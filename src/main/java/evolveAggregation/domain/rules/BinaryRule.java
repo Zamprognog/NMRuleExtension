@@ -1,8 +1,11 @@
 package evolveAggregation.domain.rules;
 
 import evolveAggregation.domain.Direction;
+import evolveAggregation.domain.KG.KGEdge;
+import evolveAggregation.groundingEngine.GraphManager;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +36,31 @@ public class BinaryRule extends Rule{
     }
 
     @Override
-    public String matchBinding(Map<String, String> bindings, Direction direction) {
-        return "";
+    public void apply(GraphManager gm, Boolean predictObject, String startNodeString, Direction direction, Map<String, List<GroundedRulePath>> predictions ){
+        List<groundingTuple> results = new ArrayList<>();
+
+        if (predictObject) {
+            gm.searchGrounding(gm.findNode(startNodeString), getForwardSteps(), 0,
+                    new ArrayList<>(), new HashMap<>(Map.of(head.getSubject(),startNodeString)), results);
+        } else {
+            gm.searchGrounding(gm.findNode(startNodeString), getBackwardSteps(), 0,
+                    new ArrayList<>(), new HashMap<>(Map.of(head.getObject(), startNodeString)), results);
+        }
+
+        for (groundingTuple gt : results) {
+            String predictedNode = predictObject ? gt.bindings().get(head.getObject()) : gt.bindings().get(head.getSubject());
+            List<KGEdge> edgeList = gt.edgeList();
+            predictions.computeIfAbsent(predictedNode, k -> new ArrayList<>()).add(new GroundedRulePath(getConfidence(), edgeList));
+        }
     }
+//    @Override
+//    public String matchBinding(Map<String, String> bindings, Direction direction) {
+//        if (direction == Direction.FORWARD) {
+//            // predicting object
+//            return bindings.getOrDefault(head.getObject(), "");
+//        } else {
+//            // predicting subject
+//            return bindings.getOrDefault(head.getSubject(), "");
+//        }
+//    }
 }

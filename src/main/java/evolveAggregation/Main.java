@@ -27,7 +27,7 @@ public class Main {
         RuleRegistry registry = new RuleRegistry();
         registry.loadRulesFromFile(rulesPath);
 
-        VariablePatternMatcher pm=  new VariablePatternMatcher();
+//        VariablePatternMatcher pm=  new VariablePatternMatcher();
 
 
         String querySubject = "Cersei_Lannister";
@@ -37,7 +37,8 @@ public class Main {
         //Map<String, List<List<KGEdge>>> predictions = new HashMap<>();
         Map<String, List<GroundedRulePath>> predictions = new HashMap<>();
         for (Rule r : candidateRules) {
-            pm.applyRule(gm,querySubject,r, predictions,Direction.FORWARD);
+//            pm.applyRule(gm,r,querySubject, r.getHead().getObject(), Direction.FORWARD,predictions);
+            r.apply(gm, true, querySubject, Direction.FORWARD, predictions);
 //            for (KGVertex v : gm.getGraph().vertexSet()) {
 //                pm.applyRule(gm,v.getUri(),r, predictions,Direction.FORWARD);
 //            }

@@ -6,6 +6,7 @@ import evolveAggregation.domain.KG.KGVertex;
 import evolveAggregation.domain.rules.GroundedRulePath;
 import evolveAggregation.domain.rules.Rule;
 import evolveAggregation.domain.rules.RuleStep;
+import evolveAggregation.domain.rules.groundingTuple;
 import org.jgrapht.Graph;
 import java.util.*;
 
@@ -15,9 +16,9 @@ import java.util.*;
  */
 public class VariablePatternMatcher {
 
-    public record groundingTuple(List<KGEdge> edgeList,Map<String, String> bindings){}
+//    public record groundingTuple(List<KGEdge> edgeList,Map<String, String> bindings){}
 
-    public void applyRule(GraphManager gm, String startNodeString, Rule rule, Map<String, List<GroundedRulePath>> predictions, Direction direction) {
+    public void applyRule(GraphManager gm, Rule rule, String targetVariable, String startNodeString, Direction direction, Map<String, List<GroundedRulePath>> predictions ) {
         //List<List<KGEdge>> results = new ArrayList<>();
         List<groundingTuple> results = new ArrayList<>();
 //        Map<String, String> currentBindings = new HashMap<>();
@@ -29,12 +30,11 @@ public class VariablePatternMatcher {
 
         for (groundingTuple gt : results) {
             //String predictedNode = gt.bindings.get(rule.getHead().getObject()); //todo: differentiate based on rule type
-            String predictedNode = rule.matchBinding(gt.bindings, direction);
+//            String predictedNode = rule.matchBinding(gt.bindings(), targetVariable);
+            String predictedNode = gt.bindings().get(targetVariable);
             List<KGEdge> edgeList = gt.edgeList();
             predictions.computeIfAbsent(predictedNode, k -> new ArrayList<>()).add(new GroundedRulePath(rule.getConfidence(), edgeList));
         }
-        System.out.println(results);
-//        return results;
     }
 
     private void searchGrounding(Graph<KGVertex, KGEdge> graph,

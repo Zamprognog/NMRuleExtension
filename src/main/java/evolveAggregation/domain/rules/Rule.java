@@ -4,6 +4,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import evolveAggregation.domain.Direction;
+import evolveAggregation.groundingEngine.GraphManager;
 
 
 // Represents one complete "Rule" (e.g., "FindValidShipmentRoute")
@@ -47,22 +48,6 @@ public abstract class Rule {
         this.body = body;
         this.name = originalString;
         this.confidence = confidence;
-//
-//        if (ruletype == Ruletype.binary) {
-//
-//            forwardSteps.addAll(makeStepsFromVariable(body, head.getSubject()));
-//            backwardSteps.addAll(makeStepsFromVariable(body.reversed(), head.getObject()));
-//
-//        } else {
-//            //rule is unary, it's always only one direction
-//            if (head.isSubjectVariable()) {
-//                forwardSteps.addAll(makeStepsFromVariable(body, head.getSubject()));
-//            } else {
-//                forwardSteps.addAll(makeStepsFromVariable(body, head.getObject()));
-//            }
-//        }
-//
-//
     }
 
 
@@ -101,38 +86,15 @@ public abstract class Rule {
         return null;
     }
 
-    protected abstract List<RuleStep> makeStepsFromVariable(List<RuleAtom> body, String variable);
-//    protected List<RuleStep> makeStepsFromVariable(List<RuleAtom> body, String variable){
-//        List<RuleStep> steps = new ArrayList<>();
-//        for (RuleAtom a : body){
-//
-//            if (a.getSubject().equals(variable)){
-//                // the last variable is the subject of this ruleatom
-//                if ( a.isObjectVariable() ) {
-//                    steps.add(RuleStep.variable(Direction.FORWARD, a.getPredicate(), a.getObject()));
-//                } else {
-//                    steps.add(RuleStep.literal(Direction.FORWARD, a.getPredicate(), a.getObject()));
-//                }
-//                variable = a.getObject();
-//            } else {
-//                // the last variable is the object of this ruleatom
-//                if (a.isSubjectVariable()) {
-//                    steps.add(RuleStep.variable(Direction.BACKWARD, a.getPredicate(), a.getSubject()));
-//                } else {
-//                    steps.add(RuleStep.literal(Direction.BACKWARD, a.getPredicate(), a.getSubject()));
-//                }
-//                variable = a.getSubject();
-//            }
-//
-//
-//        }
-//        return steps;
-//    }
+    public abstract void apply(GraphManager gm, Boolean predictObject, String startNodeString, Direction direction, Map<String, List<GroundedRulePath>> predictions );
 
+    protected abstract List<RuleStep> makeStepsFromVariable(List<RuleAtom> body, String variable);
+
+//    public abstract String  matchBinding(Map<String, String> bindings, Direction direction);
 
     public String getName() {
         return this.name;
     }
 
-    public abstract String  matchBinding(Map<String, String> bindings, Direction direction);
+
 }
