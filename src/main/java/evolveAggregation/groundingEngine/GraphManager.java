@@ -1,149 +1,164 @@
 package evolveAggregation.groundingEngine;
+
+import evolveAggregation.domain.RuleStep;
 import evolveAggregation.domain.Direction;
-import evolveAggregation.domain.KG.KGVertex;
-import evolveAggregation.domain.KG.Triple;
-import evolveAggregation.domain.KG.KGEdge;
-import evolveAggregation.domain.rules.RuleStep;
-import evolveAggregation.domain.rules.groundingTuple;
-import org.jgrapht.Graph;
-import org.jgrapht.graph.*;
+import evolveAggregation.optimizedGraph.Graph;
+import evolveAggregation.optimizedGraph.GraphDictionary;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class GraphManager {
-    public Graph<KGVertex, KGEdge> getGraph() {
-        return graph;
+
+    // The Manager owns the Dictionaries and the raw Graph structure
+    private final GraphDictionary entityDict;
+    private final GraphDictionary relationDict;
+    private final Graph graph;
+
+    public GraphManager() {
+        this.entityDict = new GraphDictionary();
+        this.relationDict = new GraphDictionary();
+        this.graph = new Graph();
     }
 
-    private Graph<KGVertex, KGEdge> graph =
-            new DirectedPseudograph<>(KGEdge.class);
-
-    public void addTriple(Triple t) {
-        KGVertex s= new KGVertex(t.subject());
-        KGVertex o= new KGVertex(t.object());
-        graph.addVertex(s);
-        graph.addVertex(o);
-
-        graph.addEdge(s, o, new KGEdge(t.predicate()));
-    }
-
-//    public List<String> query(String subject, String predicate) {
-//        // This is where your recursive pathfinding / rule application logic will go
-//        return new ArrayList<>();
-//    }
+    // --- 1. Graph Building (File I/O & Translation) ---
 
     public void parseTriples(String filePath, String separator) {
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
             while ((line = reader.readLine()) != null) {
-                // skip comments or empty lines
                 if (line.trim().isEmpty() || line.startsWith("#")) continue;
 
                 String[] parts = line.split(separator);
-                if (parts.length == 3) {
-                    addTriple(new Triple(parts[0], parts[1], parts[2]));
+                if (parts.length >= 3) {
+                    // Translate Strings to Ints
+                    int subId = entityDict.getId(parts[0].trim());
+                    int relId = relationDict.getId(parts[1].trim());
+                    int objId = entityDict.getId(parts[2].trim());
+
+                    // Push ints to the Graph
+                    graph.addTriple(subId, relId, objId);
                 }
             }
         } catch (IOException e) {
-            System.err.println("Error reading the file: " + e.getMessage());
+            System.err.println("Failed to read file: " + e.getMessage());
         }
     }
 
-    public void printGraph() {
-        System.out.println(graph);
+    /**
+     * MUST be called after all files are parsed to optimize the graph for search.
+     */
+    public void finalizeGraph() {
+        graph.freezeGraph();
     }
 
-    public KGVertex findNode(String name) {
-        return graph.vertexSet().stream()
-                .filter(v -> v.getUri().equals(name))
-                .findAny()
-                .orElse(null);
+
+//    // --- 2. Grounding Search (The "Hot Loop") ---
+//
+//    /**
+//     * Entry point for applying rules. We map Strings to IDs right at the start
+//     * so the deep recursive search only uses primitive integers.
+//     */
+//    public void startGroundingSearch(String startNodeStr, List<RuleStep> stringSteps, List<Map<String, String>> finalResults) {
+//        int startNodeId = entityDict.lookup(startNodeStr);
+//        if (startNodeId == -1) return; // Node doesn't exist in graph
+//
+//        // Translate the rule steps into integer equivalents for speed
+//        int[] stepRelations = new int[stringSteps.size()];
+//        int[] stepLiteralTargets = new int[stringSteps.size()];
+//        Direction[] stepDirections = new Direction[stringSteps.size()];
+//        String[] stepVarNames = new String[stringSteps.size()]; // Keep strings just for the final results map
+//
+//        for (int i = 0; i < stringSteps.size(); i++) {
+//            RuleStep step = stringSteps.get(i);
+//            stepRelations[i] = relationDict.lookup(step.predicate);
+//            stepDirections[i] = step.direction;
+//            stepVarNames[i] = step.targetVarName;
+//
+//            if (step.targetLiteral != null) {
+//                stepLiteralTargets[i] = entityDict.lookup(step.targetLiteral);
+//            } else {
+//                stepLiteralTargets[i] = -1; // -1 means it's a variable, not a literal
+//            }
+//        }
+//
+//        // Variable bindings. Array size matches rule length. Indexed by step depth.
+//        // Initialize with -1 (unbound)
+//        int[] currentBindings = new int[stringSteps.size()];
+//        for(int i=0; i<currentBindings.length; i++) currentBindings[i] = -1;
+//
+//        // Kick off the primitive recursive search
+//        searchGrounding(startNodeId, stepRelations, stepDirections, stepLiteralTargets, stepVarNames, 0, currentBindings, finalResults);
+//    }
+
+
+//    private void searchGrounding(int currentNode, int[] relations, Direction[] dirs, int[] literalTargets, String[] varNames,
+//                          int stepIndex, int[] bindings, List<Map<String, String>> finalResults) {
+//
+//        // Base Case: Grounding successful!
+//        if (stepIndex == relations.length) {
+//            // Translate the bound integer IDs back to Strings for the final results
+//            Map<String, String> successfulBinding = new HashMap<>();
+//            for (int i = 0; i < bindings.length; i++) {
+//                if (varNames[i] != null && bindings[i] != -1) {
+//                    successfulBinding.put(varNames[i], entityDict.getString(bindings[i]));
+//                }
+//            }
+//            finalResults.add(successfulBinding);
+//            return;
+//        }
+//
+//        int relId = relations[stepIndex];
+//        if (relId == -1) return; // The rule uses a relation that isn't in our graph
+//
+//        // O(log R) fetch of specific targets
+//        int[] targets = (dirs[stepIndex] == Direction.FORWARD) ?
+//                graph.getForwardTargets(currentNode, relId) :
+//                graph.getBackwardTargets(currentNode, relId);
+//
+//        if (targets == null) return; // Dead end
+//
+//        // Try each potential path
+//        for (int nextNode : targets) {
+//
+//            // Scenario 1: Target is a literal (e.g., "London")
+//            if (literalTargets[stepIndex] != -1) {
+//                if (nextNode != literalTargets[stepIndex]) continue;
+//            }
+//            // Scenario 2: Target is a Variable (e.g., "X")
+//            else {
+//                // To keep it simple, we just use the stepIndex as the variable's ID
+//                // UNIQUENESS CHECK: Ensure nextNode isn't already bound to a previous variable in this path
+//                if (containsValue(bindings, nextNode, stepIndex)) continue;
+//
+//                bindings[stepIndex] = nextNode; // Bind it
+//            }
+//
+//            // Recurse down
+//            doSearch(nextNode, relations, dirs, literalTargets, varNames, stepIndex + 1, bindings, finalResults);
+//
+//            // Backtrack
+//            if (literalTargets[stepIndex] == -1) {
+//                bindings[stepIndex] = -1;
+//            }
+//        }
+//    }
+
+    // High speed linear scan replacing HashMap.containsValue()
+    private boolean containsValue(int[] bindings, int value, int currentIndex) {
+        for (int i = 0; i < currentIndex; i++) {
+            if (bindings[i] == value) return true;
+        }
+        return false;
     }
 
-    public void searchGrounding(KGVertex currentNode,
-                                 List<RuleStep> ruleSteps,
-                                 int stepIndex,
-                                 List<KGEdge> currentPath,
-                                 Map<String, String> currentBindings,
-                                 List<groundingTuple> results) {
-
-        // BASE CASE: All steps satisfied? Save result and return.
-        if (stepIndex == ruleSteps.size()) {
-            //results.add(new ArrayList<>(currentPath));
-            results.add(new groundingTuple(new ArrayList<>(currentPath), new HashMap<>(currentBindings) ));
-            return;
-        }
-
-        RuleStep currentStep = ruleSteps.get(stepIndex);
-
-        // 1. Determine Candidates based on Direction
-        Set<KGEdge> candidates;
-        if (currentStep.direction == Direction.FORWARD) {
-            candidates = graph.outgoingEdgesOf(currentNode);
-        } else {
-            // Handles the "p1 <- p2" scenario (incoming edges)
-            candidates = graph.incomingEdgesOf(currentNode);
-        }
-
-        for (KGEdge edge : candidates) {
-
-            // 2. Filter by Edge Type (Label)
-            if (!edge.getPredicate().equals(currentStep.predicate)) {
-                continue;
-            }
-
-            // Calculate the candidate node we are landing on
-            KGVertex nextNode = (currentStep.direction == Direction.FORWARD)
-                    ? graph.getEdgeTarget(edge)
-                    : graph.getEdgeSource(edge);
-
-            // 3. CHECK CONSTRAINTS & BINDINGS
-            boolean newBindingCreated = false;
-            String varKey = currentStep.targetVarName;
-
-            // --- Case A: Literal Constraint (e.g., target must be "London") ---
-            if (currentStep.targetLiteral != null) {
-                if (!nextNode.equals(currentStep.targetLiteral)) {
-                    continue; // Mismatch with literal, skip
-                }
-            }
-
-            // --- Case B: Variable Constraint (e.g., target is "Y") ---
-            else if (varKey != null) {
-                if (currentBindings.containsKey(varKey)) {
-                    // Scenario: Variable "Y" was already bound in a previous step.
-                    // Check: Does the current node match the existing binding?
-                    if (!currentBindings.get(varKey).equals(nextNode)) {
-                        continue; // Inconsistency (Y cannot be Paris AND Berlin), skip
-                    }
-                } else {
-                    // Scenario: Variable "Y" is new. We need to bind it.
-
-                    // *** CRITICAL CHECK: UNIQUENESS ***
-                    // Check if this node is ALREADY bound to a DIFFERENT variable.
-                    // i.e., If X="Paris", we cannot bind Y="Paris".
-                    if (currentBindings.containsValue(nextNode)) {
-                        continue; // Node collision! "Paris" is already taken by another variable. Skip.
-                    }
-
-                    // Bind the variable
-                    currentBindings.put(varKey, nextNode.getUri());
-                    newBindingCreated = true;
-                }
-            }
-
-            // 4. RECURSE (DFS)
-            currentPath.add(edge);
-            searchGrounding(nextNode, ruleSteps, stepIndex + 1, currentPath, currentBindings, results);
-
-            // 5. BACKTRACK (Clean up for next iteration)
-            currentPath.remove(currentPath.size() - 1);
-            if (newBindingCreated) {
-                currentBindings.remove(varKey); // Unbind "Y" so other paths can try different nodes for it
-            }
-        }
-    }
+    // Useful getters
+    public GraphDictionary getEntityDict() { return entityDict; }
+    public GraphDictionary getRelationDict() { return relationDict; }
+    public Graph getGraph() { return graph; }
 }

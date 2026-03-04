@@ -1,6 +1,4 @@
-package evolveAggregation.domain.rules;
-
-import evolveAggregation.domain.Direction;
+package evolveAggregation.domain;
 
 public class RuleStep {
     public Direction direction;

@@ -1,10 +1,14 @@
-package evolveAggregation.domain.rules;
+package evolveAggregation.rules;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import evolveAggregation.domain.Direction;
-import evolveAggregation.groundingEngine.GraphManager;
+//import evolveAggregation.domain.Direction;
+//import evolveAggregation.domain.GroundedRulePath;
+import evolveAggregation.domain.RuleAtom;
+import evolveAggregation.domain.RuleStep;
+//import evolveAggregation.groundingEngine.GraphManager;
+import evolveAggregation.groundingEngine.GroundingEngine;
 
 
 // Represents one complete "Rule" (e.g., "FindValidShipmentRoute")
@@ -86,7 +90,7 @@ public abstract class Rule {
         return null;
     }
 
-    public abstract void apply(GraphManager gm, Boolean predictObject, String startNodeString, Direction direction, Map<String, List<GroundedRulePath>> predictions );
+    public abstract void apply(GroundingEngine engine, Boolean predictObject, String startNodeString, Map<String, TreeSet<Float>> predictions);
 
     protected abstract List<RuleStep> makeStepsFromVariable(List<RuleAtom> body, String variable);
 

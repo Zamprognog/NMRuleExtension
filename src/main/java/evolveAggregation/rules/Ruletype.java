@@ -1,3 +1,3 @@
-package evolveAggregation.domain.rules;
+package evolveAggregation.rules;
 
 public enum Ruletype { binary, unary }

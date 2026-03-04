@@ -1,5 +1,5 @@
 package evolveAggregation.groundingEngine;
-import evolveAggregation.domain.rules.Rule;
+import evolveAggregation.rules.Rule;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -44,6 +44,18 @@ public class RuleRegistry {
         } catch (IOException e) {
             System.err.println("Error reading the file: " + e.getMessage());
         }
+    }
+
+    public void loadRuleFromString(String line) {
+        String[] parts = line.split("\t");
+        if (parts.length >= 4) {
+            float confidence = Float.parseFloat(parts[2]);
+            String ruleStr = parts[3];
+
+            registerRule(Rule.parse(ruleStr, confidence));
+
+        }
+
     }
 
 

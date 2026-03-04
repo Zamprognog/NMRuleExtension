@@ -1,48 +1,90 @@
 package evolveAggregation;
 
-import com.fasterxml.jackson.core.format.InputAccessor;
 import evolveAggregation.domain.Direction;
-import evolveAggregation.domain.KG.KGEdge;
-import evolveAggregation.domain.KG.KGVertex;
-import evolveAggregation.domain.rules.GroundedRulePath;
-import evolveAggregation.domain.rules.Rule;
+import evolveAggregation.groundingEngine.GroundingEngine;
+import evolveAggregation.rules.RankingTree;
+import evolveAggregation.rules.Rule;
 import evolveAggregation.groundingEngine.GraphManager;
 import evolveAggregation.groundingEngine.RuleRegistry;
-import evolveAggregation.groundingEngine.VariablePatternMatcher;
 
-import java.util.ArrayList;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
+import java.util.TreeSet;
 import java.util.List;
 import java.util.Map;
 
 public class Main {
     public static void main(String[] args) {
-        String gotPath = "data/got/simpleGoT.csv";
-        //String rulesPath = "data/got/Got-rules-10";
-        String rulesPath = "data/got/Got-rules-easy";
+
+        int N = 100;
+        String graphPath = "data/NELL995/data/NELL995_full_graph.nt";
+//        String testRulesPath = "data/NELL995/test/all_rules_fixed.txt";
+        String testRulesPath = "data/NELL995/test/test_rules.txt";
 
         GraphManager gm = new GraphManager();
-        gm.parseTriples(gotPath, " ");
+        gm.parseTriples(graphPath, " ");
+        gm.finalizeGraph();
+
+        GroundingEngine engine = new GroundingEngine(gm.getGraph(), gm.getEntityDict(), gm.getRelationDict());
 
         RuleRegistry registry = new RuleRegistry();
-        registry.loadRulesFromFile(rulesPath);
+        registry.loadRulesFromFile(testRulesPath);
 
-//        VariablePatternMatcher pm=  new VariablePatternMatcher();
+//        String testSetPath = "data/NELL995/data/test_set.tsv";
+        String testSetPath = "data/NELL995/test/test_set.tsv";
+        String outputPath = "data/NELL995/predictions/NELL995_test_predictions.txt";
+        try (
+                BufferedReader br = Files.newBufferedReader(Paths.get(testSetPath));
+                BufferedWriter writer = Files.newBufferedWriter(Paths.get(outputPath))
+        ){
+            String line;
+            int lineCount = 0;
+            while ((line = br.readLine()) != null) {
+                lineCount++;
+                if (lineCount % 100 == 0) System.out.println("Processed " + lineCount + " lines.");
+                // TSV columns are separated by a tab character (\t)
+                String[] columns = line.split("\t");
+
+                String querySubject = "<" + columns[0] +">";
+                String queryPredicate = "<" + columns[1] +">";
+                String queryObject = "<" + columns[2] +">";
+
+                List<Rule> candidateRules = registry.getPredictingRules(queryPredicate);
+
+                Map<String, TreeSet<Float>> predictions = new HashMap<>();
 
 
-        String querySubject = "Cersei_Lannister";
-        String queryPredicate = "ALLIED_WITH";
-        String queryObject = "House_Baratheon_of_King's_Landing";
-        List<Rule> candidateRules = registry.getPredictingRules(queryPredicate);
-        //Map<String, List<List<KGEdge>>> predictions = new HashMap<>();
-        Map<String, List<GroundedRulePath>> predictions = new HashMap<>();
-        for (Rule r : candidateRules) {
-//            pm.applyRule(gm,r,querySubject, r.getHead().getObject(), Direction.FORWARD,predictions);
-            r.apply(gm, true, querySubject, Direction.FORWARD, predictions);
-//            for (KGVertex v : gm.getGraph().vertexSet()) {
-//                pm.applyRule(gm,v.getUri(),r, predictions,Direction.FORWARD);
-//            }
+                for (Rule r : candidateRules) {
+//
+                    if (predictions.size() > N) break;
+                    r.apply(engine, true, querySubject, predictions);
+
+                }
+//
+                RankingTree rt = new RankingTree();
+                List<RankingTree.Candidate> finalRanking = rt.getFinalRanking(predictions);
+//
+//
+                writer.write(line);
+                writer.newLine();
+                printResults(writer,finalRanking);
+                //System.out.println(predictions);
+//
+            }
+        } catch (IOException e) {
+            System.err.println("Error reading or opening the file: " + e.getMessage());
         }
-        System.out.println(predictions);
+
+    }
+
+    private static void printResults(BufferedWriter writer, List<RankingTree.Candidate> predictions) throws IOException {
+        for (RankingTree.Candidate candidate : predictions) {
+            writer.write(candidate.toBestConfString());
+        }
+        writer.newLine();
     }
 }
