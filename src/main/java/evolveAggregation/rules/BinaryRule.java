@@ -33,14 +33,15 @@ public class BinaryRule extends Rule{
     }
 
     @Override
-    public void apply(GroundingEngine engine, Boolean predictObject, String startNodeString, Map<String, TreeSet<Float>> predictions) {
+    public void apply(GroundingEngine engine, Boolean predictObject, String startNodeString, String targetRelation, Map<String, TreeSet<Float>> predictions) {
 
         // Let the engine do the heavy lifting
         List<Map<String, String>> results;
         if (predictObject) {
-            results = engine.findBindings(startNodeString, getForwardSteps());
+
+            results = engine.findBindings(startNodeString, getForwardSteps(),targetRelation, true);
         } else {
-            results = engine.findBindings(startNodeString, getBackwardSteps());
+            results = engine.findBindings(startNodeString, getBackwardSteps(),targetRelation, false);
         }
 
         // Process predictions exactly as you did before

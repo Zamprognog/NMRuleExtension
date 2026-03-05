@@ -10,6 +10,15 @@ import java.util.Set;
 public class SemanticGraphManager extends GraphManager{
     private SemanticConstraintLoader scl;
     private final GraphDictionary typeDict;
+
+    public Map<Integer, Set<Integer>> getEntityIdTypes() {
+        return entityIdTypes;
+    }
+
+    public Map<Integer, IntPropertyConstraint> getPropertyIdConstraints() {
+        return propertyIdConstraints;
+    }
+
     private final Map<Integer, Set<Integer>> entityIdTypes;
     private final Map<Integer, IntPropertyConstraint> propertyIdConstraints;
 

@@ -90,7 +90,7 @@ public abstract class Rule {
         return null;
     }
 
-    public abstract void apply(GroundingEngine engine, Boolean predictObject, String startNodeString, Map<String, TreeSet<Float>> predictions);
+    public abstract void apply(GroundingEngine engine, Boolean predictObject, String startNodeString,String targetRelation, Map<String, TreeSet<Float>> predictions);
 
     protected abstract List<RuleStep> makeStepsFromVariable(List<RuleAtom> body, String variable);
 
