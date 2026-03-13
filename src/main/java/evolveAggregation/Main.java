@@ -22,7 +22,7 @@ public class Main {
 
         int N = 100;
         String graphPath = "data/NELL995/data/NELL995_full_graph.nt";
-//        String testRulesPath = "data/NELL995/test/all_rules_fixed.txt";
+//        String testRulesPath = "data/NELL995/test/all_rules.txt";
         String testRulesPath = "data/NELL995/test/test_rules.txt";
 
         GraphManager gm = new GraphManager();
@@ -61,7 +61,7 @@ public class Main {
                 for (Rule r : candidateRules) {
 //
                     if (predictions.size() > N) break;
-                    r.apply(engine, true, querySubject, predictions);
+                    r.apply(engine, true, querySubject,queryPredicate, predictions);
 
                 }
 //

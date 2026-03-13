@@ -9,7 +9,7 @@ public class RankingTree {
     // --- Inner Class: The Candidate ---
     // Holds the entity string and the accumulating list of scores
     public static class Candidate {
-        String entity;
+        public String entity;
         List<Float> confidences;
 
         public Candidate(String entity, TreeSet<Float> confidences) {
@@ -21,6 +21,7 @@ public class RankingTree {
             return entity + " : " + confidences.getFirst() + "\t";
         }
 
+        public String getEntity() {return entity;}
     }
 
     // --- Component 2: The Ranking Tree (Tie-Breaker) ---
