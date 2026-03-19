@@ -1,7 +1,5 @@
 package evolveAggregation.rules;
 
-import evolveAggregation.domain.*;
-import evolveAggregation.groundingEngine.GraphManager;
 import evolveAggregation.groundingEngine.GroundingEngine;
 
 import java.util.*;
@@ -18,24 +16,24 @@ public class UnaryRule extends Rule {
 
 
     @Override
-    protected List<RuleStep> makeStepsFromVariable(List<RuleAtom> body, String variable) {
-        List<RuleStep> steps = new ArrayList<>();
+    protected List<RulePathStep> makeStepsFromVariable(List<RuleAtom> body, String variable) {
+        List<RulePathStep> steps = new ArrayList<>();
         for (RuleAtom a : body){
 
             if (a.getSubject().equals(variable)){
                 // the last variable is the subject of this ruleatom
                 if ( a.isObjectVariable() ) {
-                    steps.add(RuleStep.variable(Direction.FORWARD, a.getPredicate(), a.getObject()));
+                    steps.add(RulePathStep.variable(Direction.FORWARD, a.getPredicate(), a.getObject()));
                 } else {
-                    steps.add(RuleStep.literal(Direction.FORWARD, a.getPredicate(), a.getObject()));
+                    steps.add(RulePathStep.literal(Direction.FORWARD, a.getPredicate(), a.getObject()));
                 }
                 variable = a.getObject();
             } else {
                 // the last variable is the object of this ruleatom
                 if (a.isSubjectVariable()) {
-                    steps.add(RuleStep.variable(Direction.BACKWARD, a.getPredicate(), a.getSubject()));
+                    steps.add(RulePathStep.variable(Direction.BACKWARD, a.getPredicate(), a.getSubject()));
                 } else {
-                    steps.add(RuleStep.literal(Direction.BACKWARD, a.getPredicate(), a.getSubject()));
+                    steps.add(RulePathStep.literal(Direction.BACKWARD, a.getPredicate(), a.getSubject()));
                 }
                 variable = a.getSubject();
             }
@@ -95,7 +93,7 @@ public void apply(GroundingEngine engine, Boolean predictObject, String startNod
 
         // Loop over all nodes in the graph to find candidate starting nodes that satisfy the rule's body path.
         // (Assumes GroundingEngine.findSatisfyingStartNodes() is implemented as previously discussed)
-        List<String> validStarts = engine.findSatisfyingStartNodes(getForwardSteps(), targetRelation, predictObject);
+        List<String> validStarts = engine.findSatisfyingStartNodes(getForwardSteps(), targetRelation, predictObject, startNodeString);
 
         for (String candidateEntityStr : validStarts) {
             // The candidate starting node IS the predicted variable (e.g. 'X')!
@@ -110,7 +108,7 @@ public void apply(GroundingEngine engine, Boolean predictObject, String startNod
             return; // We need a starting point to run a direct path search.
         }
 
-        List<Map<String, String>> results = engine.findBindings(startNodeString, getForwardSteps(), targetRelation, predictObject);
+        List<Map<String, String>> results = engine.findPathGroundings(startNodeString, getForwardSteps(), targetRelation, predictObject);
 
         for (Map<String, String> ignored : results) {
             // If path is successfully grounded, the rule always predicts its literal constant.

@@ -22,7 +22,8 @@ public class ModelComparison {
         String graphPath     = "data/NELL995/data/NELL995_train.tsv";
         String validPath     = "data/NELL995/data/NELL995_valid.tsv"; // Adjust if you don't have this
         String testPath      = "data/NELL995/data/NELL995_test.tsv";
-        String rulesPath     = "data/NELL995/rules/NELL995_rules_all_anyburl-100";
+        String rulesPath     = "data/NELL995/rules/NELL995_rules_anyburl-1000";
+//        String rulesPath     = "data/NELL995/rules/NELL995_rules_all_anyburl-100";
         String ontologyPath  = "data/NELL995/data/NELL.ontology.ttl";
         String entityTypesPath = "data/NELL995/data/NELL995_entity_types.nt";
 
@@ -39,17 +40,17 @@ public class ModelComparison {
         standardGm.parseTriples(graphPath, "\t");
         standardGm.finalizeGraph();
         RuleRegistry standardRegistry = new RuleRegistry();
-        standardRegistry.loadRulesFromFile(rulesPath);
+        standardRegistry.loadRulesFromFile(rulesPath, false);
         GroundingEngine standardEngine = new GroundingEngine(standardGm.getGraph(), standardGm.getEntityDict(), standardGm.getRelationDict());
 
-        // 3. Setup Semantic Engine
+        // 3. Set up Semantic Engine
         System.out.println("Initializing Semantic Engine...");
         SemanticGraphManager semanticGm = new SemanticGraphManager();
         semanticGm.parseTriples(graphPath, "\t");
         semanticGm.finalizeGraph();
         semanticGm.compileConstraints(ontologyPath, entityTypesPath);
         RuleRegistry semanticRegistry = new RuleRegistry();
-        semanticRegistry.loadRulesFromFile(rulesPath); // Assuming identical rules
+        semanticRegistry.loadRulesFromFile(rulesPath, false); // Assuming identical rules
         SemanticGroundingEngine semanticEngine = new SemanticGroundingEngine(semanticGm);
 
         System.out.println("\n==================================================");
@@ -98,12 +99,12 @@ public class ModelComparison {
                 Map<String, TreeSet<Float>> objectPredictions = new HashMap<>();
                 for (Rule r : candidateRules) {
                     r.apply(engine, true, subject, predicate, objectPredictions);
-                    if (objectPredictions.size() > 100) break;
+                    if (objectPredictions.size() > 500) break;
                 }
                 int objectRank = calculateFilteredRank(objectPredictions, subject, predicate, object, true, allKnownFacts);
-
+                totalPredictions++;
                 if (objectRank != -1) {
-                    totalPredictions++;
+
                     if (objectRank <= 1) hits1++;
                     if (objectRank <= 5) hits5++;
                     if (objectRank <= 10) hits10++;
@@ -114,12 +115,11 @@ public class ModelComparison {
                 Map<String, TreeSet<Float>> subjectPredictions = new HashMap<>();
                 for (Rule r : candidateRules) {
                     r.apply(engine, false, object, predicate, subjectPredictions);
-                    if (subjectPredictions.size() > 100) break;
+                    if (subjectPredictions.size() > 500) break;
                 }
                 int subjectRank = calculateFilteredRank(subjectPredictions, object, predicate, subject, false, allKnownFacts);
-
+                totalPredictions++;
                 if (subjectRank != -1) {
-                    totalPredictions++;
                     if (subjectRank <= 1) hits1++;
                     if (subjectRank <= 5) hits5++;
                     if (subjectRank <= 10) hits10++;

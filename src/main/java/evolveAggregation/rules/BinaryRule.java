@@ -1,7 +1,5 @@
 package evolveAggregation.rules;
 
-import evolveAggregation.domain.*;
-import evolveAggregation.groundingEngine.GraphManager;
 import evolveAggregation.groundingEngine.GroundingEngine;
 
 import java.util.*;
@@ -15,17 +13,17 @@ public class BinaryRule extends Rule{
     }
 
     @Override
-    protected List<RuleStep> makeStepsFromVariable(List<RuleAtom> body, String variable) {
-        List<RuleStep> steps = new ArrayList<>();
+    protected List<RulePathStep> makeStepsFromVariable(List<RuleAtom> body, String variable) {
+        List<RulePathStep> steps = new ArrayList<>();
 
         for (RuleAtom a : body){
             if (a.getSubject().equals(variable)){
                 // the last variable is the subject of this ruleatom
-                steps.add(RuleStep.variable(Direction.FORWARD, a.getPredicate(), a.getObject()));
+                steps.add(RulePathStep.variable(Direction.FORWARD, a.getPredicate(), a.getObject()));
                 variable = a.getObject();
             } else {
                 // the last variable is the object of this ruleatom
-                steps.add(RuleStep.variable(Direction.BACKWARD, a.getPredicate(), a.getSubject()));
+                steps.add(RulePathStep.variable(Direction.BACKWARD, a.getPredicate(), a.getSubject()));
                 variable = a.getSubject();
             }
         }
@@ -39,9 +37,9 @@ public class BinaryRule extends Rule{
         List<Map<String, String>> results;
         if (predictObject) {
 
-            results = engine.findBindings(startNodeString, getForwardSteps(),targetRelation, true);
+            results = engine.findPathGroundings(startNodeString, getForwardSteps(),targetRelation, true);
         } else {
-            results = engine.findBindings(startNodeString, getBackwardSteps(),targetRelation, false);
+            results = engine.findPathGroundings(startNodeString, getBackwardSteps(),targetRelation, false);
         }
 
         // Process predictions exactly as you did before

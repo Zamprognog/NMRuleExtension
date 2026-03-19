@@ -3,10 +3,8 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-//import evolveAggregation.domain.Direction;
+//import evolveAggregation.rules.Direction;
 //import evolveAggregation.domain.GroundedRulePath;
-import evolveAggregation.domain.RuleAtom;
-import evolveAggregation.domain.RuleStep;
 //import evolveAggregation.groundingEngine.GraphManager;
 import evolveAggregation.groundingEngine.GroundingEngine;
 
@@ -33,19 +31,19 @@ public abstract class Rule {
         return confidence;
     }
 
-    public List<RuleStep> getForwardSteps() {
+    public List<RulePathStep> getForwardSteps() {
         return forwardSteps;
     }
 
-    public List<RuleStep> getBackwardSteps() {
+    public List<RulePathStep> getBackwardSteps() {
         return backwardSteps;
     }
 
     protected final RuleAtom head;
     protected final List<RuleAtom> body;
     protected final float confidence;
-    protected final List<RuleStep> forwardSteps = new ArrayList<>();
-    protected final List<RuleStep> backwardSteps = new ArrayList<>();
+    protected final List<RulePathStep> forwardSteps = new ArrayList<>();
+    protected final List<RulePathStep> backwardSteps = new ArrayList<>();
 
     Rule(RuleAtom head, List<RuleAtom> body, String originalString, float confidence) {
         this.head = head;
@@ -82,6 +80,24 @@ public abstract class Rule {
         }
     }
 
+    public static Rule parseAmie(String ruleString, Float confidence) {
+        String[] parts = ruleString.split("<=");
+        if (parts.length < 2) return null;
+
+        RuleAtom headAtom = parseAtom(parts[0].trim());
+        if (headAtom == null) return null;
+
+        String[] atomStrings = parts[1].trim().split(",\\s+");
+        List<RuleAtom> bodyAtoms = new ArrayList<>(atomStrings.length);
+
+        for (String s : atomStrings) {
+            RuleAtom a = parseAtom(s);
+            if (a != null) bodyAtoms.add(a);
+        }
+
+        return new AMIERule(headAtom, bodyAtoms, ruleString, confidence);
+    }
+
     private static RuleAtom parseAtom(String atomStr) {
         Matcher m = ATOM_PATTERN.matcher(atomStr);
         if (m.find()) {
@@ -92,7 +108,7 @@ public abstract class Rule {
 
     public abstract void apply(GroundingEngine engine, Boolean predictObject, String startNodeString,String targetRelation, Map<String, TreeSet<Float>> predictions);
 
-    protected abstract List<RuleStep> makeStepsFromVariable(List<RuleAtom> body, String variable);
+    protected abstract List<RulePathStep> makeStepsFromVariable(List<RuleAtom> body, String variable);
 
 //    public abstract String  matchBinding(Map<String, String> bindings, Direction direction);
 

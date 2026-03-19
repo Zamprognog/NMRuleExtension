@@ -1,4 +1,4 @@
-package evolveAggregation.domain;
+package evolveAggregation.rules;
 
 
 public class RuleAtom {

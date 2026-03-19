@@ -45,12 +45,13 @@ public class RankingTree {
         }
 
         public void collect(List<Candidate> results) {
-            // 1. Add candidates that end exactly here
-            results.addAll(bucket);
-            // 2. Recursively add children (TreeMap ensures high scores are visited first)
+
+            // 1. Recursively add children (TreeMap ensures high scores are visited first)
             for (RankingNode child : children.values()) {
                 child.collect(results);
             }
+            // 2. Add candidates that end exactly here
+            results.addAll(bucket);
 
         }
     }

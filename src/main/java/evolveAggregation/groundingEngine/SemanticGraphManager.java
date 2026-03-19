@@ -1,6 +1,6 @@
 package evolveAggregation.groundingEngine;
 
-import evolveAggregation.optimizedGraph.GraphDictionary;
+import evolveAggregation.graphTools.GraphDictionary;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -9,6 +9,9 @@ import java.util.Set;
 
 public class SemanticGraphManager extends GraphManager{
     private SemanticConstraintLoader scl;
+
+
+
     private final GraphDictionary typeDict;
 
     public Map<Integer, Set<Integer>> getEntityIdTypes() {
@@ -59,30 +62,30 @@ public class SemanticGraphManager extends GraphManager{
             int relId = getRelationDict().getId(entry.getKey());
 
             SemanticConstraintLoader.PropertyConstraint rawConstraint = entry.getValue();
-            IntPropertyConstraint fastConstraint = new IntPropertyConstraint();
+            IntPropertyConstraint encodedConstraint = new IntPropertyConstraint();
 
             // Copy the boolean flags directly
-            fastConstraint.isFunctional = rawConstraint.isFunctional;
-            fastConstraint.isSymmetric = rawConstraint.isSymmetric;
-            fastConstraint.isTransitive = rawConstraint.isTransitive;
-            fastConstraint.isInverseFunctional = rawConstraint.isInverseFunctional;
+            encodedConstraint.isFunctional = rawConstraint.isFunctional;
+            encodedConstraint.isSymmetric = rawConstraint.isSymmetric;
+            encodedConstraint.isTransitive = rawConstraint.isTransitive;
+            encodedConstraint.isInverseFunctional = rawConstraint.isInverseFunctional;
 
             // Translate Domain Strings to Domain Ints
             for (String domainUri : rawConstraint.domainClasses) {
-                fastConstraint.domainClasses.add(getEntityDict().getId(domainUri));
+                encodedConstraint.domainClasses.add(getTypeDict().getId(domainUri));
             }
 
             // Translate Range Strings to Range Ints
             for (String rangeUri : rawConstraint.rangeClasses) {
-                fastConstraint.rangeClasses.add(getEntityDict().getId(rangeUri));
+                encodedConstraint.rangeClasses.add(getTypeDict().getId(rangeUri));
             }
 
             // Translate Disjoint Properties Strings to Ints
             for (String disjointUri : rawConstraint.disjointProperties) {
-                fastConstraint.disjointProperties.add(getRelationDict().getId(disjointUri));
+                encodedConstraint.disjointProperties.add(getRelationDict().getId(disjointUri));
             }
 
-            propertyIdConstraints.put(relId, fastConstraint);
+            propertyIdConstraints.put(relId, encodedConstraint);
         }
 
         Map<String, Set<String>> rawTypes = scl.getEntityTypes();
@@ -99,5 +102,9 @@ public class SemanticGraphManager extends GraphManager{
 
             entityIdTypes.put(entityId, typeIds);
         }
+    }
+
+    public GraphDictionary getTypeDict() {
+        return typeDict;
     }
 }

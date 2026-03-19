@@ -1,14 +1,15 @@
 package evolveAggregation.groundingEngine;
 
-import evolveAggregation.domain.Direction;
-import evolveAggregation.domain.RuleStep;
-import evolveAggregation.optimizedGraph.GraphDictionary;
-import evolveAggregation.optimizedGraph.Graph;
+import evolveAggregation.rules.Direction;
+import evolveAggregation.rules.RulePatternStep;
+import evolveAggregation.rules.RulePathStep;
+import evolveAggregation.graphTools.GraphDictionary;
+import evolveAggregation.graphTools.Graph;
 
 import java.util.*;
 
 /**
- * The {@code GroundingEngine} provides the core logic for grounding rules in an optimized graph.
+ * The {@code GroundingEngine} provides the core logic for grounding rules.
  * It searches the graph for paths that satisfy a given sequence of rule steps and provides
  * bindings for the variables defined in those rules.
  */
@@ -35,7 +36,15 @@ public class GroundingEngine {
     }
 
     /**
-     * Finds all possible bindings for a rule starting from a specific node.
+     * Hook for subclasses to perform early validation on the query node and relation.
+     * Overridden by SemanticGroundingEngine.
+     */
+    protected boolean isQueryValid(String queryNodeStr, String targetRelationStr, Boolean predictObject) {
+        return true; // Standard engine has no constraints, always proceed.
+    }
+
+    /**
+     * Finds all possible bindings for a rule starting from a specific node. Applies to Anyburl-type rules.
      *
      * @param startNodeStr the string representation of the starting node
      * @param stringSteps the list of rule steps to be followed from the start node
@@ -43,7 +52,12 @@ public class GroundingEngine {
      * @param predictObject {@code true} if predicting the object, {@code false} if predicting the subject
      * @return a list of maps, where each map represents a set of variable bindings that satisfy the rule
      */
-    public List<Map<String, String>> findBindings(String startNodeStr, List<RuleStep> stringSteps, String targetRelation, Boolean predictObject) {
+    public List<Map<String, String>> findPathGroundings(String startNodeStr, List<RulePathStep> stringSteps, String targetRelation, Boolean predictObject) {
+        // PRUNE EARLY: Check if the query itself is valid before searching
+        if (!isQueryValid(startNodeStr, targetRelation, predictObject)) {
+            return new ArrayList<>();
+        }
+
         List<Map<String, String>> ruleGroundings = new ArrayList<>();
 
         int startNodeId = entityDict.lookup(startNodeStr);
@@ -61,7 +75,7 @@ public class GroundingEngine {
         String[] stepVarNames = new String[numSteps];
 
         for (int i = 0; i < numSteps; i++) {
-            RuleStep step = stringSteps.get(i);
+            RulePathStep step = stringSteps.get(i);
             stepRelations[i] = relationDict.lookup(step.predicate);
             stepDirections[i] = step.direction;
             stepVarNames[i] = step.targetVarName;
@@ -73,19 +87,131 @@ public class GroundingEngine {
             }
         }
 
-        // --- Setup binding array for recursive search ---
+        // --- Set up a binding array for recursive search ---
         int[] currentBindings = new int[numSteps];
         Arrays.fill(currentBindings, -1);
 
         // --- Execute the recursive search ---
-        doSearch(startNodeId, startNodeId, stepRelations, stepDirections, stepLiteralTargets, stepVarNames,
+        doPathSearch(startNodeId, startNodeId, stepRelations, stepDirections, stepLiteralTargets, stepVarNames,
                 0, currentBindings, ruleGroundings, targetRelationId, predictObject);
 
         return ruleGroundings;
     }
 
     /**
+     * Finds groundings using Subgraph Isomorphism for AMIE-style rules.
+     * This method is used when the rule is defined as a general graph pattern rather than a simple path.
+     *
+     * @param startNodeString The entity string we are starting from (e.g., "e1")
+     * @param startVarName The variable name of the start node (e.g., "A")
+     * @param targetVarName The variable name we want to predict (e.g., "B")
+     * @param steps The ordered list of graph pattern steps
+     * @return A list of valid entity strings that bind to the targetVarName
+     */
+    public List<String> findPatternGroundings(String startNodeString, String startVarName, String targetVarName, List<RulePatternStep> steps) {
+        int startId = entityToId(startNodeString);
+        if (startId == -1) return new ArrayList<>();
+
+        List<Integer> validTargetIds = new ArrayList<>();
+
+        // The bindings map keeps track of which variable is bound to which Node ID
+        Map<String, Integer> bindings = new HashMap<>();
+        bindings.put(startVarName, startId);
+
+        doPatternSearch(steps, 0, bindings, validTargetIds, targetVarName);
+
+        // Convert resulting IDs back to Strings
+        List<String> results = new ArrayList<>();
+        for (int id : validTargetIds) {
+            results.add(idToEntity(id));
+        }
+        return results;
+    }
+
+    /**
+     * Used by Anyburl-style Unary rules when the start node is a variable.
+     * Iterates over ALL nodes in the graph to find those that satisfy the rule body.
+     *
+     * @param stringSteps the list of rule steps
+     * @param targetRelation the name of the relation being predicted
+     * @param predictObject {@code true} if predicting the object, {@code false} if predicting the subject
+     * @param knownEntity the known entity in the query triple, needed in subclasses for semantic checks
+     * @return a list of node strings that satisfy the rule
+     */
+//    public List<String> findSatisfyingStartNodes(List<RuleStep> stringSteps, String targetRelation, Boolean predictObject) {
+    public List<String> findSatisfyingStartNodes(List<RulePathStep> stringSteps, String targetRelation, Boolean predictObject, String knownEntity) {
+        List<String> validStartNodes = new ArrayList<>();
+
+
+        // PRUNE ENTIRE LOOP EARLY: No need to evaluate all nodes if the query node violates constraints
+        if (!isQueryValid(knownEntity, targetRelation, predictObject)) {
+            return new ArrayList<>();
+        }
+
+        // 1. Pre-compile rule steps into primitives
+        int numSteps = stringSteps.size();
+        int[] stepRelations = new int[numSteps];
+        int[] stepLiteralTargets = new int[numSteps];
+        int targetRelationId = relationDict.lookup(targetRelation);
+        Direction[] stepDirections = new Direction[numSteps];
+        String[] stepVarNames = new String[numSteps];
+
+        for (int i = 0; i < numSteps; i++) {
+            RulePathStep step = stringSteps.get(i);
+            stepRelations[i] = relationDict.lookup(step.predicate);
+            stepDirections[i] = step.direction;
+            stepVarNames[i] = step.targetVarName;
+
+            stepLiteralTargets[i] = (step.targetLiteral != null) ?
+                    entityDict.lookup(step.targetLiteral) : -1;
+        }
+
+        // If the rule uses a relation that isn't in our dictionary, no node will satisfy it
+        for (int relId : stepRelations) {
+            if (relId == -1) {
+                return validStartNodes;
+            }
+        }
+
+        int totalNodes = entityDict.size();
+
+        // 2. Optimization: reuse objects to avoid heavy O(N) allocations inside the hot loop
+        int[] currentBindings = new int[numSteps];
+        Arrays.fill(currentBindings, -1);
+        List<Map<String, String>> dummyResults = new ArrayList<>();
+
+        // 3. Loop over every node ID in the graph
+        for (int startNodeId = 0; startNodeId < totalNodes; startNodeId++) {
+
+            // Check if the node has at least one edge for the first relation
+            int firstRel = stepRelations[0];
+            int[] initialTargets = (stepDirections[0] == Direction.FORWARD) ?
+                    graph.getForwardTargets(startNodeId, firstRel) :
+                    graph.getBackwardTargets(startNodeId, firstRel);
+
+            if (initialTargets == null) {
+                continue; // Node doesn't have the required edge; skip
+            }
+
+            dummyResults.clear(); // Safe to reuse; bindings are reset to -1 via engine backtracking
+
+            doPathSearch(startNodeId, startNodeId, stepRelations, stepDirections, stepLiteralTargets, stepVarNames,
+                    0, currentBindings, dummyResults, targetRelationId, predictObject);
+
+            // If the search yielded results, this node satisfies the rule!
+            if (!dummyResults.isEmpty()) {
+                validStartNodes.add(entityDict.getString(startNodeId));
+            }
+        }
+
+        return validStartNodes;
+    }
+
+    /**
      * Performs a depth-first search (DFS) through the graph to find paths that satisfy the rule steps.
+     * Each step in the rule corresponds to a triple (subject, relation, object) in the graph.
+     * This method handles both literal targets and variables, ensuring that variables in a path
+     * are bound uniquely to prevent cycles or redundant groundings within a single rule application.
      *
      * @param startNodeId the ID of the original starting node
      * @param currentNode the ID of the node currently being processed in the search
@@ -100,9 +226,9 @@ public class GroundingEngine {
      * @param predictObject {@code true} if predicting the object, {@code false} if predicting the subject
      * @return {@code true} to continue the search across other branches, {@code false} to abort
      */
-    private boolean doSearch(int startNodeId, int currentNode, int[] relations, Direction[] dirs, int[] literalTargets,
-                             String[] varNames, int stepIndex, int[] bindings,
-                             List<Map<String, String>> ruleGroundings, int targetRelationId, Boolean predictObject) {
+    private boolean doPathSearch(int startNodeId, int currentNode, int[] relations, Direction[] dirs, int[] literalTargets,
+                                 String[] varNames, int stepIndex, int[] bindings,
+                                 List<Map<String, String>> ruleGroundings, int targetRelationId, Boolean predictObject) {
 
         // --- Base case: reached the end of the rule steps ---
         if (stepIndex == relations.length) {
@@ -140,7 +266,7 @@ public class GroundingEngine {
             }
 
             // RECURSE: Move to the next step
-            boolean continueSearch = doSearch(startNodeId, nextNode, relations, dirs, literalTargets, varNames,
+            boolean continueSearch = doPathSearch(startNodeId, nextNode, relations, dirs, literalTargets, varNames,
                     stepIndex + 1, bindings, ruleGroundings, targetRelationId, predictObject);
 
             // BACKTRACK: Reset the binding for this step if it was a variable
@@ -154,6 +280,54 @@ public class GroundingEngine {
         }
 
         return true; // Finished this branch normally
+    }
+
+    /**
+     * Performs a depth-first search (DFS) to find all satisfying groundings for an AMIE-style graph pattern.
+     * This method recursively explores the graph, binding variables defined in the {@link RulePatternStep} list.
+     *
+     * @param steps The ordered list of graph pattern steps to satisfy.
+     * @param stepIndex The current step index in the pattern (depth of the search).
+     * @param bindings A map of variable names to their current entity ID bindings.
+     * @param results A list to store the entity IDs that satisfy the target variable.
+     * @param targetVarName The name of the variable whose satisfying entity IDs we want to collect.
+     */
+    private void doPatternSearch(List<RulePatternStep> steps, int stepIndex, Map<String, Integer> bindings, List<Integer> results, String targetVarName) {
+        // Base case: We successfully mapped all steps in the rule
+        //todo: integrate the semantic part (@checksuccess etc)
+        if (stepIndex == steps.size()) {
+            if (bindings.containsKey(targetVarName)) {
+                results.add(bindings.get(targetVarName));
+            }
+            return;
+        }
+
+        RulePatternStep step = steps.get(stepIndex);
+
+        int sourceId = bindings.get(step.sourceVarName);
+        int relationId = relationDict.lookup(step.predicate);
+        if (relationId == -1) return; // Relation doesn't exist in graph
+
+        int[] neighbors = step.direction == Direction.FORWARD ? graph.getForwardTargets(sourceId, relationId) : graph.getBackwardTargets(sourceId, relationId);
+
+        if (neighbors == null) return;
+
+        for (int neighborId : neighbors) {
+
+            // CASE 1: Loop Closure - The target variable is ALREADY bound
+            if (bindings.containsKey(step.targetVarName)) {
+                if (bindings.get(step.targetVarName) != neighborId) continue; // Must match the existing binding
+
+                doPatternSearch(steps, stepIndex + 1, bindings, results, targetVarName);
+            }
+            // CASE 2: Standard Traversal - The target variable is NEW
+            else {
+                // Bind it, recurse, then backtrack
+                bindings.put(step.targetVarName, neighborId);
+                doPatternSearch(steps, stepIndex + 1, bindings, results, targetVarName);
+                bindings.remove(step.targetVarName); // Backtrack!
+            }
+        }
     }
 
     /**
@@ -207,76 +381,7 @@ public class GroundingEngine {
         return false;
     }
 
-    /**
-     * Used by Unary rules when the start node is a variable.
-     * Iterates over ALL nodes in the graph to find those that satisfy the rule body.
-     *
-     * @param stringSteps the list of rule steps
-     * @param targetRelation the name of the relation being predicted
-     * @param predictObject {@code true} if predicting the object, {@code false} if predicting the subject
-     * @return a list of node strings that satisfy the rule
-     */
-    public List<String> findSatisfyingStartNodes(List<RuleStep> stringSteps, String targetRelation, Boolean predictObject) {
-        List<String> validStartNodes = new ArrayList<>();
 
-        // 1. Pre-compile rule steps into primitives
-        int numSteps = stringSteps.size();
-        int[] stepRelations = new int[numSteps];
-        int[] stepLiteralTargets = new int[numSteps];
-        int targetRelationId = relationDict.lookup(targetRelation);
-        Direction[] stepDirections = new Direction[numSteps];
-        String[] stepVarNames = new String[numSteps];
-
-        for (int i = 0; i < numSteps; i++) {
-            RuleStep step = stringSteps.get(i);
-            stepRelations[i] = relationDict.lookup(step.predicate);
-            stepDirections[i] = step.direction;
-            stepVarNames[i] = step.targetVarName;
-
-            stepLiteralTargets[i] = (step.targetLiteral != null) ?
-                    entityDict.lookup(step.targetLiteral) : -1;
-        }
-
-        // If the rule uses a relation that isn't in our dictionary, no node will satisfy it
-        for (int relId : stepRelations) {
-            if (relId == -1) {
-                return validStartNodes;
-            }
-        }
-
-        int totalNodes = entityDict.size();
-
-        // 2. Optimization: reuse objects to avoid heavy O(N) allocations inside the hot loop
-        int[] currentBindings = new int[numSteps];
-        Arrays.fill(currentBindings, -1);
-        List<Map<String, String>> dummyResults = new ArrayList<>();
-
-        // 3. Loop over every node ID in the graph
-        for (int startNodeId = 0; startNodeId < totalNodes; startNodeId++) {
-
-            // Check if the node has at least one edge for the first relation
-            int firstRel = stepRelations[0];
-            int[] initialTargets = (stepDirections[0] == Direction.FORWARD) ?
-                    graph.getForwardTargets(startNodeId, firstRel) :
-                    graph.getBackwardTargets(startNodeId, firstRel);
-
-            if (initialTargets == null) {
-                continue; // Node doesn't have the required edge; skip
-            }
-
-            dummyResults.clear(); // Safe to reuse; bindings are reset to -1 via engine backtracking
-
-            doSearch(startNodeId, startNodeId, stepRelations, stepDirections, stepLiteralTargets, stepVarNames,
-                    0, currentBindings, dummyResults, targetRelationId, predictObject);
-
-            // If the search yielded results, this node satisfies the rule!
-            if (!dummyResults.isEmpty()) {
-                validStartNodes.add(entityDict.getString(startNodeId));
-            }
-        }
-
-        return validStartNodes;
-    }
     /**
      * Converts an entity string to its corresponding ID.
      *
