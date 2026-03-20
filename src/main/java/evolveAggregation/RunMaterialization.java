@@ -16,7 +16,7 @@ public class RunMaterialization {
         String validPath = "data/NELL995/data/NELL995_valid.tsv";
         String testPath  = "data/NELL995/data/NELL995_test.tsv";
         String rulesPath = "data/NELL995/rules/NELL995_rules_amie.tsv";
-        String outputPath = "data/NELL995/data/NELL995_materialized_10pct.nt";
+        String outputPath = "data/NELL995/predictions/NELL995_materialized_10pct.nt";
 
         double targetPercentage = 10.0; // Generate 10% new facts
 

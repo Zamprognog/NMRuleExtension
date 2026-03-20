@@ -16,10 +16,28 @@ public class Evaluator {
     private final RuleRegistry registry;
     private final Set<String> allKnownFacts;
 
+    // NEW: Indexes to quickly count known facts for filtering buffers
+    private final Map<String, Integer> knownObjectCounts = new HashMap<>();
+    private final Map<String, Integer> knownSubjectCounts = new HashMap<>();
+
     public Evaluator(GroundingEngine engine, RuleRegistry registry, Set<String> allKnownFacts) {
         this.engine = engine;
         this.registry = registry;
         this.allKnownFacts = allKnownFacts;
+        buildFactIndexes();
+    }
+
+    private void buildFactIndexes() {
+        for (String fact : allKnownFacts) {
+            String[] parts = fact.split("\t");
+            if (parts.length >= 3) {
+                String subPred = parts[0] + "\t" + parts[1];
+                String predObj = parts[1] + "\t" + parts[2];
+
+                knownObjectCounts.put(subPred, knownObjectCounts.getOrDefault(subPred, 0) + 1);
+                knownSubjectCounts.put(predObj, knownSubjectCounts.getOrDefault(predObj, 0) + 1);
+            }
+        }
     }
 
     public Metrics evaluate(String testPath, int limitN) {
@@ -27,10 +45,14 @@ public class Evaluator {
         double mrr = 0.0;
         int totalPredictions = 0;
 
+        // We only care about the top 100 ranks
+        int K_RANKS = 100;
+
         try (BufferedReader reader = new BufferedReader(new FileReader(testPath))) {
             String line;
             int count = 0;
             while ((line = reader.readLine()) != null && count < limitN) {
+//                if (count % 100 == 0) System.out.println("Evaluating line " + count);
                 String[] parts = line.split("\\s+");
                 if (parts.length < 3) continue;
                 String subject = parts[0];
@@ -39,13 +61,26 @@ public class Evaluator {
 
                 List<Rule> candidateRules = registry.getPredictingRules(predicate);
 
+                // CRITICAL: Rules MUST be sorted by confidence descending for early stopping to work
+                candidateRules.sort((r1, r2) -> Float.compare(r2.getConfidence(), r1.getConfidence()));
+
                 // --- Object prediction ---
                 Map<String, TreeSet<Float>> objectPredictions = new HashMap<>();
+
+                // Calculate the exact safe stopping threshold: K + (number of known facts we will filter out)
+                String subPredKey = subject + "\t" + predicate;
+                int objectStopThreshold = K_RANKS + knownObjectCounts.getOrDefault(subPredKey, 0);
+
                 for (Rule r : candidateRules) {
                     r.apply(engine, true, subject, predicate, objectPredictions);
-                    if (objectPredictions.size() > 100) break;
+
+                    // SMART STOPPING
+                    if (objectPredictions.size() >= objectStopThreshold) {
+                        break;
+                    }
                 }
-                int objectRank = calculateFilteredRank(objectPredictions, subject, predicate, object, true);
+
+                int objectRank = calculateFilteredRank(objectPredictions, subject, predicate, object, true, K_RANKS);
                 if (objectRank != -1) {
                     if (objectRank <= 1) hits1++;
                     if (objectRank <= 5) hits5++;
@@ -56,11 +91,20 @@ public class Evaluator {
 
                 // --- Subject prediction ---
                 Map<String, TreeSet<Float>> subjectPredictions = new HashMap<>();
+
+                String predObjKey = predicate + "\t" + object;
+                int subjectStopThreshold = K_RANKS + knownSubjectCounts.getOrDefault(predObjKey, 0);
+
                 for (Rule r : candidateRules) {
                     r.apply(engine, false, object, predicate, subjectPredictions);
-                    if (subjectPredictions.size() > 500) break;
+
+                    // SMART STOPPING
+                    if (subjectPredictions.size() >= subjectStopThreshold) {
+                        break;
+                    }
                 }
-                int subjectRank = calculateFilteredRank(subjectPredictions, object, predicate, subject, false);
+
+                int subjectRank = calculateFilteredRank(subjectPredictions, object, predicate, subject, false, K_RANKS);
                 if (subjectRank != -1) {
                     if (subjectRank <= 1) hits1++;
                     if (subjectRank <= 5) hits5++;
@@ -76,22 +120,15 @@ public class Evaluator {
         }
 
         if (totalPredictions > 0) {
-            double h1 = (double) hits1 / totalPredictions;
-            double h5 = (double) hits5 / totalPredictions;
-            double h10 = (double) hits10 / totalPredictions;
-            double finalMrr = mrr / totalPredictions;
-            System.out.printf("  Evaluated %d predictions.\n", totalPredictions);
-            return new Metrics(h1, h5, h10, finalMrr, totalPredictions);
+            return new Metrics((double) hits1 / totalPredictions, (double) hits5 / totalPredictions,
+                    (double) hits10 / totalPredictions, mrr / totalPredictions, totalPredictions);
         }
 
         return new Metrics(0, 0, 0, 0, 0);
     }
 
-    private int calculateFilteredRank(Map<String, TreeSet<Float>> predictions,
-                                      String sourceEntity,
-                                      String predicate,
-                                      String correctEntity,
-                                      boolean predictingObject) {
+    private int calculateFilteredRank(Map<String, TreeSet<Float>> predictions, String sourceEntity,
+                                      String predicate, String correctEntity, boolean predictingObject, int maxRanks) {
         if (predictions.isEmpty()) return -1;
 
         RankingTree tree = new RankingTree();
@@ -99,17 +136,18 @@ public class Evaluator {
 
         int rank = 1;
         for (RankingTree.Candidate candidate : sortedCandidates) {
+            if (rank > maxRanks) return -1; // Give up if it falls outside the top K
+
             String predictedEntity = candidate.entity;
 
             if (predictedEntity.equals(correctEntity)) {
-                return rank; // Found it!
+                return rank;
             }
 
             String factString = predictingObject
                     ? sourceEntity + "\t" + predicate + "\t" + predictedEntity
                     : predictedEntity + "\t" + predicate + "\t" + sourceEntity;
 
-            // Filter out known facts so they don't penalize the rank
             if (!allKnownFacts.contains(factString)) {
                 rank++;
             }
