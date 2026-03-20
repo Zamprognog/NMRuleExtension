@@ -1,6 +1,4 @@
-package evolveAggregation.rules;
-
-import java.util.*;
+package evolveAggregation.groundingEngine;
 
 import java.util.*;
 

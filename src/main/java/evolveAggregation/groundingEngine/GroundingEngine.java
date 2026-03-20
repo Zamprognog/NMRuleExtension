@@ -25,23 +25,15 @@ public class GroundingEngine {
     /**
      * Constructs a new {@code GroundingEngine} with the required graph and dictionaries.
      *
-     * @param graph the graph structure containing entity and relation triples
-     * @param entityDict the dictionary for entity ID-to-string conversion
-     * @param relationDict the dictionary for relation ID-to-string conversion
+     * @param gm the graph manager containing the graph and dictionaries.
      */
-    public GroundingEngine(Graph graph, GraphDictionary entityDict, GraphDictionary relationDict) {
-        this.graph = graph;
-        this.entityDict = entityDict;
-        this.relationDict = relationDict;
+    public GroundingEngine(GraphManager gm) {
+        this.graph = gm.getGraph();
+        this.entityDict = gm.getEntityDict();
+        this.relationDict = gm.getRelationDict();
     }
 
-    /**
-     * Hook for subclasses to perform early validation on the query node and relation.
-     * Overridden by SemanticGroundingEngine.
-     */
-    protected boolean isQueryValid(String queryNodeStr, String targetRelationStr, Boolean predictObject) {
-        return true; // Standard engine has no constraints, always proceed.
-    }
+    // AnyBURL rules section.
 
     /**
      * Finds all possible bindings for a rule starting from a specific node. Applies to Anyburl-type rules.
@@ -99,52 +91,21 @@ public class GroundingEngine {
     }
 
     /**
-     * Finds groundings using Subgraph Isomorphism for AMIE-style rules.
-     * This method is used when the rule is defined as a general graph pattern rather than a simple path.
-     *
-     * @param startNodeString The entity string we are starting from (e.g., "e1")
-     * @param startVarName The variable name of the start node (e.g., "A")
-     * @param targetVarName The variable name we want to predict (e.g., "B")
-     * @param steps The ordered list of graph pattern steps
-     * @return A list of valid entity strings that bind to the targetVarName
-     */
-    public List<String> findPatternGroundings(String startNodeString, String startVarName, String targetVarName, List<RulePatternStep> steps) {
-        int startId = entityToId(startNodeString);
-        if (startId == -1) return new ArrayList<>();
-
-        List<Integer> validTargetIds = new ArrayList<>();
-
-        // The bindings map keeps track of which variable is bound to which Node ID
-        Map<String, Integer> bindings = new HashMap<>();
-        bindings.put(startVarName, startId);
-
-        doPatternSearch(steps, 0, bindings, validTargetIds, targetVarName);
-
-        // Convert resulting IDs back to Strings
-        List<String> results = new ArrayList<>();
-        for (int id : validTargetIds) {
-            results.add(idToEntity(id));
-        }
-        return results;
-    }
-
-    /**
      * Used by Anyburl-style Unary rules when the start node is a variable.
      * Iterates over ALL nodes in the graph to find those that satisfy the rule body.
      *
      * @param stringSteps the list of rule steps
-     * @param targetRelation the name of the relation being predicted
+     * @param headRelation the name of the relation being predicted
      * @param predictObject {@code true} if predicting the object, {@code false} if predicting the subject
      * @param knownEntity the known entity in the query triple, needed in subclasses for semantic checks
      * @return a list of node strings that satisfy the rule
      */
-//    public List<String> findSatisfyingStartNodes(List<RuleStep> stringSteps, String targetRelation, Boolean predictObject) {
-    public List<String> findSatisfyingStartNodes(List<RulePathStep> stringSteps, String targetRelation, Boolean predictObject, String knownEntity) {
+    public List<String> findSatisfyingStartNodes(List<RulePathStep> stringSteps, String headRelation, Boolean predictObject, String knownEntity) {
         List<String> validStartNodes = new ArrayList<>();
 
 
         // PRUNE ENTIRE LOOP EARLY: No need to evaluate all nodes if the query node violates constraints
-        if (!isQueryValid(knownEntity, targetRelation, predictObject)) {
+        if (!isQueryValid(knownEntity, headRelation, predictObject)) {
             return new ArrayList<>();
         }
 
@@ -152,7 +113,7 @@ public class GroundingEngine {
         int numSteps = stringSteps.size();
         int[] stepRelations = new int[numSteps];
         int[] stepLiteralTargets = new int[numSteps];
-        int targetRelationId = relationDict.lookup(targetRelation);
+        int targetRelationId = relationDict.lookup(headRelation);
         Direction[] stepDirections = new Direction[numSteps];
         String[] stepVarNames = new String[numSteps];
 
@@ -282,52 +243,182 @@ public class GroundingEngine {
         return true; // Finished this branch normally
     }
 
+
+    /**
+     * Finds groundings using Subgraph Isomorphism for AMIE-style rules.
+     * This method is used when the rule is defined as a general graph pattern rather than a simple path.
+     *
+     * @param startNodeStr The entity string we are starting from (e.g., "e1")
+     * @param steps The ordered list of rule pattern steps
+     * @param headRelation The relation in the head of the rule
+     * @param startVarName The variable name of the start node (e.g., "A")
+     * @param targetVarName The variable name we want to predict (e.g., "B")
+     * @param predictObject  {@code true} if predicting the object, {@code false} if predicting the subject
+     *
+     * @return a list of maps, where each map represents a set of variable bindings that satisfy the rule
+     */
+    public List<Map<String, String>> findPatternGroundings(String startNodeStr, List<RulePatternStep> steps, String headRelation, String startVarName, String targetVarName, Boolean predictObject) {
+        if (!isQueryValid(startNodeStr, headRelation, predictObject)) {
+            return new ArrayList<>();
+        }
+
+        List<Map<String, String>> results = new ArrayList<>();
+        int startNodeId = entityDict.lookup(startNodeStr);
+        if (startNodeId == -1) {
+            return results;
+        }
+
+        // 1. Map string variable names to fixed indices for our bindings array
+        Map<String, Integer> varToIndex = new HashMap<>();
+        List<String> indexToVar = new ArrayList<>();
+
+        // Ensure the start and target variables exist in our mapping
+        varToIndex.put(startVarName, 0);
+        indexToVar.add(startVarName);
+
+        if (!varToIndex.containsKey(targetVarName)) {
+            varToIndex.put(targetVarName, varToIndex.size());
+            indexToVar.add(targetVarName);
+        }
+
+        for (RulePatternStep step : steps) {
+            if (!varToIndex.containsKey(step.sourceVarName)) {
+                varToIndex.put(step.sourceVarName, varToIndex.size());
+                indexToVar.add(step.sourceVarName);
+            }
+            if (step.targetVarName != null && !varToIndex.containsKey(step.targetVarName)) {
+                varToIndex.put(step.targetVarName, varToIndex.size());
+                indexToVar.add(step.targetVarName);
+            }
+        }
+
+        // 2. Pre-compile rule steps to primitives for fast traversal
+        int numSteps = steps.size();
+        int[] relations = new int[numSteps];
+        Direction[] dirs = new Direction[numSteps];
+        int[] sourceVarIndices = new int[numSteps];
+        int[] targetVarIndices = new int[numSteps];
+        int targetRelationId = relationDict.lookup(headRelation);
+
+        for (int i = 0; i < numSteps; i++) {
+            RulePatternStep step = steps.get(i);
+            relations[i] = relationDict.lookup(step.predicate);
+            dirs[i] = step.direction;
+            sourceVarIndices[i] = varToIndex.get(step.sourceVarName);
+            targetVarIndices[i] = step.targetVarName != null ? varToIndex.get(step.targetVarName) : -1;
+        }
+
+        // 3. Set up the bindings array and bind the start node
+        int[] bindings = new int[varToIndex.size()];
+        Arrays.fill(bindings, -1);
+        bindings[varToIndex.get(startVarName)] = startNodeId;
+
+        // Convert our index mapping to an array to pass into checkSuccess
+        String[] varNames = indexToVar.toArray(new String[0]);
+
+        // 4. Execute recursive search
+        doPatternSearch(startNodeId, 0, relations, dirs, sourceVarIndices, targetVarIndices, varNames, bindings, results, targetRelationId, predictObject);
+
+        return results;
+    }
+
+    // AMIE Rules section.
+
     /**
      * Performs a depth-first search (DFS) to find all satisfying groundings for an AMIE-style graph pattern.
      * This method recursively explores the graph, binding variables defined in the {@link RulePatternStep} list.
      *
-     * @param steps The ordered list of graph pattern steps to satisfy.
      * @param stepIndex The current step index in the pattern (depth of the search).
+     * @param relations The pre-compiled list of relation IDs in steps.
+     * @param dirs The pre-compiled list of directions (forward/backward) in steps.
+     * @param sourceVarIndices The list of source variable indices in steps.
+     * @param targetVarIndices The list of target variable indices in steps.
      * @param bindings A map of variable names to their current entity ID bindings.
      * @param results A list to store the entity IDs that satisfy the target variable.
-     * @param targetVarName The name of the variable whose satisfying entity IDs we want to collect.
      */
-    private void doPatternSearch(List<RulePatternStep> steps, int stepIndex, Map<String, Integer> bindings, List<Integer> results, String targetVarName) {
-        // Base case: We successfully mapped all steps in the rule
-        //todo: integrate the semantic part (@checksuccess etc)
-        if (stepIndex == steps.size()) {
-            if (bindings.containsKey(targetVarName)) {
-                results.add(bindings.get(targetVarName));
-            }
-            return;
+    private boolean doPatternSearch(int startNodeId, int stepIndex, int[] relations, Direction[] dirs, int[] sourceVarIndices, int[] targetVarIndices, String[] varNames, int[] bindings, List<Map<String, String>> results, int targetRelationId, Boolean predictObject) {
+
+        // Base case: We successfully mapped all steps
+        if (stepIndex == relations.length) {
+            return checkSuccess(startNodeId, bindings, varNames, results, targetRelationId, predictObject);
         }
 
-        RulePatternStep step = steps.get(stepIndex);
+        int relId = relations[stepIndex];
+        if (relId == -1) {
+            return true; // Relation isn't found in the graph, skip this branch
+        }
 
-        int sourceId = bindings.get(step.sourceVarName);
-        int relationId = relationDict.lookup(step.predicate);
-        if (relationId == -1) return; // Relation doesn't exist in graph
+        // The source node for this step is guaranteed to be bound based on buildOrderedPattern logic
+        int sourceNodeId = bindings[sourceVarIndices[stepIndex]];
 
-        int[] neighbors = step.direction == Direction.FORWARD ? graph.getForwardTargets(sourceId, relationId) : graph.getBackwardTargets(sourceId, relationId);
+        // Fetch targets based on direction
+        int[] targets = (dirs[stepIndex] == Direction.FORWARD) ?
+                graph.getForwardTargets(sourceNodeId, relId) :
+                graph.getBackwardTargets(sourceNodeId, relId);
 
-        if (neighbors == null) return;
+        if (targets == null) {
+            return true; // No edges found, skip
+        }
 
-        for (int neighborId : neighbors) {
+        int targetVarIdx = targetVarIndices[stepIndex];
 
-            // CASE 1: Loop Closure - The target variable is ALREADY bound
-            if (bindings.containsKey(step.targetVarName)) {
-                if (bindings.get(step.targetVarName) != neighborId) continue; // Must match the existing binding
+        for (int nextNode : targets) {
+            if (targetVarIdx != -1) {
+                if (bindings[targetVarIdx] != -1) {
+                    // CRITICAL LOGIC: The target variable is ALREADY bound.
+                    // This means we are closing a loop in the graph pattern. The node MUST match the bound entity.
+                    if (bindings[targetVarIdx] != nextNode) {
+                        continue;
+                    }
 
-                doPatternSearch(steps, stepIndex + 1, bindings, results, targetVarName);
-            }
-            // CASE 2: Standard Traversal - The target variable is NEW
-            else {
-                // Bind it, recurse, then backtrack
-                bindings.put(step.targetVarName, neighborId);
-                doPatternSearch(steps, stepIndex + 1, bindings, results, targetVarName);
-                bindings.remove(step.targetVarName); // Backtrack!
+                    boolean continueSearch = doPatternSearch(startNodeId, stepIndex + 1, relations, dirs, sourceVarIndices, targetVarIndices, varNames, bindings, results, targetRelationId, predictObject);
+                    if (!continueSearch) return false;
+
+                } else {
+                    // Variable is not bound yet. Enforce injectivity (prevent mapping different variables to the same entity).
+                    if (containsValueForPattern(bindings, nextNode)) {
+                        continue;
+                    }
+
+                    // Bind the new variable and recurse
+                    bindings[targetVarIdx] = nextNode;
+                    boolean continueSearch = doPatternSearch(startNodeId, stepIndex + 1, relations, dirs, sourceVarIndices, targetVarIndices, varNames, bindings, results, targetRelationId, predictObject);
+
+                    // Backtrack
+                    bindings[targetVarIdx] = -1;
+
+                    if (!continueSearch) return false;
+                }
+            } else {
+                // Target is not a variable (e.g., a literal). Skip variable binding and proceed.
+                boolean continueSearch = doPatternSearch(startNodeId, stepIndex + 1, relations, dirs, sourceVarIndices, targetVarIndices, varNames, bindings, results, targetRelationId, predictObject);
+                if (!continueSearch) return false;
             }
         }
+        return true;
+    }
+
+    /**
+     * Checks if a given value is already present anywhere in the bindings array.
+     * Unlike the standard path method, pattern arrays are populated out of order.
+     */
+    protected boolean containsValueForPattern(int[] bindings, int value) {
+        for (int binding : bindings) {
+            if (binding == value) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Useful methods section.
+
+    /**
+     * Hook for subclasses to perform early validation on the query node and relation.
+     * Overridden by SemanticGroundingEngine.
+     */
+    protected boolean isQueryValid(String queryNodeStr, String targetRelationStr, Boolean predictObject) {
+        return true; // Standard engine has no constraints, always proceed.
     }
 
     /**
@@ -380,7 +471,6 @@ public class GroundingEngine {
         }
         return false;
     }
-
 
     /**
      * Converts an entity string to its corresponding ID.

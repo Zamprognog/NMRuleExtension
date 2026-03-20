@@ -71,10 +71,13 @@ public class AMIERule extends Rule {
         List<RulePatternStep> orderedSteps = buildOrderedPattern(startVar);
 
         // Call the new pattern matching engine
-        List<String> results = engine.findPatternGroundings(startNodeString, startVar, targetVar, orderedSteps);
+        List<Map<String, String>> results = engine.findPatternGroundings(startNodeString, orderedSteps, head.getPredicate(), startVar, targetVar, predictObject);
 
-        for (String predictedEntity : results) {
-            predictions.computeIfAbsent(predictedEntity, k -> new TreeSet<>()).add(getConfidence());
+        for (Map<String, String> grounding : results) {
+            String predictedEntity = grounding.get(targetVar);
+            if (predictedEntity != null) {
+                predictions.computeIfAbsent(predictedEntity, k -> new TreeSet<>()).add(getConfidence());
+            }
         }
     }
 }

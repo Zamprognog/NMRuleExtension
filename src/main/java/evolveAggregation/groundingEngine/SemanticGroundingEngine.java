@@ -7,8 +7,9 @@ public class SemanticGroundingEngine extends GroundingEngine{
     private final Map<Integer, Set<Integer>> entityIdTypes;
     private final Map<Integer, SemanticGraphManager.IntPropertyConstraint> propertyIdConstraints;
 
+
     public SemanticGroundingEngine(SemanticGraphManager gm) {
-        super(gm.getGraph(), gm.getEntityDict(), gm.getRelationDict());
+        super(gm);
         this.entityIdTypes = gm.getEntityIdTypes();
         this.propertyIdConstraints = gm.getPropertyIdConstraints();
     }
