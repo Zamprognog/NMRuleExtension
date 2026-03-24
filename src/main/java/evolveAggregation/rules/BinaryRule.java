@@ -36,10 +36,9 @@ public class BinaryRule extends Rule{
         // Let the engine do the heavy lifting
         List<Map<String, String>> results;
         if (predictObject) {
-
-            results = engine.findPathGroundings(startNodeString, getForwardSteps(),targetRelation, true);
+            results = engine.findPathGroundings(startNodeString, getForwardSteps(),targetRelation, this.getHead().getObject(), true);
         } else {
-            results = engine.findPathGroundings(startNodeString, getBackwardSteps(),targetRelation, false);
+            results = engine.findPathGroundings(startNodeString, getBackwardSteps(),targetRelation, this.getHead().getSubject(), false);
         }
 
         // Process predictions exactly as you did before

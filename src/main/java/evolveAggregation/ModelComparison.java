@@ -1,9 +1,9 @@
 package evolveAggregation;
 
-import evolveAggregation.groundingEngine.GraphManager;
+import evolveAggregation.graphTools.GraphManager;
 import evolveAggregation.groundingEngine.GroundingEngine;
 import evolveAggregation.groundingEngine.RuleRegistry;
-import evolveAggregation.groundingEngine.SemanticGraphManager;
+import evolveAggregation.graphTools.SemanticGraphManager;
 import evolveAggregation.groundingEngine.SemanticGroundingEngine;
 import evolveAggregation.evaluation.Evaluator;
 import evolveAggregation.evaluation.Metrics;
@@ -21,12 +21,12 @@ public class ModelComparison {
         String graphPath     = "data/NELL995/data/NELL995_train.tsv";
         String validPath     = "data/NELL995/data/NELL995_valid.tsv";
         String testPath      = "data/NELL995/data/NELL995_test.tsv";
-        String rulesPath     = "data/NELL995/rules/NELL995_rules_amie.tsv";
-        //String rulesPath     = "data/NELL995/rules/NELL995_rules_all_anyburl-100";
+//        String rulesPath     = "data/NELL995/rules/NELL995_rules_amie.tsv";
+        String rulesPath     = "data/NELL995/rules/NELL995_rules_all_anyburl-100";
 //        String rulesPath     = "data/NELL995/rules/NELL995_rules_anyburl-1000";
         String ontologyPath  = "data/NELL995/data/NELL.ontology.ttl";
         String entityTypesPath = "data/NELL995/data/NELL995_entity_types.nt";
-        Boolean isAmie = true;
+        Boolean isAmie = false;
         // 1. Load Known Facts for Filtered Evaluation
         Set<String> allKnownFacts = new HashSet<>();
         DataLoader.loadFactsIntoSet(allKnownFacts, graphPath, validPath, testPath);
@@ -34,26 +34,30 @@ public class ModelComparison {
 
         // 2. Setup Standard Engine
         System.out.println("Initializing Standard Engine...");
-        GraphManager standardGm = new GraphManager();
-        standardGm.parseTriples(graphPath, "\t");
-        standardGm.finalizeGraph();
-        RuleRegistry standardRegistry = new RuleRegistry();
-        standardRegistry.loadRulesFromFile(rulesPath, isAmie);
-        GroundingEngine standardEngine = new GroundingEngine(standardGm);
-
-        Evaluator standardEvaluator = new Evaluator(standardEngine, standardRegistry, allKnownFacts);
-
-        // 3. Set up Semantic Engine
-        System.out.println("Initializing Semantic Engine...");
+//        GraphManager standardGm = new GraphManager();
+//        standardGm.parseTriples(graphPath, "\t");
+//        standardGm.finalizeGraph();
         SemanticGraphManager semanticGm = new SemanticGraphManager();
         semanticGm.parseTriples(graphPath, "\t");
         semanticGm.finalizeGraph();
         semanticGm.compileConstraints(ontologyPath, entityTypesPath);
+        RuleRegistry standardRegistry = new RuleRegistry();
+        standardRegistry.loadRulesFromFile(rulesPath, isAmie);
+        GroundingEngine standardEngine = new GroundingEngine(semanticGm);
+
+        Evaluator standardEvaluator = new Evaluator(standardEngine, standardRegistry, allKnownFacts, semanticGm);
+
+        // 3. Set up Semantic Engine
+        System.out.println("Initializing Semantic Engine...");
+//        SemanticGraphManager semanticGm = new SemanticGraphManager();
+//        semanticGm.parseTriples(graphPath, "\t");
+//        semanticGm.finalizeGraph();
+//        semanticGm.compileConstraints(ontologyPath, entityTypesPath);
         RuleRegistry semanticRegistry = new RuleRegistry();
         semanticRegistry.loadRulesFromFile(rulesPath, isAmie);
         SemanticGroundingEngine semanticEngine = new SemanticGroundingEngine(semanticGm);
 
-        Evaluator semanticEvaluator = new Evaluator(semanticEngine, semanticRegistry, allKnownFacts);
+        Evaluator semanticEvaluator = new Evaluator(semanticEngine, semanticRegistry, allKnownFacts, semanticGm);
 
         // 4. Evaluate Models
         System.out.println("\n==================================================");

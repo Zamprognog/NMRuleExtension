@@ -1,6 +1,6 @@
 package evolveAggregation;
 
-import evolveAggregation.groundingEngine.GraphManager;
+import evolveAggregation.graphTools.GraphManager;
 import evolveAggregation.groundingEngine.GroundingEngine;
 import evolveAggregation.groundingEngine.RuleRegistry;
 import evolveAggregation.materialization.Materializer;

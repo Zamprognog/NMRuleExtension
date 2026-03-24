@@ -5,13 +5,19 @@ public class Metrics {
     private final double hits5;
     private final double hits10;
     private final double mrr;
+    private final double sem1;
+    private final double sem5;
+    private final double sem10;
     private final int totalPredictions;
 
-    public Metrics(double hits1, double hits5, double hits10, double mrr, int totalPredictions) {
+    public Metrics(double hits1, double hits5, double hits10, double mrr,double sem1, double sem5, double sem10, int totalPredictions) {
         this.hits1 = hits1;
         this.hits5 = hits5;
         this.hits10 = hits10;
         this.mrr = mrr;
+        this.sem1 = sem1;
+        this.sem5 = sem5;
+        this.sem10 = sem10;
         this.totalPredictions = totalPredictions;
     }
 
@@ -25,7 +31,7 @@ public class Metrics {
      * Prints a formatted single-line comparison for these metrics.
      */
     public void printRow(String modelName) {
-        System.out.printf("%-15s | %-10.4f | %-10.4f | %-10.4f | %-10.4f%n",
-                modelName, hits1, hits5, hits10, mrr);
+        System.out.printf("%-15s | %-10.4f | %-10.4f | %-10.4f | %-10.4f | %-10.4f%n",
+                modelName, hits1, hits5, hits10, mrr, sem10);
     }
 }

@@ -1,7 +1,4 @@
-package evolveAggregation.groundingEngine;
-
-import evolveAggregation.graphTools.Graph;
-import evolveAggregation.graphTools.GraphDictionary;
+package evolveAggregation.graphTools;
 
 import java.io.BufferedReader;
 import java.io.FileReader;

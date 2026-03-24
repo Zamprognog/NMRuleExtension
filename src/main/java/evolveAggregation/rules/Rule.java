@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 
 //import evolveAggregation.rules.Direction;
 //import evolveAggregation.domain.GroundedRulePath;
-//import evolveAggregation.groundingEngine.GraphManager;
+//import evolveAggregation.graphTools.GraphManager;
 import evolveAggregation.groundingEngine.GroundingEngine;
 
 

@@ -44,38 +44,9 @@ public class UnaryRule extends Rule {
     }
 
 
-
-//    @Override
-//    public void apply(GroundingEngine engine, Boolean predictObject, String startNodeString, String targetRelation, Map<String, TreeSet<Float>> predictions) {
-//        List<Map<String, String>> results = new ArrayList<>();
-//        if (startNodeString == null) {
-//            for (String candidateEntityStr : engine.findSatisfyingStartNodes(getForwardSteps(), targetRelation, predictObject)) {
-//                //todo this is not working at the moment
-//                List<Map<String, String>> tempResults = engine.findBindings(candidateEntityStr, getForwardSteps(), targetRelation, predictObject);
-//                for (Map<String, String> binding : tempResults) {
-//                    if (head.isSubjectVariable()) {
-//                        binding.put(head.getSubject(), candidateEntityStr);
-//                    } else {
-//                        binding.put(head.getObject(), candidateEntityStr);
-//                    }
-//                    results.add(binding);
-//                }
-//            }
-//        } else {
-//            results = engine.findBindings(startNodeString, getForwardSteps(),targetRelation, predictObject);
-//        }
-//        for (Map<String, String> bindings : results) {
-//            String predictedNode = predictObject ? head.getObject() : head.getSubject();
-//            if (startNodeString == null) {
-//                predictedNode = bindings.get(head.getObject());
-//            }
-//            if (predictedNode != null) {
-//                predictions.computeIfAbsent(predictedNode, k -> new TreeSet<>()).add(getConfidence());
-//            }
-//        }
-//}
+    
 @Override
-public void apply(GroundingEngine engine, Boolean predictObject, String startNodeString, String targetRelation, Map<String, TreeSet<Float>> predictions) {
+public void apply(GroundingEngine engine, Boolean predictObject, String startNodeString, String headRelation, Map<String, TreeSet<Float>> predictions) {
 
     // Determine if we are trying to predict the exact variable that forms the starting point of this unary rule's path.
     // For example: head is p(c, X) and query is (s, p, ?) -> predictObject=true, head.isSubjectVariable()=false -> predictHeadVariable=true
@@ -93,7 +64,8 @@ public void apply(GroundingEngine engine, Boolean predictObject, String startNod
 
         // Loop over all nodes in the graph to find candidate starting nodes that satisfy the rule's body path.
         // (Assumes GroundingEngine.findSatisfyingStartNodes() is implemented as previously discussed)
-        List<String> validStarts = engine.findSatisfyingStartNodes(getForwardSteps(), targetRelation, predictObject, startNodeString);
+
+        List<String> validStarts = engine.findSatisfyingStartNodes(getForwardSteps(), headRelation, null, predictObject, startNodeString);
 
         for (String candidateEntityStr : validStarts) {
             // The candidate starting node IS the predicted variable (e.g. 'X')!
@@ -107,8 +79,9 @@ public void apply(GroundingEngine engine, Boolean predictObject, String startNod
         if (startNodeString == null) {
             return; // We need a starting point to run a direct path search.
         }
+        String headVariable = predictObject ? head.getObject() : head.getSubject();
 
-        List<Map<String, String>> results = engine.findPathGroundings(startNodeString, getForwardSteps(), targetRelation, predictObject);
+        List<Map<String, String>> results = engine.findPathGroundings(startNodeString, getForwardSteps(), headRelation, headVariable, predictObject);
 
         for (Map<String, String> ignored : results) {
             // If path is successfully grounded, the rule always predicts its literal constant.

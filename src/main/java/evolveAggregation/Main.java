@@ -1,6 +1,7 @@
 package evolveAggregation;
 
-import evolveAggregation.groundingEngine.GraphManager;
+import evolveAggregation.graphTools.GraphManager;
+import evolveAggregation.graphTools.SemanticGraphManager;
 import evolveAggregation.groundingEngine.GroundingEngine;
 import evolveAggregation.groundingEngine.RuleRegistry;
 import evolveAggregation.evaluation.Evaluator;
@@ -28,15 +29,17 @@ public class Main {
 
         // 2. Initialize Engine
         System.out.println("Initializing Engine...");
-        GraphManager gm = new GraphManager();
+        SemanticGraphManager gm = new SemanticGraphManager();
         gm.parseTriples(graphPath, "\t");
         gm.finalizeGraph();
+        gm.compileConstraints("data/NELL995/data/NELL.ontology.ttl", "data/NELL995/data/NELL995_entity_types.nt");
+
 
         RuleRegistry registry = new RuleRegistry();
         registry.loadRulesFromFile(rulesPath, true);
         GroundingEngine engine = new GroundingEngine(gm);
 
-        Evaluator evaluator = new Evaluator(engine, registry, allKnownFacts);
+        Evaluator evaluator = new Evaluator(engine, registry, allKnownFacts, gm);
 
         // 3. Evaluate
         System.out.println("\n==================================================");
@@ -48,8 +51,8 @@ public class Main {
         System.out.println("\n==================================================");
         System.out.println("                FINAL METRICS                     ");
         System.out.println("==================================================");
-        System.out.printf("%-15s | %-10s | %-10s | %-10s | %-10s%n", "Model", "Hits@1", "Hits@5", "Hits@10", "MRR");
-        System.out.println("------------------------------------------------------------------");
+        System.out.printf("%-15s | %-10s | %-10s | %-10s | %-10s | %-10s%n", "Model", "Hits@1", "Hits@5", "Hits@10", "MRR", "SEM@10");
+        System.out.println("----------------------------------------------------------------------------");
         metrics.printRow("Baseline");
     }
 }

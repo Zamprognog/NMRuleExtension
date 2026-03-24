@@ -1,4 +1,4 @@
-package evolveAggregation.groundingEngine;
+package evolveAggregation.graphTools;
 
 import org.apache.jena.ontology.*;
 import org.apache.jena.rdf.model.*;
@@ -20,6 +20,8 @@ public class SemanticConstraintLoader {
     // 2. Property Constraints Map: Property URI -> Constraint Object
     private final Map<String, PropertyConstraint> propertyConstraints = new HashMap<>();
 
+    //3. Disjoint Classes Map: Class URI -> Set of Disjoint Class URIs
+    private final Map<String, Set<String>> disjointClassesMap = new HashMap<>();
     /**
      * Data structure to hold domain, range, and characteristics of a property.
      */
@@ -131,11 +133,11 @@ public class SemanticConstraintLoader {
 
             // 4. Extract Disjointness
             // Using listPropertyValues with OWL.disjointWith to avoid potential OntProperty mapping issues
-            ExtendedIterator<org.apache.jena.rdf.model.RDFNode> disjoints = p.listPropertyValues(OWL.disjointWith);
+            ExtendedIterator<org.apache.jena.rdf.model.RDFNode> disjoints = p.listPropertyValues(model.getProperty("http://www.w3.org/2002/07/owl#propertyDisjointWith"));
             while (disjoints.hasNext()) {
                 org.apache.jena.rdf.model.RDFNode d = disjoints.next();
                 if (d.isResource() && !d.isAnon()) {
-                    constraint.disjointProperties.add(d.asResource().getURI());
+                    constraint.disjointProperties.add(d.asResource().getURI()); // Rename variable in PropertyConstraint to disjointProperties
                 }
             }
 
@@ -163,6 +165,13 @@ public class SemanticConstraintLoader {
                 }
             }
             classHierarchy.put(classUri, superClasses);
+            ExtendedIterator<OntClass> disjointIter = cls.listDisjointWith();
+            while (disjointIter.hasNext()) {
+                OntClass disj = disjointIter.next();
+                if (!disj.isAnon() && !isSystemType(disj.getURI())) {
+                    disjointClassesMap.computeIfAbsent(classUri, k -> new HashSet<>()).add(disj.getURI());
+                }
+            }
         }
 
 
@@ -209,20 +218,6 @@ public class SemanticConstraintLoader {
     // Getters for your custom pathfinder
     public Map<String, Set<String>> getEntityTypes() { return entityTypes; }
     public Map<String, PropertyConstraint> getPropertyConstraints() { return propertyConstraints; }
+    public Map<String, Set<String>> getDisjointClasses() { return disjointClassesMap; }
 
-    // --- Main method for testing ---
-//    public static void main(String[] args) {
-//        SemanticConstraintLoader loader = new SemanticConstraintLoader();
-//
-//        // Replace with your actual ontology file
-//        loader.loadAndExtract("data/test/test.nt");
-//
-//        // Example: Check functionality
-//        Map<String, PropertyConstraint> props = loader.getPropertyConstraints();
-//        props.forEach((k, v) -> System.out.println("Prop: " + k + " => " + v));
-//
-//        // Example: Check types
-//        Map<String, Set<String>> entities = loader.getEntityTypes();
-//        System.out.println("Loaded " + entities.size() + " entities with type info.");
-//    }
 }
