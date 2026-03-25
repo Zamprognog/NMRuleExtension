@@ -32,10 +32,11 @@ public class SemanticGroundingEngine extends GroundingEngine{
             return true; // Probably something is probably wrong in the semantic parsing phase
         }
 
-        SemanticGraphManager.IntPropertyConstraint constraints = propertyIdConstraints.get(headRelationId);
-        if (constraints == null) {
+        SemanticGraphManager.IntPropertyConstraint propertyConstraint = propertyIdConstraints.get(headRelationId);
+        if (propertyConstraint == null) {
             return true; // No constraints defined for this relation
         }
+        SemanticGraphManager.IntPropertyConstraint targetRelationConstraints = propertyIdConstraints.get(headRelationId);
 
         Set<Integer> queryNodeTypes = entityIdTypes.getOrDefault(queryNodeId, Collections.emptySet());
 
@@ -44,10 +45,10 @@ public class SemanticGroundingEngine extends GroundingEngine{
 
             // 1. Check DOMAIN of p
 
-            if (hasDisjointConflict(queryNodeTypes, constraints.domainClasses)) return false;
+            if (hasDisjointConflict(queryNodeTypes, targetRelationConstraints.disjointWithDomain)) return false;
 
             // 3. Check FUNCTIONAL property of p
-            if (constraints.isFunctional) {
+            if (propertyConstraint.isFunctional) {
                 int[] existingTargets = graph.getForwardTargets(queryNodeId, headRelationId);
                 // If it already has an outgoing edge for this functional relation, fail
                 return existingTargets == null || existingTargets.length <= 0;
@@ -56,7 +57,7 @@ public class SemanticGroundingEngine extends GroundingEngine{
             // Predicting (?, p, o) -> queryNodeStr is the object 'o' (e.g., london)
 
             // 2. Check RANGE of p
-            if (hasDisjointConflict(queryNodeTypes, constraints.rangeClasses)) return false;
+            if (hasDisjointConflict(queryNodeTypes, targetRelationConstraints.disjointWithRange)) return false;
 
             //todo: add invfunct
         }
@@ -105,16 +106,15 @@ public class SemanticGroundingEngine extends GroundingEngine{
             Set<Integer> predictedNodeTypes = entityIdTypes.getOrDefault(predictedEntityId, Collections.emptySet());
 
             if (!predictedNodeTypes.isEmpty()) {
-                // Use the new disjoint conflict checker
                 if (predictObject) {
                     // Predicting Object -> check against Range
-                    if (hasDisjointConflict(predictedNodeTypes, targetRelationConstraints.rangeClasses)) {
+                    if (hasDisjointConflict(predictedNodeTypes, targetRelationConstraints.disjointWithRange)) {
                         ruleGroundings.clear();
                         return false;
                     }
                 } else {
                     // Predicting Subject -> check against Domain
-                    if (hasDisjointConflict(predictedNodeTypes, targetRelationConstraints.domainClasses)) {
+                    if (hasDisjointConflict(predictedNodeTypes, targetRelationConstraints.disjointWithDomain)) {
                         ruleGroundings.clear();
                         return false;
                     }
@@ -141,10 +141,10 @@ public class SemanticGroundingEngine extends GroundingEngine{
                 // Use the new disjoint conflict checker
                 if (predictObject) {
                     // Predicting Object -> check against Range
-                    if (hasDisjointConflict(predictedNodeTypes, targetRelationConstraints.rangeClasses)) return false;
+                    if (hasDisjointConflict(predictedNodeTypes, targetRelationConstraints.disjointWithRange)) return false;
                 } else {
                     // Predicting Subject -> check against Domain
-                    if (hasDisjointConflict(predictedNodeTypes, targetRelationConstraints.domainClasses)) return false;
+                    if (hasDisjointConflict(predictedNodeTypes, targetRelationConstraints.disjointWithDomain)) return false;
                 }
             }
         }
@@ -155,17 +155,13 @@ public class SemanticGroundingEngine extends GroundingEngine{
      * Helper method implementing Open World disjointness logic.
      * Returns TRUE if there is a conflict (meaning it should be rejected).
      */
-    private boolean hasDisjointConflict(Set<Integer> entityTypes, Set<Integer> domainOrRangeClasses) {
-        if (domainOrRangeClasses.isEmpty() || entityTypes.isEmpty()) return false;
-
-        for (int reqClass : domainOrRangeClasses) {
-            Set<Integer> disjointWithReq = disjointClasses.getOrDefault(reqClass, Collections.emptySet());
-
-            // If the entity possesses ANY type that is disjoint with the required class -> Conflict!
-            if (!Collections.disjoint(entityTypes, disjointWithReq)) {
-                return true;
-            }
+    private boolean hasDisjointConflict(Set<Integer> entityTypes, Set<Integer> precomputedDisjointClasses) {
+        if (precomputedDisjointClasses.isEmpty() || entityTypes.isEmpty()) {
+            return false;
         }
-        return false;
+
+        // Collections.disjoint returns true if the two sets have NO elements in common.
+        // If they are NOT disjoint, they share an element, meaning we found a conflict.
+        return !Collections.disjoint(entityTypes, precomputedDisjointClasses);
     }
 }

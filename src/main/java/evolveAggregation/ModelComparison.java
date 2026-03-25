@@ -15,15 +15,15 @@ import java.util.Set;
 public class ModelComparison {
 
     public static void main(String[] args) {
-        int N = 20000;
+        int N = 1000;
 
         // --- File Paths ---
         String graphPath     = "data/NELL995/data/NELL995_train.tsv";
         String validPath     = "data/NELL995/data/NELL995_valid.tsv";
         String testPath      = "data/NELL995/data/NELL995_test.tsv";
 //        String rulesPath     = "data/NELL995/rules/NELL995_rules_amie.tsv";
-        String rulesPath     = "data/NELL995/rules/NELL995_rules_all_anyburl-100";
-//        String rulesPath     = "data/NELL995/rules/NELL995_rules_anyburl-1000";
+//        String rulesPath     = "data/NELL995/rules/NELL995_rules_all_anyburl-100";
+        String rulesPath     = "data/NELL995/rules/NELL995_rules_anyburl-1000";
         String ontologyPath  = "data/NELL995/data/NELL.ontology.ttl";
         String entityTypesPath = "data/NELL995/data/NELL995_entity_types.nt";
         Boolean isAmie = false;
@@ -41,6 +41,7 @@ public class ModelComparison {
         semanticGm.parseTriples(graphPath, "\t");
         semanticGm.finalizeGraph();
         semanticGm.compileConstraints(ontologyPath, entityTypesPath);
+        semanticGm.precomputeDisjointConstraints();
         RuleRegistry standardRegistry = new RuleRegistry();
         standardRegistry.loadRulesFromFile(rulesPath, isAmie);
         GroundingEngine standardEngine = new GroundingEngine(semanticGm);

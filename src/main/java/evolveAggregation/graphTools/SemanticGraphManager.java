@@ -1,9 +1,6 @@
 package evolveAggregation.graphTools;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class SemanticGraphManager extends GraphManager {
     private SemanticConstraintLoader scl;
@@ -36,6 +33,10 @@ public class SemanticGraphManager extends GraphManager {
         public Set<Integer> domainClasses = new HashSet<>();
         public Set<Integer> rangeClasses = new HashSet<>();
         public Set<Integer> disjointProperties = new HashSet<>();
+
+        public Set<Integer> disjointWithDomain = new HashSet<>();
+        public Set<Integer> disjointWithRange = new HashSet<>();
+
         public boolean isFunctional = false;
         public boolean isSymmetric = false;
         public boolean isTransitive = false;
@@ -151,19 +152,12 @@ public class SemanticGraphManager extends GraphManager {
         if (entId == -1 || predId == -1) return false;
 
         IntPropertyConstraint constraint = propertyIdConstraints.get(predId);
-        if (constraint == null || constraint.domainClasses.isEmpty()) return false; // No domain restricted
+        if (constraint == null || constraint.disjointWithDomain.isEmpty()) return false; // No domain restricted
 
         Set<Integer> entTypes = entityIdTypes.get(entId);
         if (entTypes == null || entTypes.isEmpty()) return false; // Entity has no known types to conflict with
 
-        // Strict Check: The entity must possess at least one of the allowed domain classes
-        for (int reqDomain : constraint.domainClasses) {
-            if (entTypes.contains(reqDomain)) {
-                return false; // Valid! Found a matching type.
-            }
-        }
-
-        return true; // Violation: The entity has types, but none of them match the required domain.
+        return !Collections.disjoint(entTypes, constraint.disjointWithDomain);
     }
 
     /**
@@ -177,21 +171,34 @@ public class SemanticGraphManager extends GraphManager {
         if (entId == -1 || predId == -1) return false;
 
         IntPropertyConstraint constraint = propertyIdConstraints.get(predId);
-        if (constraint == null || constraint.rangeClasses.isEmpty()) return false;
+        if (constraint == null || constraint.disjointWithRange.isEmpty()) return false;
 
         Set<Integer> entTypes = entityIdTypes.get(entId);
         if (entTypes == null || entTypes.isEmpty()) return false;
 
-        // Strict Check: The entity must possess at least one of the allowed range classes
-        for (int reqRange : constraint.rangeClasses) {
-            if (entTypes.contains(reqRange)) {
-                return false; // Valid!
-            }
-        }
-
-        return true; // Violation: None of the entity's types match the required range.
+        return !Collections.disjoint(entTypes, constraint.disjointWithRange);
     }
 
+    public void precomputeDisjointConstraints() {
+        for (IntPropertyConstraint constraint : propertyIdConstraints.values()) {
+
+            // 1. Precompute all classes disjoint with the required DOMAIN
+            for (Integer domainClassId : constraint.domainClasses) {
+                Set<Integer> disjointClassesForDomain = disjointClasses.get(domainClassId);
+                if (disjointClassesForDomain != null) {
+                    constraint.disjointWithDomain.addAll(disjointClassesForDomain);
+                }
+            }
+
+            // 2. Precompute all classes disjoint with the required RANGE
+            for (Integer rangeClassId : constraint.rangeClasses) {
+                Set<Integer> disjointClassesForRange = disjointClasses.get(rangeClassId);
+                if (disjointClassesForRange != null) {
+                    constraint.disjointWithRange.addAll(disjointClassesForRange);
+                }
+            }
+        }
+    }
 
     public GraphDictionary getTypeDict() {
         return typeDict;
