@@ -15,7 +15,7 @@ import java.util.Set;
 public class ModelComparison {
 
     public static void main(String[] args) {
-        int N = 1000;
+        int N = 20000;
 
         // --- File Paths ---
         String graphPath     = "data/NELL995/data/NELL995_train.tsv";

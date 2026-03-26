@@ -46,7 +46,7 @@ public class UnaryRule extends Rule {
 
     
 @Override
-public void apply(GroundingEngine engine, Boolean predictObject, String startNodeString, String headRelation, Map<String, TreeSet<Float>> predictions) {
+public void apply(GroundingEngine engine, Boolean predictObject, String startNodeString, String headRelation, Map<String, List<Float>> predictions) {
 
     // Determine if we are trying to predict the exact variable that forms the starting point of this unary rule's path.
     // For example: head is p(c, X) and query is (s, p, ?) -> predictObject=true, head.isSubjectVariable()=false -> predictHeadVariable=true
@@ -69,7 +69,7 @@ public void apply(GroundingEngine engine, Boolean predictObject, String startNod
 
         for (String candidateEntityStr : validStarts) {
             // The candidate starting node IS the predicted variable (e.g. 'X')!
-            predictions.computeIfAbsent(candidateEntityStr, k -> new TreeSet<>()).add(getConfidence());
+            predictions.computeIfAbsent(candidateEntityStr, k -> new ArrayList<>()).add(getConfidence());
         }
 
     } else {
@@ -80,14 +80,12 @@ public void apply(GroundingEngine engine, Boolean predictObject, String startNod
             return; // We need a starting point to run a direct path search.
         }
         String headVariable = predictObject ? head.getObject() : head.getSubject();
-
         List<Map<String, String>> results = engine.findPathGroundings(startNodeString, getForwardSteps(), headRelation, headVariable, predictObject);
 
-        for (Map<String, String> ignored : results) {
-            // If path is successfully grounded, the rule always predicts its literal constant.
+        if (!results.isEmpty()) {
             String predictedNode = predictObject ? head.getObject() : head.getSubject();
             if (predictedNode != null) {
-                predictions.computeIfAbsent(predictedNode, k -> new TreeSet<>()).add(getConfidence());
+                predictions.computeIfAbsent(predictedNode, k -> new ArrayList<>()).add(getConfidence());
             }
         }
     }

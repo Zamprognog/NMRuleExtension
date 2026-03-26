@@ -6,6 +6,7 @@ import evolveAggregation.groundingEngine.GroundingEngine;
 import evolveAggregation.groundingEngine.RuleRegistry;
 import evolveAggregation.evaluation.Evaluator;
 import evolveAggregation.evaluation.Metrics;
+import evolveAggregation.groundingEngine.SemanticGroundingEngine;
 import evolveAggregation.utils.DataLoader;
 
 import java.util.HashSet;
@@ -20,7 +21,7 @@ public class Main {
         String graphPath     = "data/NELL995/data/NELL995_train.tsv";
         String validPath     = "data/NELL995/data/NELL995_valid.tsv";
         String testPath      = "data/NELL995/data/NELL995_test.tsv";
-        String rulesPath     = "data/NELL995/rules/NELL995_rules_amie.tsv";
+        String rulesPath     = "data/NELL995/rules/NELL995_rules_anyburl-1000";
 
         // 1. Load Known Facts for Filtered Evaluation
         Set<String> allKnownFacts = new HashSet<>();
@@ -36,8 +37,9 @@ public class Main {
 
 
         RuleRegistry registry = new RuleRegistry();
-        registry.loadRulesFromFile(rulesPath, true);
+        registry.loadRulesFromFile(rulesPath, false);
         GroundingEngine engine = new GroundingEngine(gm);
+//        SemanticGroundingEngine engine = new SemanticGroundingEngine(gm);
 
         Evaluator evaluator = new Evaluator(engine, registry, allKnownFacts, gm);
 

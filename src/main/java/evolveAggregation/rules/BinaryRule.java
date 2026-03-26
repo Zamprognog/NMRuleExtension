@@ -31,24 +31,24 @@ public class BinaryRule extends Rule{
     }
 
     @Override
-    public void apply(GroundingEngine engine, Boolean predictObject, String startNodeString, String targetRelation, Map<String, TreeSet<Float>> predictions) {
+    public void apply(GroundingEngine engine, Boolean predictObject, String startNodeString, String headRelation, Map<String, List<Float>> predictions) {
 
-        // Let the engine do the heavy lifting
-        List<Map<String, String>> results;
-        if (predictObject) {
-            results = engine.findPathGroundings(startNodeString, getForwardSteps(),targetRelation, this.getHead().getObject(), true);
-        } else {
-            results = engine.findPathGroundings(startNodeString, getBackwardSteps(),targetRelation, this.getHead().getSubject(), false);
-        }
+        List<Map<String, String>> results = predictObject ?
+                engine.findPathGroundings(startNodeString, getForwardSteps(), headRelation, head.getObject(), true) :
+                engine.findPathGroundings(startNodeString, getBackwardSteps(), headRelation, head.getSubject(), false);
 
-        // Process predictions exactly as you did before
+        // 1. Deduplicate predictions made by THIS specific rule
+        Set<String> uniquePredictions = new HashSet<>();
         for (Map<String, String> bindings : results) {
             String predictedNode = predictObject ? bindings.get(head.getObject()) : bindings.get(head.getSubject());
-
-            // Note: ensure predictNode isn't null before adding
             if (predictedNode != null) {
-                predictions.computeIfAbsent(predictedNode, k -> new TreeSet<>()).add(getConfidence());
+                uniquePredictions.add(predictedNode);
             }
+        }
+
+        // 2. Add this rule's confidence exactly ONCE per candidate
+        for (String predictedNode : uniquePredictions) {
+            predictions.computeIfAbsent(predictedNode, k -> new ArrayList<>()).add(getConfidence());
         }
     }
 

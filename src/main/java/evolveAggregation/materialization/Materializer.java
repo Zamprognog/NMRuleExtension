@@ -49,14 +49,14 @@ public class Materializer {
                 String entity = engine.idToEntity(i);
 
                 // 1. Try predicting the object (Forward)
-                Map<String, TreeSet<Float>> objPreds = new HashMap<>();
+                Map<String, List<Float>> objPreds = new HashMap<>();
                 rule.apply(engine, true, entity, predicate, objPreds);
                 processPredictions(entity, predicate, objPreds.keySet(), true, newlyMaterialized, targetNewCount);
 
                 if (newlyMaterialized.size() >= targetNewCount) break;
 
                 // 2. Try predicting the subject (Backward)
-                Map<String, TreeSet<Float>> subjPreds = new HashMap<>();
+                Map<String, List<Float>> subjPreds = new HashMap<>();
                 rule.apply(engine, false, entity, predicate, subjPreds);
                 processPredictions(entity, predicate, subjPreds.keySet(), false, newlyMaterialized, targetNewCount);
             }

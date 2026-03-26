@@ -8,11 +8,12 @@ public class RankingTree {
     // Holds the entity string and the accumulating list of scores
     public static class Candidate {
         public String entity;
-        List<Float> confidences;
+        public List<Float> confidences;
 
-        public Candidate(String entity, TreeSet<Float> confidences) {
+        public Candidate(String entity, List<Float> confidences) {
             this.entity = entity;
-            this.confidences = new ArrayList<>(confidences.descendingSet());
+            confidences.sort(Collections.reverseOrder());
+            this.confidences = confidences;
         }
 
         public String toBestConfString() {
@@ -55,10 +56,10 @@ public class RankingTree {
     }
 
     // --- The Workflow Method ---
-    public List<Candidate> getFinalRanking(Map<String, TreeSet<Float>> predictions) {
+    public List<Candidate> getFinalRanking(Map<String, List<Float>> predictions) {
         RankingNode root = new RankingNode();
 
-        for (Map.Entry<String, TreeSet<Float>> prediction : predictions.entrySet()) {
+        for (Map.Entry<String, List<Float>> prediction : predictions.entrySet()) {
 
             Candidate candidate = new Candidate(prediction.getKey(), prediction.getValue());
             root.insert(candidate, 0);

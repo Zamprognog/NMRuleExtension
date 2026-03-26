@@ -59,19 +59,13 @@ public class Evaluator {
      * Intermediate result structure for a single link prediction task.
      */
     private static class RankResult {
-        /** The filtered rank of the correct entity. -1 if not found within maxRanks. */
-        int hitRank = -1;
-        /** Number of semantically consistent predictions at top 1. */
+        double averageRank = -1.0;
+
         int consistentAt1 = 0;
-        /** Number of semantically consistent predictions at top 5. */
         int consistentAt5 = 0;
-        /** Number of semantically consistent predictions at top 10. */
         int consistentAt10 = 0;
-        /** Total predictions considered at top 1 (usually 1 if available). */
         int totalAt1 = 0;
-        /** Total predictions considered at top 5 (up to 5). */
         int totalAt5 = 0;
-        /** Total predictions considered at top 10 (up to 10). */
         int totalAt10 = 0;
     }
 
@@ -104,7 +98,7 @@ public class Evaluator {
      * @param semanticManager Manager for checking semantic constraints.
      * @return A RankResult containing the hit rank and consistency counts.
      */
-    private RankResult calculateMetrics(Map<String, TreeSet<Float>> predictions, String sourceEntity,
+    private RankResult calculateMetrics(Map<String, List<Float>> predictions, String sourceEntity,
                                         String predicate, String correctEntity, boolean predictingObject,
                                         int maxRanks, SemanticGraphManager semanticManager) {
 
@@ -117,8 +111,13 @@ public class Evaluator {
         int filteredRank = 1;
         int rawRank = 1;
 
-        boolean isFunc = predictingObject ? semanticManager.isFunctional(predicate) : semanticManager.isInverseFunctional(predicate);
+        int currentFilteredRank = 1;
+        int tieBlockStartRank = 1;
+        int entitiesInTieBlock = 0;
+        boolean targetInBlock = false;
+        List<Float> currentTieScore = null;
 
+        boolean isFunc = predictingObject ? semanticManager.isFunctional(predicate) : semanticManager.isInverseFunctional(predicate);
         String lookupKey = predictingObject ? sourceEntity + "\t" + predicate : predicate + "\t" + sourceEntity;
         boolean alreadyHasValue = predictingObject ?
                 knownObjectCounts.getOrDefault(lookupKey, 0) > 0 :
@@ -126,54 +125,61 @@ public class Evaluator {
 
         for (RankingTree.Candidate candidate : sortedCandidates) {
             String predictedEntity = candidate.entity;
+            String factString = predictingObject
+                    ? sourceEntity + "\t" + predicate + "\t" + predictedEntity
+                    : predictedEntity + "\t" + predicate + "\t" + sourceEntity;
 
-        // --- 1. SEMANTIC CONSISTENCY CHECK (sem@N) ---
-            // We check consistency for the top 10 raw predictions.
+            // --- 1. SEMANTIC CONSISTENCY CHECK (sem@N) ---
             if (rawRank <= 10) {
                 boolean isConsistent = true;
-
-                // Check functionality: if relation is functional and a value already exists,
-                // any other predicted value (except the correct one) is inconsistent.
-                if (isFunc && alreadyHasValue && !predictedEntity.equals(correctEntity)) {
+                if (isFunc && alreadyHasValue && !allKnownFacts.contains(factString)) {
                     isConsistent = false;
                 }
-
                 if (isConsistent) {
-                    // Check domain and range constraints based on the prediction direction.
                     if (predictingObject) {
                         if (semanticManager.violatesRange(predictedEntity, predicate)) isConsistent = false;
                     } else {
                         if (semanticManager.violatesDomain(predictedEntity, predicate)) isConsistent = false;
                     }
                 }
-
-                // Accumulate consistency counts for sem@1, sem@5, and sem@10
                 if (rawRank <= 1) { result.totalAt1++; if (isConsistent) result.consistentAt1++; }
                 if (rawRank <= 5) { result.totalAt5++; if (isConsistent) result.consistentAt5++; }
                 if (rawRank <= 10) { result.totalAt10++; if (isConsistent) result.consistentAt10++; }
             }
+            rawRank++;
 
-            // --- 2. STANDARD LINK PREDICTION CHECK (Hits@K) ---
-            // Filtered setting: skip known true facts that are not the target correct entity.
-            if (filteredRank <= maxRanks && result.hitRank == -1) {
-                if (predictedEntity.equals(correctEntity)) {
-                    result.hitRank = filteredRank;
-                } else {
-                    String factString = predictingObject
-                            ? sourceEntity + "\t" + predicate + "\t" + predictedEntity
-                            : predictedEntity + "\t" + predicate + "\t" + sourceEntity;
-
-                    // If the predicted fact is already known but not the one we are looking for,
-                    // we skip it (it doesn't increase the rank).
-                    if (!allKnownFacts.contains(factString)) {
-                        filteredRank++;
-                    }
-                }
+            // --- 2. TIE-AWARE LINK PREDICTION (Hits@K, MRR) ---
+            // FILTERING: Skip known true facts to prevent data leakage.
+            if (!predictedEntity.equals(correctEntity) && allKnownFacts.contains(factString)) {
+                continue; // Do not advance the filtered rank for this known fact
             }
 
-            rawRank++;
-            if (result.hitRank != -1 && rawRank > 10) break;
-            if (filteredRank > maxRanks && rawRank > 10) break;
+            // TIE DETECTION: Check if we are starting a new block of identical scores
+            if (currentTieScore == null || !candidate.confidences.equals(currentTieScore)) {
+                if (targetInBlock) break; // We found the target in the previous tie block! Stop searching.
+
+                currentTieScore = candidate.confidences;
+                tieBlockStartRank = currentFilteredRank;
+                entitiesInTieBlock = 0;
+            }
+
+            entitiesInTieBlock++;
+            currentFilteredRank++;
+
+            if (predictedEntity.equals(correctEntity)) {
+                targetInBlock = true;
+            }
+
+            // Early stopping if we've passed maxRanks and we aren't resolving a tie block
+            if (currentFilteredRank > maxRanks && !targetInBlock && !candidate.confidences.equals(currentTieScore)) {
+                break;
+            }
+        }
+
+        // --- 3. CALCULATE AVERAGE RANK FOR THE TARGET ---
+        if (targetInBlock) {
+            int tieBlockEndRank = tieBlockStartRank + entitiesInTieBlock - 1;
+            result.averageRank = (tieBlockStartRank + tieBlockEndRank) / 2.0;
         }
 
         return result;
@@ -193,12 +199,15 @@ public class Evaluator {
         AtomicInteger hits1 = new AtomicInteger(0);
         AtomicInteger hits5 = new AtomicInteger(0);
         AtomicInteger hits10 = new AtomicInteger(0);
+        DoubleAdder mrr = new DoubleAdder();
 
         // FIXED: Changed to DoubleAdder
         DoubleAdder sem1 = new DoubleAdder();
         DoubleAdder sem5 = new DoubleAdder();
         DoubleAdder sem10 = new DoubleAdder();
-        DoubleAdder mrr = new DoubleAdder();
+        AtomicInteger semQueriesAt1 = new AtomicInteger(0);
+        AtomicInteger semQueriesAt5 = new AtomicInteger(0);
+        AtomicInteger semQueriesAt10 = new AtomicInteger(0);
         AtomicInteger totalPredictions = new AtomicInteger(0);
 
         AtomicInteger processedLines = new AtomicInteger(0);
@@ -219,7 +228,7 @@ public class Evaluator {
                         candidateRules.sort((r1, r2) -> Float.compare(r2.getConfidence(), r1.getConfidence()));
 
                         // --- Object prediction (Forward: subject + predicate -> ?) ---
-                        Map<String, TreeSet<Float>> objectPredictions = new HashMap<>();
+                        Map<String, List<Float>> objectPredictions = new HashMap<>();
                         String subPredKey = subject + "\t" + predicate;
                         // Determine how many predictions to collect based on K_RANKS and already known objects.
                         int objectStopThreshold = K_RANKS + knownObjectCounts.getOrDefault(subPredKey, 0);
@@ -231,20 +240,31 @@ public class Evaluator {
 
                         // Calculate metrics for the forward prediction.
                         RankResult objectResult = calculateMetrics(objectPredictions, subject, predicate, object, true, K_RANKS, semanticManager);
-                        if (objectResult.hitRank != -1) {
-                            if (objectResult.hitRank <= 1) hits1.incrementAndGet();
-                            if (objectResult.hitRank <= 5) hits5.incrementAndGet();
-                            if (objectResult.hitRank <= 10) hits10.incrementAndGet();
-                            mrr.add(1.0 / objectResult.hitRank);
+
+                        // Check if averageRank is > 0 (meaning it was successfully predicted)
+                        if (objectResult.averageRank > 0) {
+                            if (objectResult.averageRank <= 1.0) hits1.incrementAndGet();
+                            if (objectResult.averageRank <= 5.0) hits5.incrementAndGet();
+                            if (objectResult.averageRank <= 10.0) hits10.incrementAndGet();
+                            mrr.add(1.0 / objectResult.averageRank);
                         }
                         // Accumulate consistency results (sem@K)
-                        if (objectResult.totalAt1 > 0) sem1.add((double) objectResult.consistentAt1 / objectResult.totalAt1);
-                        if (objectResult.totalAt5 > 0) sem5.add((double) objectResult.consistentAt5 / objectResult.totalAt5);
-                        if (objectResult.totalAt10 > 0) sem10.add((double) objectResult.consistentAt10 / objectResult.totalAt10);
+                        if (objectResult.totalAt1 > 0) {
+                            sem1.add((double) objectResult.consistentAt1 / objectResult.totalAt1);
+                            semQueriesAt1.incrementAndGet();
+                        }
+                        if (objectResult.totalAt5 > 0) {
+                            sem5.add((double) objectResult.consistentAt5 / objectResult.totalAt5);
+                            semQueriesAt5.incrementAndGet();
+                        }
+                        if (objectResult.totalAt10 > 0) {
+                            sem10.add((double) objectResult.consistentAt10 / objectResult.totalAt10);
+                            semQueriesAt10.incrementAndGet();
+                        }
                         totalPredictions.incrementAndGet();
 
                         // --- Subject prediction (Backward: ? + predicate -> object) ---
-                        Map<String, TreeSet<Float>> subjectPredictions = new HashMap<>();
+                        Map<String, List<Float>> subjectPredictions = new HashMap<>();
                         String predObjKey = predicate + "\t" + object;
                         int subjectStopThreshold = K_RANKS + knownSubjectCounts.getOrDefault(predObjKey, 0);
 
@@ -254,16 +274,27 @@ public class Evaluator {
                         }
 
                         // Calculate metrics for the backward prediction.
-                        RankResult subjectResult = calculateMetrics(subjectPredictions, subject, predicate, object, false, K_RANKS, semanticManager);
-                        if (subjectResult.hitRank != -1) {
-                            if (subjectResult.hitRank <= 1) hits1.incrementAndGet();
-                            if (subjectResult.hitRank <= 5) hits5.incrementAndGet();
-                            if (subjectResult.hitRank <= 10) hits10.incrementAndGet();
-                            mrr.add(1.0 / subjectResult.hitRank);
+                        RankResult subjectResult = calculateMetrics(objectPredictions, subject, predicate, object, true, K_RANKS, semanticManager);
+
+                        // Check if averageRank is > 0 (meaning it was successfully predicted)
+                        if (subjectResult.averageRank > 0) {
+                            if (subjectResult.averageRank <= 1.0) hits1.incrementAndGet();
+                            if (subjectResult.averageRank <= 5.0) hits5.incrementAndGet();
+                            if (subjectResult.averageRank <= 10.0) hits10.incrementAndGet();
+                            mrr.add(1.0 / subjectResult.averageRank);
                         }
-                        if (subjectResult.totalAt1 > 0) sem1.add((double) subjectResult.consistentAt1 / subjectResult.totalAt1);
-                        if (subjectResult.totalAt5 > 0) sem5.add((double) subjectResult.consistentAt5 / subjectResult.totalAt5);
-                        if (subjectResult.totalAt10 > 0) sem10.add((double) subjectResult.consistentAt10 / subjectResult.totalAt10);
+                        if (subjectResult.totalAt1 > 0) {
+                            sem1.add((double) subjectResult.consistentAt1 / subjectResult.totalAt1);
+                            semQueriesAt1.incrementAndGet();
+                        }
+                        if (subjectResult.totalAt5 > 0) {
+                            sem5.add((double) subjectResult.consistentAt5 / subjectResult.totalAt5);
+                            semQueriesAt5.incrementAndGet();
+                        }
+                        if (subjectResult.totalAt10 > 0) {
+                            sem10.add((double) subjectResult.consistentAt10 / subjectResult.totalAt10);
+                            semQueriesAt10.incrementAndGet();
+                        }
                         totalPredictions.incrementAndGet();
 
                         int currentProgress = processedLines.incrementAndGet();
@@ -283,19 +314,61 @@ public class Evaluator {
             double h10 = (double) hits10.get() / total;
             double finalMrr = mrr.sum() / total;
 
-            // Extract the final semantic ratios
-            double s1 = sem1.sum() / total;
-            double s5 = sem5.sum() / total;
-            double s10 = sem10.sum() / total;
+            double s1 = semQueriesAt1.get() > 0 ? sem1.sum() / semQueriesAt1.get() : 0.0;
+            double s5 = semQueriesAt5.get() > 0 ? sem5.sum() / semQueriesAt5.get() : 0.0;
+            double s10 = semQueriesAt10.get() > 0 ? sem10.sum() / semQueriesAt10.get() : 0.0;
 
             System.out.printf("  Evaluated %d total predictions across %d facts.\n", total, processedLines.get());
 
-            // UPDATED: Assuming you expand your Metrics class to hold these
-            // You will need to add these fields to your Metrics constructor!
             return new Metrics(h1, h5, h10, finalMrr, s1, s5, s10, total);
         }
 
         // Return empty if no predictions
         return new Metrics(0, 0, 0, 0, 0, 0, 0, 0);
+    }
+
+    public double getFilteredAverageRank(List<RankingTree.Candidate> rankedResults, String targetEntity, Set<String> knownTrueEntities) {
+        int currentRank = 1;
+        int tieBlockStartRank = 1;
+        int entitiesInTieBlock = 0;
+        boolean targetInBlock = false;
+        List<Float> currentTieScore = null;
+
+        for (RankingTree.Candidate c : rankedResults) {
+            // 1. FILTERING: Skip known true facts to prevent data leakage.
+            // If the candidate is a known fact, AND it is not our current target, it becomes invisible.
+            if (!c.entity.equals(targetEntity) && knownTrueEntities.contains(c.entity)) {
+                continue;
+            }
+
+            // 2. TIE DETECTION: Check if we are starting a new block of identical scores
+            if (currentTieScore == null || !c.confidences.equals(currentTieScore)) {
+                // If we found our target in the PREVIOUS block, stop searching.
+                if (targetInBlock) {
+                    break;
+                }
+                // Otherwise, reset the block trackers for this new score
+                currentTieScore = c.confidences;
+                tieBlockStartRank = currentRank;
+                entitiesInTieBlock = 0;
+            }
+
+            // 3. COUNTING: Add this entity to the current block's footprint
+            entitiesInTieBlock++;
+            currentRank++; // Advance the rank counter for the next distinct score block
+
+            if (c.entity.equals(targetEntity)) {
+                targetInBlock = true;
+            }
+        }
+
+        // 4. CALCULATION: Apply the average rank formula
+        if (targetInBlock) {
+            int tieBlockEndRank = tieBlockStartRank + entitiesInTieBlock - 1;
+            return (tieBlockStartRank + tieBlockEndRank) / 2.0;
+        }
+
+        // Target was not generated by any rules
+        return -1.0;
     }
 }
