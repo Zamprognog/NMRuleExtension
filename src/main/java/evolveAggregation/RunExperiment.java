@@ -32,7 +32,10 @@ public class RunExperiment {
             // 2. Load Known Facts for Filtered Evaluation
             Set<String> allKnownFacts = new HashSet<>();
             DataLoader.loadFactsIntoSet(allKnownFacts, config.train, config.valid, config.test);
+            Set<String> trainKnownFacts = new HashSet<>();
+            DataLoader.loadFactsIntoSet(trainKnownFacts, config.train);
             System.out.println("Loaded " + allKnownFacts.size() + " known facts for filtered metrics.");
+            System.out.println("Loaded " + trainKnownFacts.size() + " training facts for consistency checks.");
 
             // 3. Initialize Shared Semantic Graph Manager
             System.out.println("Initializing Shared SemanticGraphManager...");
@@ -46,12 +49,12 @@ public class RunExperiment {
             System.out.println("\n##################################################");
             System.out.println("              EVALUATING ANYBURL RULES            ");
             System.out.println("##################################################");
-            runRuleSetEvaluation(config.anyburlRules, false, semanticGm, allKnownFacts, config.test, N);
+            runRuleSetEvaluation(config.anyburlRules, false, semanticGm, allKnownFacts, trainKnownFacts, config.test, N);
 
             System.out.println("\n##################################################");
             System.out.println("                EVALUATING AMIE RULES             ");
             System.out.println("##################################################");
-            runRuleSetEvaluation(config.amieRules, true, semanticGm, allKnownFacts, config.test, N);
+            runRuleSetEvaluation(config.amieRules, true, semanticGm, allKnownFacts, trainKnownFacts, config.test, N);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -59,7 +62,7 @@ public class RunExperiment {
     }
 
     private static void runRuleSetEvaluation(String rulesPath, boolean isAmie, SemanticGraphManager gm,
-                                             Set<String> allKnownFacts, String testPath, int maxEvals) {
+                                             Set<String> allKnownFacts, Set<String> trainKnownFacts, String testPath, int maxEvals) {
 
         // Load rules into a shared registry
         System.out.println("Loading Rules from: " + rulesPath);
@@ -69,13 +72,13 @@ public class RunExperiment {
         // --- Standard Engine ---
         System.out.println("\n--- Condition 1: Standard Grounding Engine ---");
         GroundingEngine standardEngine = new GroundingEngine(gm);
-        Evaluator standardEvaluator = new Evaluator(standardEngine, registry, allKnownFacts, gm);
+        Evaluator standardEvaluator = new Evaluator(standardEngine, registry, allKnownFacts, trainKnownFacts, gm);
         Metrics standardMetrics = standardEvaluator.evaluate(testPath, maxEvals);
 
         // --- Semantic Engine ---
         System.out.println("\n--- Condition 2: Semantic Grounding Engine ---");
         SemanticGroundingEngine semanticEngine = new SemanticGroundingEngine(gm);
-        Evaluator semanticEvaluator = new Evaluator(semanticEngine, registry, allKnownFacts, gm);
+        Evaluator semanticEvaluator = new Evaluator(semanticEngine, registry, allKnownFacts, trainKnownFacts, gm);
         Metrics semanticMetrics = semanticEvaluator.evaluate(testPath, maxEvals);
 
         // --- Print Local Comparison ---

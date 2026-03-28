@@ -31,6 +31,8 @@ public class Evaluator {
     private final RuleRegistry registry;
     /** A set of all known facts in the dataset, used for filtered link prediction. */
     private final Set<String> allKnownFacts;
+    /** A set of facts known during training, used for functional consistency checks. */
+    private final Set<String> trainKnownFacts;
     /** Manages ontological constraints (domain, range, functionality). Will always use the SemanticGraph as it stores the cosntraints for evaluation*/
     private final SemanticGraphManager semanticManager;
 
@@ -38,19 +40,24 @@ public class Evaluator {
     private final Map<String, Integer> knownObjectCounts = new HashMap<>();
     /** Maps a 'predicate\tobject' string to the number of known subjects for that pair. */
     private final Map<String, Integer> knownSubjectCounts = new HashMap<>();
-
+    /** Maps a 'subject\tpredicate' string to the number of known objects for that pair. */
+    private final Map<String, Integer> knownTrainObjectCounts = new HashMap<>();
+    /** Maps a 'predicate\tobject' string to the number of known subjects for that pair. */
+    private final Map<String, Integer> knownTrainSubjectCounts = new HashMap<>();
     /**
      * Constructs an Evaluator with the necessary components.
      *
      * @param engine The grounding engine to apply rules.
      * @param registry The rule registry containing rules for evaluation.
      * @param allKnownFacts All known triples in the graph (train/valid/test).
+     * @param trainKnownFacts The triples known during training (train).
      * @param semanticManager The manager for semantic constraints.
      */
-    public Evaluator(GroundingEngine engine, RuleRegistry registry, Set<String> allKnownFacts, SemanticGraphManager semanticManager) {
+    public Evaluator(GroundingEngine engine, RuleRegistry registry, Set<String> allKnownFacts, Set<String> trainKnownFacts, SemanticGraphManager semanticManager) {
         this.engine = engine;
         this.registry = registry;
         this.allKnownFacts = allKnownFacts;
+        this.trainKnownFacts = trainKnownFacts;
         this.semanticManager = semanticManager;
         buildFactIndexes();
     }
@@ -82,6 +89,16 @@ public class Evaluator {
 
                 knownObjectCounts.put(subPred, knownObjectCounts.getOrDefault(subPred, 0) + 1);
                 knownSubjectCounts.put(predObj, knownSubjectCounts.getOrDefault(predObj, 0) + 1);
+            }
+        }
+        for (String fact : trainKnownFacts) {
+            String[] parts = fact.split("\\t");
+            if (parts.length >= 3) {
+                String subPred = parts[0] + "\t" + parts[1];
+                String predObj = parts[1] + "\t" + parts[2];
+
+                knownTrainObjectCounts.put(subPred, knownTrainObjectCounts.getOrDefault(subPred, 0) + 1);
+                knownTrainSubjectCounts.put(predObj, knownTrainSubjectCounts.getOrDefault(predObj, 0) + 1);
             }
         }
     }
@@ -119,9 +136,12 @@ public class Evaluator {
 
         boolean isFunc = predictingObject ? semanticManager.isFunctional(predicate) : semanticManager.isInverseFunctional(predicate);
         String lookupKey = predictingObject ? sourceEntity + "\t" + predicate : predicate + "\t" + sourceEntity;
+//        boolean alreadyHasValue = predictingObject ?
+//                knownObjectCounts.getOrDefault(lookupKey, 0) > 0 :
+//                knownSubjectCounts.getOrDefault(lookupKey, 0) > 0;
         boolean alreadyHasValue = predictingObject ?
-                knownObjectCounts.getOrDefault(lookupKey, 0) > 0 :
-                knownSubjectCounts.getOrDefault(lookupKey, 0) > 0;
+                knownTrainObjectCounts.getOrDefault(lookupKey, 0) > 0 :
+                knownTrainSubjectCounts.getOrDefault(lookupKey, 0) > 0;
 
         for (RankingTree.Candidate candidate : sortedCandidates) {
             String predictedEntity = candidate.entity;
@@ -132,7 +152,7 @@ public class Evaluator {
             // --- 1. SEMANTIC CONSISTENCY CHECK (sem@N) ---
             if (rawRank <= 10) {
                 boolean isConsistent = true;
-                if (isFunc && alreadyHasValue && !allKnownFacts.contains(factString)) {
+                if (isFunc && alreadyHasValue && !trainKnownFacts.contains(factString)) {
                     isConsistent = false;
                 }
                 if (isConsistent) {
@@ -327,48 +347,48 @@ public class Evaluator {
         return new Metrics(0, 0, 0, 0, 0, 0, 0, 0);
     }
 
-    public double getFilteredAverageRank(List<RankingTree.Candidate> rankedResults, String targetEntity, Set<String> knownTrueEntities) {
-        int currentRank = 1;
-        int tieBlockStartRank = 1;
-        int entitiesInTieBlock = 0;
-        boolean targetInBlock = false;
-        List<Float> currentTieScore = null;
-
-        for (RankingTree.Candidate c : rankedResults) {
-            // 1. FILTERING: Skip known true facts to prevent data leakage.
-            // If the candidate is a known fact, AND it is not our current target, it becomes invisible.
-            if (!c.entity.equals(targetEntity) && knownTrueEntities.contains(c.entity)) {
-                continue;
-            }
-
-            // 2. TIE DETECTION: Check if we are starting a new block of identical scores
-            if (currentTieScore == null || !c.confidences.equals(currentTieScore)) {
-                // If we found our target in the PREVIOUS block, stop searching.
-                if (targetInBlock) {
-                    break;
-                }
-                // Otherwise, reset the block trackers for this new score
-                currentTieScore = c.confidences;
-                tieBlockStartRank = currentRank;
-                entitiesInTieBlock = 0;
-            }
-
-            // 3. COUNTING: Add this entity to the current block's footprint
-            entitiesInTieBlock++;
-            currentRank++; // Advance the rank counter for the next distinct score block
-
-            if (c.entity.equals(targetEntity)) {
-                targetInBlock = true;
-            }
-        }
-
-        // 4. CALCULATION: Apply the average rank formula
-        if (targetInBlock) {
-            int tieBlockEndRank = tieBlockStartRank + entitiesInTieBlock - 1;
-            return (tieBlockStartRank + tieBlockEndRank) / 2.0;
-        }
-
-        // Target was not generated by any rules
-        return -1.0;
-    }
+//    public double getFilteredAverageRank(List<RankingTree.Candidate> rankedResults, String targetEntity, Set<String> knownTrueEntities) {
+//        int currentRank = 1;
+//        int tieBlockStartRank = 1;
+//        int entitiesInTieBlock = 0;
+//        boolean targetInBlock = false;
+//        List<Float> currentTieScore = null;
+//
+//        for (RankingTree.Candidate c : rankedResults) {
+//            // 1. FILTERING: Skip known true facts to prevent data leakage.
+//            // If the candidate is a known fact, AND it is not our current target, it becomes invisible.
+//            if (!c.entity.equals(targetEntity) && knownTrueEntities.contains(c.entity)) {
+//                continue;
+//            }
+//
+//            // 2. TIE DETECTION: Check if we are starting a new block of identical scores
+//            if (currentTieScore == null || !c.confidences.equals(currentTieScore)) {
+//                // If we found our target in the PREVIOUS block, stop searching.
+//                if (targetInBlock) {
+//                    break;
+//                }
+//                // Otherwise, reset the block trackers for this new score
+//                currentTieScore = c.confidences;
+//                tieBlockStartRank = currentRank;
+//                entitiesInTieBlock = 0;
+//            }
+//
+//            // 3. COUNTING: Add this entity to the current block's footprint
+//            entitiesInTieBlock++;
+//            currentRank++; // Advance the rank counter for the next distinct score block
+//
+//            if (c.entity.equals(targetEntity)) {
+//                targetInBlock = true;
+//            }
+//        }
+//
+//        // 4. CALCULATION: Apply the average rank formula
+//        if (targetInBlock) {
+//            int tieBlockEndRank = tieBlockStartRank + entitiesInTieBlock - 1;
+//            return (tieBlockStartRank + tieBlockEndRank) / 2.0;
+//        }
+//
+//        // Target was not generated by any rules
+//        return -1.0;
+//    }
 }

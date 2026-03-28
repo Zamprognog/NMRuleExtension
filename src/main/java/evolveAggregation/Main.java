@@ -26,7 +26,10 @@ public class Main {
         // 1. Load Known Facts for Filtered Evaluation
         Set<String> allKnownFacts = new HashSet<>();
         DataLoader.loadFactsIntoSet(allKnownFacts, graphPath, validPath, testPath);
-        System.out.println("Loaded " + allKnownFacts.size() + " known facts for filtered metrics.\n");
+        Set<String> trainKnownFacts = new HashSet<>();
+        DataLoader.loadFactsIntoSet(trainKnownFacts, graphPath);
+        System.out.println("Loaded " + allKnownFacts.size() + " known facts for filtered metrics.");
+        System.out.println("Loaded " + trainKnownFacts.size() + " training facts for consistency checks.\n");
 
         // 2. Initialize Engine
         System.out.println("Initializing Engine...");
@@ -41,7 +44,7 @@ public class Main {
         GroundingEngine engine = new GroundingEngine(gm);
 //        SemanticGroundingEngine engine = new SemanticGroundingEngine(gm);
 
-        Evaluator evaluator = new Evaluator(engine, registry, allKnownFacts, gm);
+        Evaluator evaluator = new Evaluator(engine, registry, allKnownFacts, trainKnownFacts, gm);
 
         // 3. Evaluate
         System.out.println("\n==================================================");

@@ -30,7 +30,10 @@ public class ModelComparison {
         // 1. Load Known Facts for Filtered Evaluation
         Set<String> allKnownFacts = new HashSet<>();
         DataLoader.loadFactsIntoSet(allKnownFacts, graphPath, validPath, testPath);
-        System.out.println("Loaded " + allKnownFacts.size() + " known facts for filtered metrics.\n");
+        Set<String> trainKnownFacts = new HashSet<>();
+        DataLoader.loadFactsIntoSet(trainKnownFacts, graphPath);
+        System.out.println("Loaded " + allKnownFacts.size() + " known facts for filtered metrics.");
+        System.out.println("Loaded " + trainKnownFacts.size() + " training facts for consistency checks.\n");
 
         // 2. Setup Standard Engine
         System.out.println("Initializing Standard Engine...");
@@ -46,7 +49,7 @@ public class ModelComparison {
         standardRegistry.loadRulesFromFile(rulesPath, isAmie);
         GroundingEngine standardEngine = new GroundingEngine(semanticGm);
 
-        Evaluator standardEvaluator = new Evaluator(standardEngine, standardRegistry, allKnownFacts, semanticGm);
+        Evaluator standardEvaluator = new Evaluator(standardEngine, standardRegistry, allKnownFacts, trainKnownFacts, semanticGm);
 
         // 3. Set up Semantic Engine
         System.out.println("Initializing Semantic Engine...");
@@ -58,7 +61,7 @@ public class ModelComparison {
         semanticRegistry.loadRulesFromFile(rulesPath, isAmie);
         SemanticGroundingEngine semanticEngine = new SemanticGroundingEngine(semanticGm);
 
-        Evaluator semanticEvaluator = new Evaluator(semanticEngine, semanticRegistry, allKnownFacts, semanticGm);
+        Evaluator semanticEvaluator = new Evaluator(semanticEngine, semanticRegistry, allKnownFacts, trainKnownFacts, semanticGm);
 
         // 4. Evaluate Models
         System.out.println("\n==================================================");
