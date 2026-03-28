@@ -6,6 +6,7 @@ import evolveAggregation.groundingEngine.RuleRegistry;
 import evolveAggregation.rules.Rule;
 import evolveAggregation.graphTools.SemanticGraphManager;
 
+import evolveAggregation.utils.DualLogger;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -235,7 +236,7 @@ public class Evaluator {
 
         try (Stream<String> lines = Files.lines(Paths.get(testPath))) {
             lines.limit(limitN)
-                    .parallel()
+//                    .parallel()
                     .forEach(line -> {
                         String[] parts = line.split("\\s+");
                         if (parts.length < 3) return;
@@ -318,8 +319,8 @@ public class Evaluator {
                         totalPredictions.incrementAndGet();
 
                         int currentProgress = processedLines.incrementAndGet();
-                        if (currentProgress % 1000 == 0) {
-                            System.out.println("Processed " + currentProgress + " test facts...");
+                        if (currentProgress % 10 == 0) {
+                            DualLogger.getOriginalOut().println("Processed " + currentProgress + " test facts...");
                         }
                     });
 

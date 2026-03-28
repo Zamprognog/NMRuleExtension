@@ -10,7 +10,12 @@ import java.time.format.DateTimeFormatter;
 
 public class DualLogger {
 
+    private static PrintStream originalOut;
+
     public static void setupLogger(String predictionsDir, String datasetName) throws IOException {
+        // Preserve original System.out
+        originalOut = System.out;
+
         // Ensure directory exists
         File dir = new File(predictionsDir);
         if (!dir.exists()) {
@@ -26,6 +31,10 @@ public class DualLogger {
         System.setOut(new PrintStream(teeOut));
 
         System.out.println("Log file created at: " + logFilePath);
+    }
+
+    public static PrintStream getOriginalOut() {
+        return originalOut != null ? originalOut : System.out;
     }
 
     // Inner class to fork the output stream
