@@ -1,5 +1,6 @@
 package evolveAggregation;
 
+import evolveAggregation.graphTools.Graph;
 import evolveAggregation.graphTools.GraphManager;
 import evolveAggregation.graphTools.SemanticGraphManager;
 import evolveAggregation.groundingEngine.GroundingEngine;
@@ -8,56 +9,54 @@ import evolveAggregation.evaluation.Evaluator;
 import evolveAggregation.evaluation.Metrics;
 import evolveAggregation.groundingEngine.SemanticGroundingEngine;
 import evolveAggregation.utils.DataLoader;
+import evolveAggregation.utils.ExperimentConfig;
 
 import java.util.HashSet;
 import java.util.Set;
 
+import static evolveAggregation.RunExperiment.runRuleSetEvaluation;
+
 public class Main {
 
     public static void main(String[] args) {
-        int N = 20000;
+        String configPath ;
+        // Pass the JSON config path as an argument, or fallback to a default
+        configPath = args.length > 0 ? args[0] : "data/NELL995/NELL995.json";
+//        configPath = args.length > 0 ? args[0] : "data/hetionet/hetionet.json";
+//        configPath = args.length > 0 ? args[0] : "data/CSKG2/CSKG2.json";
+//        configPath = args.length > 0 ? args[0] : "data/YAGO4.5/YAGO4.5.json";
+        int N = 30000; // Define max evaluations
 
-        // --- File Paths ---
-        String graphPath     = "data/NELL995/data/NELL995_train.tsv";
-        String validPath     = "data/NELL995/data/NELL995_valid.tsv";
-        String testPath      = "data/NELL995/data/NELL995_test.tsv";
-        String rulesPath     = "data/NELL995/rules/NELL995_rules_anyburl-1000";
-
+        boolean isAmie = false;
         // 1. Load Known Facts for Filtered Evaluation
-        Set<String> allKnownFacts = new HashSet<>();
-        DataLoader.loadFactsIntoSet(allKnownFacts, graphPath, validPath, testPath);
-        Set<String> trainKnownFacts = new HashSet<>();
-        DataLoader.loadFactsIntoSet(trainKnownFacts, graphPath);
-        System.out.println("Loaded " + allKnownFacts.size() + " known facts for filtered metrics.");
-        System.out.println("Loaded " + trainKnownFacts.size() + " training facts for consistency checks.\n");
+        try {
+            ExperimentConfig config = ExperimentConfig.load(configPath);
 
-        // 2. Initialize Engine
-        System.out.println("Initializing Engine...");
-        SemanticGraphManager gm = new SemanticGraphManager();
-        gm.parseTriples(graphPath, "\t");
-        gm.finalizeGraph();
-        gm.compileConstraints("data/NELL995/data/NELL.ontology.ttl", "data/NELL995/data/NELL995_entity_types.nt");
+            Set<String> allKnownFacts = new HashSet<>();
+            DataLoader.loadFactsIntoSet(allKnownFacts, config.train, config.valid, config.test);
+            Set<String> trainKnownFacts = new HashSet<>();
+            DataLoader.loadFactsIntoSet(trainKnownFacts, config.train);
 
+            // 2. Initialize Engine
+            SemanticGraphManager semanticGm = new SemanticGraphManager();
+            semanticGm.parseTriples(config.train, "\t");
+            semanticGm.finalizeGraph();
+            semanticGm.compileConstraints(config.schema, config.typesFile);
+            semanticGm.precomputeDisjointConstraints();
 
-        RuleRegistry registry = new RuleRegistry();
-        registry.loadRulesFromFile(rulesPath, false);
-        GroundingEngine engine = new GroundingEngine(gm);
-//        SemanticGroundingEngine engine = new SemanticGroundingEngine(gm);
+            System.out.println("Ready for prediction");
+//            runRuleSetEvaluation(config.anyburlRules, false, semanticGm, allKnownFacts, trainKnownFacts, config.test, N);
 
-        Evaluator evaluator = new Evaluator(engine, registry, allKnownFacts, trainKnownFacts, gm);
+            RuleRegistry registry = new RuleRegistry();
+            registry.loadRulesFromFile(config.anyburlRules, isAmie);
+//            SemanticGroundingEngine engine = new SemanticGroundingEngine(semanticGm);
+            GroundingEngine engine = new GroundingEngine(semanticGm);
+            Evaluator evaluator = new Evaluator(engine, registry, allKnownFacts, trainKnownFacts, semanticGm);
+            Metrics metrics = evaluator.evaluate(config.test, N);
+            metrics.printRow("Standard");
 
-        // 3. Evaluate
-        System.out.println("\n==================================================");
-        System.out.println("Running Link Prediction...");
-        System.out.println("==================================================");
-        Metrics metrics = evaluator.evaluate(testPath, N);
-
-        // 4. Print Results
-        System.out.println("\n==================================================");
-        System.out.println("                FINAL METRICS                     ");
-        System.out.println("==================================================");
-        System.out.printf("%-15s | %-10s | %-10s | %-10s | %-10s | %-10s%n", "Model", "Hits@1", "Hits@5", "Hits@10", "MRR", "SEM@10");
-        System.out.println("----------------------------------------------------------------------------");
-        metrics.printRow("Baseline");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }

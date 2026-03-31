@@ -80,7 +80,7 @@ public class SemanticConstraintLoader {
 
         try (FileInputStream in = new FileInputStream(path)) {
             model.read(in, null, format);
-        } catch (IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
@@ -95,10 +95,11 @@ public class SemanticConstraintLoader {
 
     private void extractPropertyConstraints(OntModel model) {
         // Iterate over all Object Properties (relationships between entities)
-        ExtendedIterator<ObjectProperty> properties = model.listObjectProperties();
+//        ExtendedIterator<OntProperty> properties = model.listObjectProperties();
+        ExtendedIterator<OntProperty> properties = model.listOntProperties();
 
         while (properties.hasNext()) {
-            ObjectProperty p = properties.next();
+            OntProperty p = properties.next();
             if (p.isAnon()) continue; // Skip blank nodes
 
             String uri = p.getURI();

@@ -22,8 +22,8 @@ public class ModelComparison {
         String validPath     = "data/NELL995/data/NELL995_valid.tsv";
         String testPath      = "data/NELL995/data/NELL995_test.tsv";
 //        String rulesPath     = "data/NELL995/rules/NELL995_rules_amie.tsv";
-//        String rulesPath     = "data/NELL995/rules/NELL995_rules_all_anyburl-100";
-        String rulesPath     = "data/NELL995/rules/NELL995_rules_anyburl-1000";
+        String rulesPath     = "data/NELL995/rules/NELL995_rules_all_anyburl-100";
+//        String rulesPath     = "data/NELL995/rules/NELL995_rules_anyburl-1000";
         String ontologyPath  = "data/NELL995/data/NELL.ontology.ttl";
         String entityTypesPath = "data/NELL995/data/NELL995_entity_types.nt";
         Boolean isAmie = false;

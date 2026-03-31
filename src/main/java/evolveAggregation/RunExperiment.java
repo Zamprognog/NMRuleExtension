@@ -16,9 +16,12 @@ import java.util.Set;
 public class RunExperiment {
 
     public static void main(String[] args) {
+        String configPath ;
         // Pass the JSON config path as an argument, or fallback to a default
-//        String configPath = args.length > 0 ? args[0] : "data/NELL995/NELL995.json";
-        String configPath = args.length > 0 ? args[0] : "data/hetionet/hetionet.json";
+//        configPath = args.length > 0 ? args[0] : "data/NELL995/NELL995.json";
+//        configPath = args.length > 0 ? args[0] : "data/hetionet/hetionet.json";
+        configPath = args.length > 0 ? args[0] : "data/CSKG2/CSKG2.json";
+//        configPath = args.length > 0 ? args[0] : "data/YAGO4.5/YAGO4.5.json";
         int N = 30000; // Define max evaluations
 
         try {
@@ -62,8 +65,8 @@ public class RunExperiment {
         }
     }
 
-    private static void runRuleSetEvaluation(String rulesPath, boolean isAmie, SemanticGraphManager gm,
-                                             Set<String> allKnownFacts, Set<String> trainKnownFacts, String testPath, int maxEvals) {
+    static void runRuleSetEvaluation(String rulesPath, boolean isAmie, SemanticGraphManager gm,
+                                     Set<String> allKnownFacts, Set<String> trainKnownFacts, String testPath, int maxEvals) {
 
         // Load rules into a shared registry
         System.out.println("Loading Rules from: " + rulesPath);

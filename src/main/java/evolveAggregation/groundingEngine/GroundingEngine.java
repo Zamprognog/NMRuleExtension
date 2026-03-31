@@ -23,6 +23,7 @@ public class GroundingEngine {
     protected final GraphDictionary entityDict;
     /** Dictionary mapping relation IDs to their string representations. */
     protected final GraphDictionary relationDict;
+    protected final int maxBranchCount;
 
     /**
      * Constructs a new {@code GroundingEngine} with the required graph and dictionaries.
@@ -33,6 +34,7 @@ public class GroundingEngine {
         this.graph = gm.getGraph();
         this.entityDict = gm.getEntityDict();
         this.relationDict = gm.getRelationDict();
+        this.maxBranchCount = 10000;
     }
 
     // AnyBURL rules section.
@@ -85,10 +87,10 @@ public class GroundingEngine {
         // --- Set up a binding array for recursive search ---
         int[] currentBindings = new int[numSteps];
         Arrays.fill(currentBindings, -1);
-
+        int[] branchCounter = {this.maxBranchCount};
         // --- Execute the recursive search ---
         doPathSearch(startNodeId, startNodeId, stepRelations, stepDirections, stepLiteralTargets, stepVarNames,
-                0, currentBindings, ruleGroundings, headRelationId, headVariable, predictObject);
+                0, currentBindings, ruleGroundings, headRelationId, headVariable, predictObject, branchCounter);
 
         return ruleGroundings;
     }
@@ -144,9 +146,13 @@ public class GroundingEngine {
         Arrays.fill(currentBindings, -1);
         List<Map<String, String>> dummyResults = new ArrayList<>();
 
+        int[] branchCounter = {this.maxBranchCount};
         // 3. Loop over every node ID in the graph
         for (int startNodeId = 0; startNodeId < totalNodes; startNodeId++) {
 
+            if (branchCounter[0] <= 0) {
+                break; // Stop evaluating new start nodes if the global limit is reached
+            }
             // Check if the node has at least one edge for the first relation
             int firstRel = stepRelations[0];
             int[] initialTargets = (stepDirections[0] == Direction.FORWARD) ?
@@ -160,7 +166,7 @@ public class GroundingEngine {
             dummyResults.clear(); // Safe to reuse; bindings are reset to -1 via engine backtracking
 
             doPathSearch(startNodeId, startNodeId, stepRelations, stepDirections, stepLiteralTargets, stepVarNames,
-                    0, currentBindings, dummyResults, headRelationId, null, predictObject);
+                    0, currentBindings, dummyResults, headRelationId, null, predictObject, branchCounter);
 
             // If the search yielded results, this node satisfies the rule!
             if (!dummyResults.isEmpty()) {
@@ -213,7 +219,7 @@ public class GroundingEngine {
      */
     private boolean doPathSearch(int startNodeId, int currentNode, int[] relations, Direction[] dirs, int[] literalTargets,
                                  String[] varNames, int stepIndex, int[] bindings,
-                                 List<Map<String, String>> ruleGroundings, int headRelationId, String headVariable, Boolean predictObject) {
+                                 List<Map<String, String>> ruleGroundings, int headRelationId, String headVariable, Boolean predictObject, int[] branchCounter) {
 
         // --- Base case: reached the end of the rule steps ---
         if (stepIndex == relations.length) {
@@ -236,6 +242,10 @@ public class GroundingEngine {
 
         for (int nextNode : targets) {
             // Iterate over candidate target nodes
+            if (branchCounter[0] <= 0) {
+                return true; //branch limit reached
+            }
+            branchCounter[0]--;
 
             if (literalTargets[stepIndex] != -1) {
                 // Analyzing an atom with a literal: check if the target matches the required literal
@@ -252,7 +262,7 @@ public class GroundingEngine {
 
             // RECURSE: Move to the next step
             boolean continueSearch = doPathSearch(startNodeId, nextNode, relations, dirs, literalTargets, varNames,
-                    stepIndex + 1, bindings, ruleGroundings, headRelationId, headVariable, predictObject);
+                    stepIndex + 1, bindings, ruleGroundings, headRelationId, headVariable, predictObject, branchCounter);
 
             // BACKTRACK: Reset the binding for this step if it was a variable
             if (literalTargets[stepIndex] == -1) {
@@ -339,9 +349,9 @@ public class GroundingEngine {
 
         // Convert our index mapping to an array to pass into checkSuccess
         String[] varNames = indexToVar.toArray(new String[0]);
-
+        int[] branchCounter = {this.maxBranchCount};
         // 4. Execute recursive search
-        doPatternSearch(startNodeId, 0, relations, dirs, sourceVarIndices, targetVarIndices, varNames, bindings, results, targetRelationId, headVariable, predictObject);
+        doPatternSearch(startNodeId, 0, relations, dirs, sourceVarIndices, targetVarIndices, varNames, bindings, results, targetRelationId, headVariable, predictObject, branchCounter);
 
         return results;
     }
@@ -360,7 +370,10 @@ public class GroundingEngine {
      * @param bindings A map of variable names to their current entity ID bindings.
      * @param results A list to store the entity IDs that satisfy the target variable.
      */
-    private boolean doPatternSearch(int startNodeId, int stepIndex, int[] relations, Direction[] dirs, int[] sourceVarIndices, int[] targetVarIndices, String[] varNames, int[] bindings, List<Map<String, String>> results, int targetRelationId, String headVariable, Boolean predictObject) {
+    private boolean doPatternSearch(int startNodeId, int stepIndex, int[] relations, Direction[] dirs,
+                                    int[] sourceVarIndices, int[] targetVarIndices, String[] varNames, int[] bindings,
+                                    List<Map<String, String>> results, int targetRelationId, String headVariable,
+                                    Boolean predictObject, int[] branchCounter) {
 
         // Base case: We successfully mapped all steps
         if (stepIndex == relations.length) {
@@ -387,6 +400,11 @@ public class GroundingEngine {
         int targetVarIdx = targetVarIndices[stepIndex];
 
         for (int nextNode : targets) {
+            if (branchCounter[0] <= 0) {
+                return true; //branch limit reached
+            }
+            branchCounter[0]--;
+
             if (targetVarIdx != -1) {
                 if (bindings[targetVarIdx] != -1) {
                     // CRITICAL LOGIC: The target variable is ALREADY bound.
@@ -395,7 +413,7 @@ public class GroundingEngine {
                         continue;
                     }
 
-                    boolean continueSearch = doPatternSearch(startNodeId, stepIndex + 1, relations, dirs, sourceVarIndices, targetVarIndices, varNames, bindings, results, targetRelationId, headVariable,predictObject);
+                    boolean continueSearch = doPatternSearch(startNodeId, stepIndex + 1, relations, dirs, sourceVarIndices, targetVarIndices, varNames, bindings, results, targetRelationId, headVariable,predictObject, branchCounter);
                     if (!continueSearch) return false;
 
                 } else {
@@ -406,7 +424,7 @@ public class GroundingEngine {
 
                     // Bind the new variable and recurse
                     bindings[targetVarIdx] = nextNode;
-                    boolean continueSearch = doPatternSearch(startNodeId, stepIndex + 1, relations, dirs, sourceVarIndices, targetVarIndices, varNames, bindings, results, targetRelationId, headVariable,predictObject);
+                    boolean continueSearch = doPatternSearch(startNodeId, stepIndex + 1, relations, dirs, sourceVarIndices, targetVarIndices, varNames, bindings, results, targetRelationId, headVariable,predictObject, branchCounter);
 
                     // Backtrack
                     bindings[targetVarIdx] = -1;
@@ -415,7 +433,7 @@ public class GroundingEngine {
                 }
             } else {
                 // Target is not a variable (e.g., a literal). Skip variable binding and proceed.
-                boolean continueSearch = doPatternSearch(startNodeId, stepIndex + 1, relations, dirs, sourceVarIndices, targetVarIndices, varNames, bindings, results, targetRelationId, headVariable,predictObject);
+                boolean continueSearch = doPatternSearch(startNodeId, stepIndex + 1, relations, dirs, sourceVarIndices, targetVarIndices, varNames, bindings, results, targetRelationId, headVariable,predictObject, branchCounter);
                 if (!continueSearch) return false;
             }
         }

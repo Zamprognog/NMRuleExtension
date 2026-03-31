@@ -236,7 +236,7 @@ public class Evaluator {
 
         try (Stream<String> lines = Files.lines(Paths.get(testPath))) {
             lines.limit(limitN)
-//                    .parallel()
+                    .parallel()
                     .forEach(line -> {
                         String[] parts = line.split("\\s+");
                         if (parts.length < 3) return;
@@ -295,7 +295,7 @@ public class Evaluator {
                         }
 
                         // Calculate metrics for the backward prediction.
-                        RankResult subjectResult = calculateMetrics(objectPredictions, subject, predicate, object, true, K_RANKS, semanticManager);
+                        RankResult subjectResult = calculateMetrics(subjectPredictions, subject, predicate, object, false, K_RANKS, semanticManager);
 
                         // Check if averageRank is > 0 (meaning it was successfully predicted)
                         if (subjectResult.averageRank > 0) {
@@ -319,7 +319,7 @@ public class Evaluator {
                         totalPredictions.incrementAndGet();
 
                         int currentProgress = processedLines.incrementAndGet();
-                        if (currentProgress % 10 == 0) {
+                        if (currentProgress % 1000 == 0) {
                             DualLogger.getOriginalOut().println("Processed " + currentProgress + " test facts...");
                         }
                     });
