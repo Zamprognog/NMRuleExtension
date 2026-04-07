@@ -56,6 +56,7 @@ public class SemanticGraphManager extends GraphManager {
         scl.loadAndExtract(tboxPath, aboxPath);
 
         Map<String, SemanticConstraintLoader.PropertyConstraint> rawProps = scl.getPropertyConstraints();
+        System.out.println("SemanticGraphManager: Compiled " + rawProps.size() + " property constraints from TBox.");
 
         for (Map.Entry<String, SemanticConstraintLoader.PropertyConstraint> entry : rawProps.entrySet()) {
             // Get the integer ID for the property URI
@@ -90,6 +91,7 @@ public class SemanticGraphManager extends GraphManager {
         }
 
         Map<String, Set<String>> rawDisjointClasses = scl.getDisjointClasses();
+        System.out.println("SemanticGraphManager: Extracted " + rawDisjointClasses.size() + " disjoint class mappings.");
         for (Map.Entry<String, Set<String>> entry : rawDisjointClasses.entrySet()) {
             int classId = getTypeDict().getId(entry.getKey());
             Set<Integer> encodedDisjoints = new HashSet<>();
@@ -101,6 +103,7 @@ public class SemanticGraphManager extends GraphManager {
         }
 
         Map<String, Set<String>> rawTypes = scl.getEntityTypes();
+        System.out.println("SemanticGraphManager: Loaded types for " + rawTypes.size() + " entities.");
 
         for (Map.Entry<String, Set<String>> entry : rawTypes.entrySet()) {
             // The instance belongs to the base entityDict

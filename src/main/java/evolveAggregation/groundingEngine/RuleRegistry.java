@@ -46,7 +46,7 @@ public class RuleRegistry {
                 String[] parts = line.split("\t");
                 if (parts.length >= 4) {
 //                    float confidence = Float.parseFloat(parts[2]) + 5;
-                    float confidence = (Float.parseFloat(parts[1]) + 5 ) / Float.parseFloat(parts[0]); //offset by a lambda value to account for 'unseen data'.
+                    float confidence = (Float.parseFloat(parts[1])) / (Float.parseFloat(parts[0]) + 5); //offset by a lambda value to account for 'unseen data'.
                     if (confidence >= 0.99) continue; // too low predicting power
                     String ruleStr = parts[3];
                     if (isAmie) {

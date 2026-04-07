@@ -52,7 +52,8 @@ public class Main {
 //            SemanticGroundingEngine engine = new SemanticGroundingEngine(semanticGm);
             GroundingEngine engine = new GroundingEngine(semanticGm);
             Evaluator evaluator = new Evaluator(engine, registry, allKnownFacts, trainKnownFacts, semanticGm);
-            Metrics metrics = evaluator.evaluate(config.test, N);
+            String logPath = config.predictionsDir != null ? config.predictionsDir + "/latest_predictions.txt" : null;
+            Metrics metrics = evaluator.evaluate(config.test, logPath, N);
             metrics.printRow("Standard");
 
         } catch (Exception e) {
