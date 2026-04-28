@@ -20,31 +20,38 @@ public class RunMaterialization {
     public static void main(String[] args) {
         String configPath ;
         // Pass the JSON config path as an argument, or fallback to a default
-        configPath = args.length > 0 ? args[0] : "data/NELL995/NELL995.json";
-//        configPath = args.length > 0 ? args[0] : "data/hetionet/hetionet.json";
+//        configPath = args.length > 0 ? args[0] : "data/NELL995/NELL995.json";
+         configPath = args.length > 0 ? args[0] : "data/hetionet/hetionet.json";
 //        configPath = args.length > 0 ? args[0] : "data/CSKG2/CSKG2.json";
 //        configPath = args.length > 0 ? args[0] : "data/YAGO4.5/YAGO4.5.json";
 
-        // Define the target percentages for new facts
+        // Define the target percentages for new facts (Scenario A: triple count)
         double[] targetPercentages = {10.0, 30.0};
+        // Define the target percentages for rules (Scenario B: rule confidence)
+        double[] rulePercentages = {10.0, 30.0};
 
         try {
-            // 1. Load Configuration & Setup Logging
+            // 1. Load Configuration
             ExperimentConfig config = ExperimentConfig.load(configPath);
-            DualLogger.setupLogger(config.predictionsDir, config.datasetName + "_materialization");
+
+            // Generate timestamp once for the entire run
+            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+
+            // Construct the specific materialization directory
+            // Format: data/<dataset_name>/predictions/materialization/<timestamp>/
+            String materializationDir = config.predictionsDir + "materialization/" + timestamp + "/";
+            File matDir = new File(materializationDir);
+            if (!matDir.exists()) {
+                matDir.mkdirs();
+            }
+
+            // Setup Logging
+            DualLogger.setupLogger(materializationDir, config.datasetName + "_materialization");
 
             System.out.println("==================================================");
             System.out.println("Starting Materialization for Dataset: " + config.datasetName);
             System.out.println("==================================================");
-
-            // Ensure predictions directory exists
-            File dir = new File(config.predictionsDir);
-            if (!dir.exists()) {
-                dir.mkdirs();
-            }
-
-            // Generate timestamp once for the entire run
-            String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+            System.out.println("Output Directory: " + materializationDir);
 
             // 2. Load Known Facts (to track duplicates and calculate percentages)
             Set<String> allKnownFacts = new HashSet<>();
@@ -66,23 +73,43 @@ public class RunMaterialization {
             semanticGm.precomputeDisjointConstraints();
 
             // 4. Run Materialization Scenarios
-            System.out.println("\n##################################################");
-            System.out.println("           MATERIALIZING WITH ANYBURL RULES       ");
-            System.out.println("##################################################");
-            runMaterializationScenarios(config, config.anyburlRules, false, "anyburl", semanticGm, allKnownFacts, targetPercentages, timestamp);
+            String rulesToMaterialize = config.materializeRules != null ? config.materializeRules.toLowerCase() : "both";
 
-            System.out.println("\n##################################################");
-            System.out.println("             MATERIALIZING WITH AMIE RULES        ");
-            System.out.println("##################################################");
-            runMaterializationScenarios(config, config.amieRules, true, "amie", semanticGm, allKnownFacts, targetPercentages, timestamp);
+            if (rulesToMaterialize.contains("anyburl") || rulesToMaterialize.equals("both")) {
+                System.out.println("\n##################################################");
+                System.out.println("           MATERIALIZING WITH ANYBURL RULES       ");
+                System.out.println("##################################################");
+                if (config.anyburlRules != null) {
+                    System.out.println("--- Ruleset: AnyBURL FULL ---");
+                    runMaterializationScenarios(config, materializationDir, config.anyburlRules, false, "anyburl_FULL", semanticGm, allKnownFacts, targetPercentages, rulePercentages, timestamp);
+                }
+                if (config.anyburlRulesCP != null) {
+                    System.out.println("\n--- Ruleset: AnyBURL CP ---");
+                    runMaterializationScenarios(config, materializationDir, config.anyburlRulesCP, false, "anyburl_CP", semanticGm, allKnownFacts, targetPercentages, rulePercentages, timestamp);
+                }
+            }
+
+            if (rulesToMaterialize.contains("amie") || rulesToMaterialize.equals("both")) {
+                System.out.println("\n##################################################");
+                System.out.println("             MATERIALIZING WITH AMIE RULES        ");
+                System.out.println("##################################################");
+                if (config.amieRules != null) {
+                    System.out.println("--- Ruleset: AMIE FULL ---");
+                    runMaterializationScenarios(config, materializationDir, config.amieRules, true, "amie_FULL", semanticGm, allKnownFacts, targetPercentages, rulePercentages, timestamp);
+                }
+                if (config.amieRulesCP != null) {
+                    System.out.println("\n--- Ruleset: AMIE CP ---");
+                    runMaterializationScenarios(config, materializationDir, config.amieRulesCP, true, "amie_CP", semanticGm, allKnownFacts, targetPercentages, rulePercentages, timestamp);
+                }
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private static void runMaterializationScenarios(ExperimentConfig config, String rulesPath, boolean isAmie, String rulesetName,
-                                                    SemanticGraphManager gm, Set<String> allKnownFacts, double[] percentages, String timestamp) {
+    private static void runMaterializationScenarios(ExperimentConfig config, String materializationDir, String rulesPath, boolean isAmie, String rulesetName,
+                                                    SemanticGraphManager gm, Set<String> allKnownFacts, double[] percentages, double[] rulePercentages, String timestamp) {
 
         // Load rules into a shared registry
         System.out.println("Loading Rules from: " + rulesPath);
@@ -93,25 +120,54 @@ public class RunMaterialization {
         GroundingEngine standardEngine = new GroundingEngine(gm);
         SemanticGroundingEngine semanticEngine = new SemanticGroundingEngine(gm);
 
-        // Iterate over the target percentages (10% and 30%)
+        String groundingToRun = config.groundingType != null ? config.groundingType.toLowerCase() : "both";
+
+        // --- Scenario 1: Materialize by Triple Count (10% and 30% of Graph) ---
+        System.out.println("\n>>> SCENARIO A: Materializing by Target Triple Count <<<");
         for (double pct : percentages) {
-            int pctInt = (int) pct; // Cast to int for clean filename strings
+            int pctInt = (int) pct;
 
-            // --- Condition 1: Standard Grounding Engine ---
-            System.out.println("\n--- Condition: Standard Grounding Engine | Target: " + pctInt + "% ---");
-            String standardOutPath = String.format("%s/%s_%s_standard_%d_%s_new_triples.nt",
-                    config.predictionsDir, config.datasetName, rulesetName, pctInt, timestamp);
+            if (groundingToRun.contains("standard") || groundingToRun.equals("both")) {
+                System.out.println("\n--- Condition: Standard | Target: " + pctInt + "% Triples ---");
+                String standardOutPath = String.format("%s/%s_%s_standard_%d_triples_%s.nt",
+                        materializationDir, config.datasetName, rulesetName, pctInt, timestamp);
 
-            Materializer standardMaterializer = new Materializer(standardEngine, registry, allKnownFacts);
-            standardMaterializer.materialize(pct, standardOutPath);
+                Materializer standardMaterializer = new Materializer(standardEngine, registry, allKnownFacts);
+                standardMaterializer.materializeByTripleCount(pct, standardOutPath);
+            }
 
-            // --- Condition 2: Semantic Grounding Engine ---
-            System.out.println("\n--- Condition: Semantic Grounding Engine | Target: " + pctInt + "% ---");
-            String semanticOutPath = String.format("%s/%s_%s_semantic_%d_%s_new_triples.nt",
-                    config.predictionsDir, config.datasetName, rulesetName, pctInt, timestamp);
+            if (groundingToRun.contains("semantic") || groundingToRun.equals("both")) {
+                System.out.println("\n--- Condition: Semantic | Target: " + pctInt + "% Triples ---");
+                String semanticOutPath = String.format("%s/%s_%s_semantic_%d_triples_%s.nt",
+                        materializationDir, config.datasetName, rulesetName, pctInt, timestamp);
 
-            Materializer semanticMaterializer = new Materializer(semanticEngine, registry, allKnownFacts);
-            semanticMaterializer.materialize(pct, semanticOutPath);
+                Materializer semanticMaterializer = new Materializer(semanticEngine, registry, allKnownFacts);
+                semanticMaterializer.materializeByTripleCount(pct, semanticOutPath);
+            }
+        }
+
+        // --- Scenario 2: Materialize by Top N% Rules (10% and 30% of Rules) ---
+        System.out.println("\n>>> SCENARIO B: Materializing by Top N% Rules <<<");
+        for (double pct : rulePercentages) {
+            int pctInt = (int) pct;
+
+            if (groundingToRun.contains("standard") || groundingToRun.equals("both")) {
+                System.out.println("\n--- Condition: Standard | Target: Top " + pctInt + "% Rules ---");
+                String standardOutPath = String.format("%s/%s_%s_standard_%d_rules_%s.nt",
+                        materializationDir, config.datasetName, rulesetName, pctInt, timestamp);
+
+                Materializer standardMaterializer = new Materializer(standardEngine, registry, allKnownFacts);
+                standardMaterializer.materializeByRuleConfidence(pct, standardOutPath);
+            }
+
+            if (groundingToRun.contains("semantic") || groundingToRun.equals("both")) {
+                System.out.println("\n--- Condition: Semantic | Target: Top " + pctInt + "% Rules ---");
+                String semanticOutPath = String.format("%s/%s_%s_semantic_%d_rules_%s.nt",
+                        materializationDir, config.datasetName, rulesetName, pctInt, timestamp);
+
+                Materializer semanticMaterializer = new Materializer(semanticEngine, registry, allKnownFacts);
+                semanticMaterializer.materializeByRuleConfidence(pct, semanticOutPath);
+            }
         }
     }
 }

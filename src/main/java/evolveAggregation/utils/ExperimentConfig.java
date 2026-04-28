@@ -8,7 +8,7 @@ import java.util.Map;
 
 public class ExperimentConfig {
     public String datasetName, graph, train, valid, test, testDebug;
-    public String schema, typesFile, anyburlRules, amieRules, predictionsDir, defUri;
+    public String schema, typesFile, anyburlRules, anyburlRulesCP, amieRules, amieRulesCP, predictionsDir, defUri, materializeRules, groundingType;
 
     public static ExperimentConfig load(String jsonPath) throws IOException {
         String content = new String(Files.readAllBytes(Paths.get(jsonPath)));
@@ -35,9 +35,13 @@ public class ExperimentConfig {
         config.schema = map.get("schema");
         config.typesFile = map.get("types_file");
         config.anyburlRules = map.get("anyburl_rules");
+        config.anyburlRulesCP = map.get("anyburl_rules_CP");
         config.amieRules = map.get("amie_rules");
+        config.amieRulesCP = map.get("amie_rules_CP");
         config.predictionsDir = map.get("predictions_dir");
         config.defUri = map.get("def_uri");
+        config.materializeRules = map.get("materialize_rules");
+        config.groundingType = map.get("grounding_type");
 
         return config;
     }

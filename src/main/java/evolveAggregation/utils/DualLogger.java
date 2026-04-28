@@ -13,8 +13,18 @@ public class DualLogger {
     private static PrintStream originalOut;
 
     public static void setupLogger(String predictionsDir, String datasetName) throws IOException {
+        setupLogger(predictionsDir, datasetName, "");
+    }
+
+    public static void setupLogger(String predictionsDir, String datasetName, String suffix) throws IOException {
+        setupLogger(predictionsDir, datasetName, suffix, "_experiment_");
+    }
+
+    public static void setupLogger(String predictionsDir, String datasetName, String suffix, String prefix) throws IOException {
         // Preserve original System.out
-        originalOut = System.out;
+        if (originalOut == null) {
+            originalOut = System.out;
+        }
 
         // Ensure directory exists
         File dir = new File(predictionsDir);
@@ -22,12 +32,13 @@ public class DualLogger {
             dir.mkdirs();
         }
 
-        // Create log file with timestamp
+        // Create log file with timestamp and suffix
         String timestamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-        String logFilePath = predictionsDir + "/" + datasetName + "_experiment_" + timestamp + ".log";
+        String suffixPart = (suffix == null || suffix.isEmpty()) ? "" : "_" + suffix;
+        String logFilePath = predictionsDir + "/" + datasetName + prefix + timestamp + suffixPart + ".log";
 
         FileOutputStream fos = new FileOutputStream(logFilePath);
-        TeeOutputStream teeOut = new TeeOutputStream(System.out, fos);
+        TeeOutputStream teeOut = new TeeOutputStream(getOriginalOut(), fos);
         System.setOut(new PrintStream(teeOut));
 
         System.out.println("Log file created at: " + logFilePath);

@@ -5,6 +5,7 @@ import org.apache.jena.rdf.model.InfModel;
 import org.apache.jena.rdf.model.Model;
 import org.apache.jena.rdf.model.ModelFactory;
 import org.apache.jena.reasoner.ReasonerRegistry;
+import evolveAggregation.utils.DualLogger;
 import evolveAggregation.utils.ExperimentConfig;
 
 import java.io.File;
@@ -47,14 +48,21 @@ public class MaterializationEvaluationPipeline {
     }
 
     public static void main(String[] args) {
-        String configPath = args.length > 0 ? args[0] : "data/NELL995/NELL995.json";
+//        String configPath = args.length > 0 ? args[0] : "data/NELL995/NELL995.json";
+        String configPath = args.length > 0 ? args[0] : "data/YAGO4.5/yago4.5.json";
+//        String configPath = args.length > 0 ? args[0] : "data/CSKG2/CSKG2.json";
+        String specificFilePath = args.length > 1 ? args[1] : null;
+
         String namedGraphURI = "http://newtriples/";
 
         try {
-            // 1. Load Configuration
+            // 1. Load Configurationz
             ExperimentConfig config = ExperimentConfig.load(configPath);
             String predictionsDir = config.predictionsDir;
             String datasetName = config.datasetName;
+
+            // Setup Logger
+            DualLogger.setupLogger(predictionsDir, datasetName, "", "_log_materialization_");
 
             System.out.println("==================================================");
             System.out.println("Evaluating Materialization for Dataset: " + datasetName);
@@ -100,39 +108,63 @@ public class MaterializationEvaluationPipeline {
 
             System.out.println("Base graph loaded. Starting evaluation...");
 
-            // 4. Iterate through your materialized triple files
-            File dir = new File(predictionsDir);
-            // The issue specifies: predictions/[dataset]_[ruleset]_[standard/semantic]_[10/30]_[timestamp].nt
-            // It also says "timestamp is irrelevant to track"
-//            File[] files = dir.listFiles((d, name) -> name.endsWith(".nt") && name.startsWith(datasetName));
-            File[] files = dir.listFiles((d, name) -> name.equals("NELL995_anyburl_semantic_10_20260401_164741_new_triples.nt"));
-
-            if (files != null) {
-                for (File file : files) {
-                    System.out.println("\n--------------------------------------------------");
-                    System.out.println("Evaluating: " + file.getName());
-
-                    // 5. Load the new triples into a temporary model
-                    Model newTriplesModel = ModelFactory.createDefaultModel();
-                    newTriplesModel.read(file.getAbsolutePath(), "N-TRIPLES");
-//                    System.out.println("  - Triples in " + file.getName() + ": " + newTriplesModel.size());
-
-                    // 6. Add it to the dataset as a named graph
-                    dataset.addNamedModel(namedGraphURI, newTriplesModel);
-
-                    // 7. Run Queries
-                    runEvaluationQueries(dataset);
-
-                    // 8. Clear the named graph for the next iteration
-                    dataset.removeNamedModel(namedGraphURI);
+            if (specificFilePath != null) {
+                File specificFile = new File(specificFilePath);
+                if (specificFile.exists() && specificFile.isFile()) {
+                    evaluateSingleFile(dataset, specificFile, namedGraphURI);
+                } else {
+                    System.err.println("Error: Specific file not found: " + specificFilePath);
                 }
             } else {
-                System.out.println("No materialized files found in " + predictionsDir);
+                // 4. Iterate through your materialized triple files
+                File baseDir = new File(predictionsDir + "/materialization/");
+                File[] subDirs = baseDir.listFiles(File::isDirectory);
+                File dir = baseDir;
+
+                if (subDirs != null && subDirs.length > 0) {
+                    // Sort subdirectories by name (lexicographic order) to find the latest timestamp
+                    java.util.Arrays.sort(subDirs, (a, b) -> b.getName().compareTo(a.getName()));
+                    dir = subDirs[0];
+                    System.out.println("Selecting latest materialization folder: " + dir.getAbsolutePath());
+                } else {
+                    System.out.println("No subdirectories found in " + baseDir.getAbsolutePath() + ". Looking in base directory.");
+                }
+
+                // The issue specifies: predictions/[dataset]_[ruleset]_[standard/semantic]_[10/30]_[triples/rules]_[timestamp].nt
+                File[] files = dir.listFiles((d, name) -> name.endsWith(".nt") && name.contains(datasetName));
+//            File[] files = dir.listFiles((d, name) -> name.equals("NELL995_anyburl_semantic_10_20260401_164741_new_triples.nt"));
+
+                if (files != null && files.length > 0) {
+                    for (File file : files) {
+                        evaluateSingleFile(dataset, file, namedGraphURI);
+                    }
+                } else {
+                    System.out.println("No materialized files found in " + dir.getAbsolutePath());
+                }
             }
 
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private static void evaluateSingleFile(Dataset dataset, File file, String namedGraphURI) {
+        System.out.println("\n--------------------------------------------------");
+        System.out.println("Evaluating: " + file.getName());
+
+        // 5. Load the new triples into a temporary model
+        Model newTriplesModel = ModelFactory.createDefaultModel();
+        newTriplesModel.read(file.getAbsolutePath(), "N-TRIPLES");
+//                    System.out.println("  - Triples in " + file.getName() + ": " + newTriplesModel.size());
+
+        // 6. Add it to the dataset as a named graph
+        dataset.addNamedModel(namedGraphURI, newTriplesModel);
+
+        // 7. Run Queries
+        runEvaluationQueries(dataset);
+
+        // 8. Clear the named graph for the next iteration
+        dataset.removeNamedModel(namedGraphURI);
     }
 
 
@@ -214,7 +246,7 @@ public class MaterializationEvaluationPipeline {
                 "    } \n" +
                 "}";
 
-        debugDomainViolations(dataset);
+//        debugDomainViolations(dataset);
         int domainViolations = executeCountQuery(dataset, qDomainCheck, "domainCheckCount");
         int rangeViolations = executeCountQuery(dataset, qRangeCheck, "rangeCheckCount");
 

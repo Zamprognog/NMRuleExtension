@@ -9,6 +9,7 @@ public class DataLoader {
 
     public static void loadFactsIntoSet(Set<String> facts, String... paths) {
         for (String path : paths) {
+            if (path == null || path.isEmpty()) continue;
             try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
                 String line;
                 while ((line = reader.readLine()) != null) {

@@ -59,7 +59,22 @@ public class SemanticGroundingEngine extends GroundingEngine{
             // 2. Check RANGE of p
             if (hasDisjointConflict(queryNodeTypes, targetRelationConstraints.disjointWithRange)) return false;
 
-            //todo: add invfunct
+            // 3. Check FUNCTIONAL property of p
+            if (propertyConstraint.isFunctional) {
+                // If we are predicting subject (?, p, o) and p is functional,
+                // we'll check each predicted subject in checkSuccess/checkStartingNodeSuccess.
+                // However, if the object 'o' itself already has multiple subjects, it's not a functional issue, but inverse functional.
+                // Wait, if p is functional, then ANY s can have at most one o.
+                // In isQueryValid, queryNodeId is 'o'. We don't know 's' yet.
+                // So we can't check if 's' already has an outgoing 'p' edge here.
+            }
+
+            // 4. Check INVERSE FUNCTIONAL property of p
+            if (propertyConstraint.isInverseFunctional) {
+                int[] existingSubjects = graph.getBackwardTargets(queryNodeId, headRelationId);
+                // If it already has an incoming edge for this inverse functional relation, fail
+                return existingSubjects == null || existingSubjects.length <= 0;
+            }
         }
 
         return true; // All semantic checks passed, proceed with graph search
@@ -94,12 +109,26 @@ public class SemanticGroundingEngine extends GroundingEngine{
         SemanticGraphManager.IntPropertyConstraint targetRelationConstraints = propertyIdConstraints.get(targetRelationId);
 
         if (targetRelationConstraints != null) {
-            // functional case - in rule issue (in-graph dealt by @isQueryValid)
-            if (targetRelationConstraints.isFunctional && ruleGroundings.size() > 1) {
-
-                // Clear the results because this rule is fundamentally invalid
-                ruleGroundings.clear();
-                return false;
+            // functional and inverse functional case - in rule issue (in-graph dealt by @isQueryValid)
+            if (predictObject) {
+                if (targetRelationConstraints.isFunctional && ruleGroundings.size() > 1) {
+                    // Clear the results because this rule is fundamentally invalid
+                    ruleGroundings.clear();
+                    return false;
+                }
+            } else {
+                if (targetRelationConstraints.isFunctional) {
+                    int[] existingTargets = graph.getForwardTargets(predictedEntityId, targetRelationId);
+                    if (existingTargets != null && existingTargets.length > 0) {
+                        ruleGroundings.clear();
+                        return false;
+                    }
+                }
+                if (targetRelationConstraints.isInverseFunctional && ruleGroundings.size() > 1) {
+                    // Clear the results because this rule is fundamentally invalid
+                    ruleGroundings.clear();
+                    return false;
+                }
             }
 
             // domain and range
@@ -131,8 +160,16 @@ public class SemanticGroundingEngine extends GroundingEngine{
         SemanticGraphManager.IntPropertyConstraint targetRelationConstraints = propertyIdConstraints.get(headRelationId);
 
         if (targetRelationConstraints != null) {
-            // functional case - in rule issue (in-graph dealt by @isQueryValid)
-            if (targetRelationConstraints.isFunctional && validStartNodes.size() > 1) return false;
+            // functional and inverse functional case - in rule issue (in-graph dealt by @isQueryValid)
+            if (predictObject) {
+                if (targetRelationConstraints.isFunctional && validStartNodes.size() > 1) return false;
+            } else {
+                if (targetRelationConstraints.isFunctional) {
+                    int[] existingTargets = graph.getForwardTargets(startNodeId, headRelationId);
+                    if (existingTargets != null && existingTargets.length > 0) return false;
+                }
+                if (targetRelationConstraints.isInverseFunctional && validStartNodes.size() > 1) return false;
+            }
 
             // domain and range
             Set<Integer> predictedNodeTypes = entityIdTypes.getOrDefault(startNodeId, Collections.emptySet());

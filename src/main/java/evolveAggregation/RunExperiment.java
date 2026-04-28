@@ -16,52 +16,100 @@ import java.util.Set;
 public class RunExperiment {
 
     public static void main(String[] args) {
-        String configPath ;
-        // Pass the JSON config path as an argument, or fallback to a default
-        configPath = args.length > 0 ? args[0] : "data/NELL995/NELL995.json";
-//        configPath = args.length > 0 ? args[0] : "data/hetionet/hetionet.json";
+        String configPath;
+        String mode = "amie"; // Default mode
+
+        // Pass the JSON config path as first argument, mode as second
+//        configPath = args.length > 0 ? args[0] : "data/NELL995/NELL995.json";
+                configPath = args.length > 0 ? args[0] : "data/hetionet/hetionet.json";
 //        configPath = args.length > 0 ? args[0] : "data/CSKG2/CSKG2.json";
 //        configPath = args.length > 0 ? args[0] : "data/YAGO4.5/YAGO4.5.json";
-        int N = 30000; // Define max evaluations
+
+        if (args.length > 1) {
+            mode = args[1].toLowerCase();
+        }
+
+        int N = 100000; // Define max evaluations
 
         try {
-            // 1. Load Configuration & Setup Logging
+            // 1. Load Configuration
             ExperimentConfig config = ExperimentConfig.load(configPath);
-            DualLogger.setupLogger(config.predictionsDir, config.datasetName);
 
-            System.out.println("==================================================");
-            System.out.println("Starting Experiment for Dataset: " + config.datasetName);
-            System.out.println("==================================================");
+            // Determine runs based on mode
+            boolean runAnyBurl = mode.equals("full") || mode.equals("anyburl");
+            boolean runAmie = mode.equals("full") || mode.equals("amie");
 
-            // 2. Load Known Facts for Filtered Evaluation
-            Set<String> allKnownFacts = new HashSet<>();
-            DataLoader.loadFactsIntoSet(allKnownFacts, config.train, config.valid, config.test);
-            Set<String> trainKnownFacts = new HashSet<>();
-            DataLoader.loadFactsIntoSet(trainKnownFacts, config.train);
-            System.out.println("Loaded " + allKnownFacts.size() + " known facts for filtered metrics.");
-            System.out.println("Loaded " + trainKnownFacts.size() + " training facts for consistency checks.");
+            if (runAnyBurl) {
+                // Setup logger for AnyBURL ALL
+                DualLogger.setupLogger(config.predictionsDir, config.datasetName, "ALL");
+                runFullExperiment(config, N, "anyburl_all");
+            }
 
-            // 3. Initialize Shared Semantic Graph Manager
-            System.out.println("Initializing Shared SemanticGraphManager...");
-            SemanticGraphManager semanticGm = new SemanticGraphManager();
-            semanticGm.parseTriples(config.train, "\t");
-            semanticGm.finalizeGraph();
-            semanticGm.compileConstraints(config.schema, config.typesFile);
-            semanticGm.precomputeDisjointConstraints();
+            if (runAnyBurl && config.anyburlRulesCP != null && !config.anyburlRulesCP.isEmpty()) {
+                // Setup logger for AnyBURL CP
+                DualLogger.setupLogger(config.predictionsDir, config.datasetName, "CP");
+                runFullExperiment(config, N, "anyburl_cp");
+            }
 
-            // 4. Run Evaluations
-            System.out.println("\n##################################################");
-            System.out.println("              EVALUATING ANYBURL RULES            ");
-            System.out.println("##################################################");
-            runRuleSetEvaluation(config.anyburlRules, false, semanticGm, allKnownFacts, trainKnownFacts, config.test, N);
+            if (runAmie) {
+                // Setup logger for AMIE (standard name or another suffix if needed, here just default or AMIE)
+                DualLogger.setupLogger(config.predictionsDir, config.datasetName, "AMIE");
+                runFullExperiment(config, N, "amie");
+            }
 
-            System.out.println("\n##################################################");
-            System.out.println("                EVALUATING AMIE RULES             ");
-            System.out.println("##################################################");
-            runRuleSetEvaluation(config.amieRules, true, semanticGm, allKnownFacts, trainKnownFacts, config.test, N);
+            if (runAmie && config.amieRulesCP != null && !config.amieRulesCP.isEmpty()) {
+                // Setup logger for AnyBURL CP
+                DualLogger.setupLogger(config.predictionsDir, config.datasetName, "CP");
+                runFullExperiment(config, N, "amie_cp");
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private static void runFullExperiment(ExperimentConfig config, int N, String runType) throws Exception {
+        System.out.println("==================================================");
+        System.out.println("Starting Experiment Run: " + runType + " for Dataset: " + config.datasetName);
+        System.out.println("==================================================");
+
+        // 2. Load Known Facts for Filtered Evaluation
+        Set<String> allKnownFacts = new HashSet<>();
+        DataLoader.loadFactsIntoSet(allKnownFacts, config.train, config.valid, config.test);
+        Set<String> trainKnownFacts = new HashSet<>();
+        DataLoader.loadFactsIntoSet(trainKnownFacts, config.train);
+        System.out.println("Loaded " + allKnownFacts.size() + " known facts for filtered metrics.");
+        System.out.println("Loaded " + trainKnownFacts.size() + " training facts for consistency checks.");
+
+        // 3. Initialize Shared Semantic Graph Manager
+        System.out.println("Initializing Shared SemanticGraphManager...");
+        SemanticGraphManager semanticGm = new SemanticGraphManager();
+        semanticGm.parseTriples(config.train, "\t");
+        semanticGm.finalizeGraph();
+        semanticGm.compileConstraints(config.schema, config.typesFile);
+        semanticGm.precomputeDisjointConstraints();
+
+        // 4. Run Evaluations
+        if (runType.equals("anyburl_all")) {
+            System.out.println("\n##################################################");
+            System.out.println("              EVALUATING ANYBURL RULES (ALL)      ");
+            System.out.println("##################################################");
+            runRuleSetEvaluation(config.anyburlRules, false, semanticGm, allKnownFacts, trainKnownFacts, config.test, N);
+        } else if (runType.equals("anyburl_cp")) {
+            System.out.println("\n##################################################");
+            System.out.println("              EVALUATING ANYBURL RULES (CP)       ");
+            System.out.println("##################################################");
+            runRuleSetEvaluation(config.anyburlRulesCP, false, semanticGm, allKnownFacts, trainKnownFacts, config.test, N);
+        } else if (runType.equals("amie")) {
+            System.out.println("\n##################################################");
+            System.out.println("                EVALUATING AMIE RULES (4CP)            ");
+            System.out.println("##################################################");
+            runRuleSetEvaluation(config.amieRules, true, semanticGm, allKnownFacts, trainKnownFacts, config.test, N);
+        } else if (runType.equals("amie_cp")) {
+            System.out.println("\n##################################################");
+            System.out.println("                EVALUATING AMIE RULES (3CP)           ");
+            System.out.println("##################################################");
+            runRuleSetEvaluation(config.amieRulesCP, true, semanticGm, allKnownFacts, trainKnownFacts, config.test, N);
         }
     }
 
