@@ -1,3 +1,3 @@
-package evolveAggregation.domain;
+package ruleMiningSemanticExtension.rules;
 
 public enum Direction { FORWARD, BACKWARD }

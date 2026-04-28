@@ -1,4 +1,4 @@
-package evolveAggregation.domain.rules;
+package ruleMiningSemanticExtension.rules;
 
 
 public class RuleAtom {
