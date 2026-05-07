@@ -1,0 +1,32 @@
+### java -jar amie3.5.1.jar -maxad 3 -mins -10 -minpca 0.1 -minc 0.1 -oute datasets/NELL995/data/NELL995_train.tsv | tail -n +16 > datasets/NELL995/rules/NELL995_rules_amie.tsv
+### java -jar amie3.5.1.jar -maxad 3 -mins -10 -minpca 0.1 -minc 0.1 -oute datasets/hetionet/data/hetio_train_nice.tsv | tail -n +16 > datasets/hetionet/rules/hetionet_rules_amie.tsv
+
+
+### Rule	Head Coverage	Std Confidence	PCA Confidence	Positive Examples	Body size	PCA Body size	Functional variable
+
+
+
+java -jar amie3.5.1.jar -maxad 3 -mins -10 -minpca 0.1 -minc 0.1 -oute datasets/YAGO4.5/data/YAGO4.5-10_train.tsv | tail -n +16 > datasets/hetionet/rules/hetionet_rules_amie.tsv
+
+#### resubmission
+## NELL
+# ALL
+java -jar amie3.5.1.jar  -maxad 3 -mins 10 -minpca 0.1 -minc 0.1 -nc 16 -full -const -oute ../data/NELL995/data/NELL995_train.tsv | tail -n +16 > ../data/NELL995/rules/NELL995_rules_amie_ALL.tsv
+# Simple
+java -jar amie3.5.1.jar  -maxad 3 -mins 10 -minpca 0.1 -minc 0.1 -nc 16 -full -oute ../data/NELL995/data/NELL995_train.tsv | tail -n +16 > ../data/NELL995/rules/NELL995_rules_amie_SIMPLE.tsv
+
+## YAGO4.5-10
+# ALL
+java -jar amie3.5.1.jar  -maxad 3 -mins 10 -minpca 0.1 -minc 0.1 -nc 16 -full -const -oute ../data/YAGO4.5/data/YAGO4.5-10_train.tsv | tail -n +16 > ../data/YAGO4.5/rules/YAGO4.5_rules_amie_ALL.tsv
+# Simple
+java -jar amie3.5.1.jar  -maxad 3 -mins 10 -minpca 0.1 -minc 0.1 -nc 16 -full -oute ../data/YAGO4.5/data/YAGO4.5-10_train.tsv | tail -n +16 > ../data/YAGO4.5/rules/YAGO4.5_rules_amie_SIMPLE.tsv
+
+## CSKG
+# Simple
+java -jar amie3.5.1.jar  -maxad 3 -mins 10 -minpca 0.1 -minc 0.1 -nc 16 -full -oute ../data/CSKG2/data/CSKG2_train.tsv | tail -n +16 > ../data/CSKG2/rules/CSKG2_rules_amie_SIMPLE.tsv
+
+## hetionet
+# Simple
+java -jar amie3.5.1.jar  -maxad 3 -mins 10 -minpca 0.1 -minc 0.1 -nc 16 -full -oute ../data/hetionet/data/hetionet_train.tsv | tail -n +16 > ../data/hetionet/rules/hetionet_3CP_rules.tsv
+# Simple
+java -jar amie3.5.1.jar  -maxad 4 -mins 10 -minpca 0.1 -minc 0.1 -nc 16 -full -oute ../data/hetionet/data/hetionet_train.tsv | tail -n +16 > ../data/hetionet/rules/hetionet_4CP_rules.tsv
