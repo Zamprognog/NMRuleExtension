@@ -77,6 +77,87 @@ Each dataset requires a `.json` configuration file. Example structure:
 - `data/`: Contains datasets, rules, and prediction outputs.
 - `tools/`: Shell scripts for external tools (e.g., AMIE mining).
 
+## Evaluation Queries
+
+### Functional count 
+```sparql
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
+PREFIX owl: <http://www.w3.org/2002/07/owl#> 
+SELECT (COUNT(*) as ?total)
+	WHERE {
+    	SELECT DISTINCT ?s ?p ?o WHERE { 
+            GRAPH <http://newtriples/> { ?s ?p ?o . }
+                { 
+                SELECT ?s ?p
+                      WHERE { 
+                        ?p rdf:type owl:FunctionalProperty . 
+                        { ?s ?p ?o_inner . }                                  
+                        UNION 
+                        { GRAPH <http://newtriples/> { ?s ?p ?o_inner . } }
+                      }
+                      GROUP BY ?s ?p 
+                      HAVING (COUNT(DISTINCT ?o_inner) > 1)
+                } 
+	}
+}
+```
+
+### Domain count 
+```sparql
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+SELECT (COUNT(*) AS ?domainCheckCount)
+WHERE {
+  {
+    SELECT DISTINCT ?s ?p ?o
+    WHERE {
+      GRAPH <http://newtriples/> {
+        ?s ?p ?o .
+      }
+      ?p rdfs:domain ?dom .
+      ?dom owl:disjointWith|^owl:disjointWith ?type1 .
+      {
+        { ?s a ?type1 . }
+        UNION
+        { GRAPH <http://newtriples/> { ?s a ?type1 . } }
+      }
+    }
+  }
+}
+```
+
+### Range count
+```sparql
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+
+SELECT (COUNT(*) AS ?rangeCheckCount)
+WHERE {
+  {
+    SELECT DISTINCT ?s ?p ?o
+    WHERE {
+      # Start with new predictions
+      GRAPH <http://newtriples/> { 
+        ?s ?p ?o . 
+      }
+      
+      # Look up range constraint
+      ?p rdfs:range ?ran .
+      
+      # Check symmetric disjointness
+      ?ran owl:disjointWith|^owl:disjointWith ?type2 .
+      
+      # Validate object against both graphs
+      {
+        { ?o a ?type2 . }
+        UNION
+        { GRAPH <http://newtriples/> { ?o a ?type2 . } }
+      }
+    }
+  }
+}
+```
 ## License
 
 This work is licensed under a [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).
