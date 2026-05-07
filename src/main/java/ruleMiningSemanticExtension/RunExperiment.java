@@ -17,11 +17,12 @@ public class RunExperiment {
 
     public static void main(String[] args) {
         String configPath;
-        String mode = "amie"; // Default mode
+        String mode = "full"; // Default mode
 
         // Pass the JSON config path as first argument, mode as second
 //        configPath = args.length > 0 ? args[0] : "data/NELL995/NELL995.json";
-                configPath = args.length > 0 ? args[0] : "data/hetionet/hetionet.json";
+        configPath = args.length > 0 ? args[0] : "data/OWL2Bench/OWL2Bench.json";
+//                configPath = args.length > 0 ? args[0] : "data/hetionet/hetionet.json";
 //        configPath = args.length > 0 ? args[0] : "data/CSKG2/CSKG2.json";
 //        configPath = args.length > 0 ? args[0] : "data/YAGO4.5/YAGO4.5.json";
 

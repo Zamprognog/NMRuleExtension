@@ -72,10 +72,15 @@ public class SemanticConstraintLoader {
     }
 
     private void loadModel(Model model, String path) {
-        String format = path.substring(path.lastIndexOf('.') + 1);
-        // Jena handles "ttl", "nt", "rdf", "owl" etc. but some extensions might need mapping
-        if (format.equals("ttl")) format = "TURTLE";
-        if (format.equals("nt")) format = "N-TRIPLE";
+        String format = null;
+        String extension = path.substring(path.lastIndexOf('.') + 1).toLowerCase();
+        
+        // Jena handles "ttl", "nt", "rdf", "owl" etc.
+        // mapping common extensions to standard Jena format strings
+        if (extension.equals("ttl")) format = "TURTLE";
+        else if (extension.equals("nt")) format = "N-TRIPLE";
+        else if (extension.equals("rdf") || extension.equals("owl")) format = "RDF/XML";
+        // for other extensions, format remains null, allowing Jena to auto-detect
 
         try (FileInputStream in = new FileInputStream(path)) {
             model.read(in, null, format);
