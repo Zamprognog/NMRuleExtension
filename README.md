@@ -54,19 +54,19 @@ Each dataset requires a `.json` configuration file. Example structure:
 
 ```json
 {
-  "dataset_name": "OWL2Bench",
-  "graph": "data/OWL2Bench/data/OWL2Bench_full_graph.nt",
-  "train": "data/OWL2Bench/data/train.tsv",
-  "valid": "data/OWL2Bench/data/valid.tsv",
-  "test": "data/OWL2Bench/data/test.tsv",
-  "schema": "data/OWL2Bench/data/ontology.owl",
-  "types_file": "data/OWL2Bench/data/entity_types.nt",
-  "predictions_dir": "data/OWL2Bench/predictions/",
-  "anyburl_rules": "data/OWL2Bench/rules/anyburl_rules_ALL-100",
-  "anyburl_rules_CP": "data/OWL2Bench/rules/anyburl_rules_CP-100",
-  "amie_rules": "data/OWL2Bench/rules/amie_rules_ALL.tsv",
-  "amie_rules_CP": "data/OWL2Bench/rules/amie_rules_CP.tsv",
-  "def_uri": "http://example.org/",
+  "dataset_name": "NELL995",
+  "graph": "data/NELL995/data/NELL995_full_graph.nt",
+  "train": "data/NELL995/data/NELL995_train.tsv",
+  "valid": "data/NELL995/data/NELL995_valid.tsv",
+  "test": "data/NELL995/data/NELL995_test.tsv",
+  "schema": "data/NELL995/data/NELL.ontology.ttl",
+  "types_file": "data/NELL995/data/NELL995_entity_types.nt",
+  "anyburl_rules": "data/NELL995/rules/NELL995_rules_anyburl_ALL-100",
+  "anyburl_rules_CP": "data/NELL995/rules/NELL995_rules_anyburl_CP-100",
+  "amie_rules": "data/NELL995/rules/NELL995_rules_amie_4CP.tsv",
+  "amie_rules_CP": "data/NELL995/rules/NELL995_rules_amie_3CP.tsv",
+  "predictions_dir": "data/NELL995/predictions/",
+  "def_uri": "https://ste-lod-crew.fr/nell/ontology/",
   "grounding_type": "both",
   "materialize_rules": "both"
 }
