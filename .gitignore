@@ -38,4 +38,5 @@ build/
 
 ### Local only — JARs and datasets should not be committed ###
 data/
+CLAUDE.md
 CLAUDE.local.md
