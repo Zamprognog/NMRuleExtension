@@ -5,11 +5,11 @@ This project implements a framework for evaluating and enhancing Rule Mining (sp
 ## Features
 
 - **Semantic Constraint Extraction**: Automatically extracts domain, range, functional, inverse-functional, and disjoint-class constraints from OWL/RDF ontologies using Apache Jena.
-- **Dual Grounding Engines**:
+- **Grounding Engines**:
     - **Standard Engine**: Traditional rule grounding.
-    - **Semantic Engine**: Incorporates semantic consistency checks during the grounding process to improve precision.
-- **Comprehensive Evaluation**: Metrics including Hits@k (1, 5, 10), MRR (Mean Reciprocal Rank), and Semantic Consistency at 10 (Sem@10).
-- **Multi-Dataset Support**: Pre-configured support for datasets like NELL-995, OWL2Bench, Hetionet, CSKG2, and YAGO 4.5.
+    - **Semantic Engine**: Incorporates semantic consistency checks during the grounding process.
+- **Evaluation**: Metrics including Hits@k (1, 5, 10), MRR (Mean Reciprocal Rank), and Semantic Consistency at 10 (Sem@10).
+- **Dataset Support**: Pre-configured support for datasets like NELL-995, Hetionet, CSKG2, and YAGO 4.5-10.
 - **Flexible Configuration**: Uses JSON-based configuration files for experiment setup.
 
 ## Prerequisites
