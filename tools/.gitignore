@@ -1,0 +1,16 @@
+# Binaries
+*.jar
+
+# Datasets, ontologies, rule files, generated outputs
+setup/**/*.tsv
+setup/**/*.owl
+setup/**/*.nt
+setup/**/*.xlsx
+setup/**/predictions*
+setup/**/*_rules_*
+setup/**/*_log
+
+# IDE and OS
+.idea/
+*.iml
+.DS_Store

@@ -37,6 +37,5 @@ build/
 .DS_Store
 
 ### Local only — JARs and datasets should not be committed ###
-tools/
 data/
 CLAUDE.local.md
