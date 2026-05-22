@@ -50,6 +50,30 @@ public class Graph {
     }
 
     /**
+     * Functional interface for consuming edges of a node.
+     */
+    @FunctionalInterface
+    public interface EdgeConsumer {
+        void accept(int relationId, int[] targetIds);
+    }
+
+    /**
+     * Iterates over all edges of a node in the specified direction.
+     * @param nodeId The ID of the node.
+     * @param forward True for forward edges, false for backward edges.
+     * @param consumer The consumer to handle the relation ID and target node IDs.
+     */
+    public void forEachEdge(int nodeId, boolean forward, EdgeConsumer consumer) {
+        NodeData[] edges = forward ? forwardEdges : backwardEdges;
+        if (nodeId < 0 || edges == null || nodeId >= edges.length) return;
+        NodeData data = edges[nodeId];
+        if (data == null) return;
+        for (int i = 0; i < data.relations.length; i++) {
+            consumer.accept(data.relations[i], data.targets[i]);
+        }
+    }
+
+    /**
      * Initializes a new Graph instance in the building phase.
      */
     public Graph() {

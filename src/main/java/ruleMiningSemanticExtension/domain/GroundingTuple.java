@@ -1,3 +1,6 @@
 package ruleMiningSemanticExtension.domain;
 
-//public record GroundingTuple(List<KGEdge> edgeList, Map<String, String> bindings){}
+import ruleMiningSemanticExtension.rules.Rule;
+import java.util.Map;
+
+public record GroundingTuple(Rule rule, Map<String, String> bindings) {}

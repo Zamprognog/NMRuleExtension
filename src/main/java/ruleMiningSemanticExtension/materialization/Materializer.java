@@ -3,7 +3,7 @@ package ruleMiningSemanticExtension.materialization;
 import ruleMiningSemanticExtension.groundingEngine.GroundingEngine;
 import ruleMiningSemanticExtension.groundingEngine.RuleRegistry;
 import ruleMiningSemanticExtension.rules.Rule;
-import ruleMiningSemanticExtension.utils.DualLogger;
+import ruleMiningSemanticExtension.domain.PredictionCandidate;import ruleMiningSemanticExtension.utils.DualLogger;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
@@ -98,14 +98,14 @@ public class Materializer {
             String entity = engine.idToEntity(i);
 
             // 1. Try predicting the object (Forward)
-            Map<String, List<Float>> objPreds = new HashMap<>();
+            Map<String, PredictionCandidate> objPreds = new HashMap<>();
             rule.apply(engine, true, entity, predicate, objPreds);
             processPredictions(entity, predicate, objPreds.keySet(), true, newlyMaterialized, targetNewCount);
 
             if (newlyMaterialized.size() >= targetNewCount) break;
 
             // 2. Try predicting the subject (Backward)
-            Map<String, List<Float>> subjPreds = new HashMap<>();
+            Map<String, PredictionCandidate> subjPreds = new HashMap<>();
             rule.apply(engine, false, entity, predicate, subjPreds);
             processPredictions(entity, predicate, subjPreds.keySet(), false, newlyMaterialized, targetNewCount);
         }

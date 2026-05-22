@@ -1,9 +1,11 @@
 package ruleMiningSemanticExtension.groundingEngine;
 
+import ruleMiningSemanticExtension.domain.GroundingResult;
+import ruleMiningSemanticExtension.domain.Triple;
 import ruleMiningSemanticExtension.graphTools.GraphManager;
 import ruleMiningSemanticExtension.rules.Direction;
-import ruleMiningSemanticExtension.rules.RulePatternStep;
 import ruleMiningSemanticExtension.rules.RulePathStep;
+import ruleMiningSemanticExtension.rules.RulePatternStep;
 import ruleMiningSemanticExtension.graphTools.GraphDictionary;
 import ruleMiningSemanticExtension.graphTools.Graph;
 
@@ -23,6 +25,7 @@ public class GroundingEngine {
     /** Dictionary mapping relation IDs to their string representations. */
     protected final GraphDictionary relationDict;
     protected final int maxBranchCount;
+    protected int maxDegree = 10; // Default max degree for neighborhood expansion
 
     /**
      * Constructs a new {@code GroundingEngine} with the required graph and dictionaries.
@@ -36,6 +39,10 @@ public class GroundingEngine {
         this.maxBranchCount = 10000;
     }
 
+    public void setMaxDegree(int maxDegree) {
+        this.maxDegree = maxDegree;
+    }
+
     // AnyBURL rules section.
 
     /**
@@ -44,17 +51,18 @@ public class GroundingEngine {
      * @param startNodeStr the string representation of the starting node
      * @param stringSteps the list of rule steps to be followed from the start node
      * @param headRelation the name of the relation being predicted
+     * @param startVarName the name of the variable corresponding to the start node
      * @param headVariable the name of the variable in the head for which the grounding is being computed
      * @param predictObject {@code true} if predicting the object, {@code false} if predicting the subject
      * @return a list of maps, where each map represents a set of variable bindings that satisfy the rule
      */
-    public List<Map<String, String>> findPathGroundings(String startNodeStr, List<RulePathStep> stringSteps, String headRelation, String headVariable, Boolean predictObject) {
+    public List<GroundingResult> findPathGroundings(String startNodeStr, List<RulePathStep> stringSteps, String headRelation, String startVarName, String headVariable, Boolean predictObject) {
         // PRUNE EARLY: Check if the query itself is valid before searching
         if (!isQueryValid(startNodeStr, headRelation, predictObject)) {
             return new ArrayList<>();
         }
 
-        List<Map<String, String>> ruleGroundings = new ArrayList<>();
+        List<GroundingResult> ruleGroundings = new ArrayList<>();
 
         int startNodeId = entityDict.lookup(startNodeStr);
         if (startNodeId == -1) {
@@ -89,7 +97,7 @@ public class GroundingEngine {
         int[] branchCounter = {this.maxBranchCount};
         // --- Execute the recursive search ---
         doPathSearch(startNodeId, startNodeId, stepRelations, stepDirections, stepLiteralTargets, stepVarNames,
-                0, currentBindings, ruleGroundings, headRelationId, headVariable, predictObject, branchCounter);
+                0, currentBindings, ruleGroundings, headRelationId, startVarName, headVariable, predictObject, branchCounter);
 
         return ruleGroundings;
     }
@@ -100,12 +108,14 @@ public class GroundingEngine {
      *
      * @param stringSteps the list of rule steps
      * @param headRelation the name of the relation being predicted
+     * @param headVariable the name of the variable being predicted
      * @param predictObject {@code true} if predicting the object, {@code false} if predicting the subject
      * @param knownEntity the known entity in the query triple, needed in subclasses for semantic checks
      * @return a list of node strings that satisfy the rule
      */
-    public List<String> findSatisfyingStartNodes(List<RulePathStep> stringSteps, String headRelation, String headVariable, Boolean predictObject, String knownEntity) {
-        List<String> validStartNodes = new ArrayList<>();
+    public List<GroundingResult> findSatisfyingStartNodes(List<RulePathStep> stringSteps, String headRelation, String headVariable, Boolean predictObject, String knownEntity) {
+        List<GroundingResult> allGroundings = new ArrayList<>();
+        Set<Integer> uniqueStartNodes = new HashSet<>();
 
 
         // PRUNE ENTIRE LOOP EARLY: No need to evaluate all nodes if the query node violates constraints
@@ -134,7 +144,7 @@ public class GroundingEngine {
         // If the rule uses a relation that isn't in our dictionary, no node will satisfy it
         for (int relId : stepRelations) {
             if (relId == -1) {
-                return validStartNodes;
+                return allGroundings;
             }
         }
 
@@ -143,7 +153,6 @@ public class GroundingEngine {
         // 2. Optimization: reuse objects to avoid heavy O(N) allocations inside the hot loop
         int[] currentBindings = new int[numSteps];
         Arrays.fill(currentBindings, -1);
-        List<Map<String, String>> dummyResults = new ArrayList<>();
 
         int[] branchCounter = {this.maxBranchCount};
         // 3. Loop over every node ID in the graph
@@ -162,73 +171,61 @@ public class GroundingEngine {
                 continue; // Node doesn't have the required edge; skip
             }
 
-            dummyResults.clear(); // Safe to reuse; bindings are reset to -1 via engine backtracking
+            int initialResultsSize = allGroundings.size();
 
             doPathSearch(startNodeId, startNodeId, stepRelations, stepDirections, stepLiteralTargets, stepVarNames,
-                    0, currentBindings, dummyResults, headRelationId, null, predictObject, branchCounter);
+                    0, currentBindings, allGroundings, headRelationId, headVariable, headVariable, predictObject, branchCounter);
 
             // If the search yielded results, this node satisfies the rule!
-            if (!dummyResults.isEmpty()) {
-                validStartNodes.add(entityDict.getString(startNodeId));
-            }
-            if (!checkStartingNodeSuccess(graph, validStartNodes, this.entityDict.lookup(knownEntity), headRelationId, startNodeId, predictObject)) {
-                //semantic check failed
-                return new ArrayList<>();
+            if (allGroundings.size() > initialResultsSize) {
+                uniqueStartNodes.add(startNodeId);
+                if (!checkStartingNodeSuccess(graph, uniqueStartNodes.size(), this.entityDict.lookup(knownEntity), headRelationId, startNodeId, predictObject)) {
+                    //semantic check failed for THIS startNodeId, remove its groundings
+                    uniqueStartNodes.remove(startNodeId);
+                    while (allGroundings.size() > initialResultsSize) {
+                        allGroundings.remove(allGroundings.size() - 1);
+                    }
+                }
             }
         }
 
-        return validStartNodes;
+        return allGroundings;
     }
-
-    /**
-     * Checks if a completed path through the graph constitutes a successful rule grounding.
-     * This method can be overridden in subclasses to apply additional constraints.
-     *
-     * @param graph the graph instance
-     * @param validStartNodes the current list of starting nodes (rules groundings)
-     * @param knownEntityId the ID of the known entity in the head of the unary rule
-     * @param headRelationId the ID of the relation in the head of the rule
-     * @param startNodeId the ID of the starting node (and rule variable binding) that was just grounded
-     * @param predictObject {@code true} if predicting the object, {@code false} if predicting the subject. Not used in this Class
-     * @return {@code true} to continue searching for more groundings, {@code false} to stop
-     */
-    protected boolean checkStartingNodeSuccess(Graph graph, List<String> validStartNodes, int knownEntityId, int headRelationId, int startNodeId, Boolean predictObject) {
-        return true;
-    }
-
 
     /**
      * Performs a depth-first search (DFS) through the graph to find paths that satisfy the rule steps.
      * Each step in the rule corresponds to a triple (subject, relation, object) in the graph.
      * This method handles both literal targets and variables, ensuring that variables in a path
      * are bound uniquely to prevent cycles or redundant groundings within a single rule application.
-     *
-     * @param startNodeId the ID of the original starting node
-     * @param currentNode the ID of the node currently being processed in the search
-     * @param relations the pre-compiled relation IDs for each rule step
-     * @param dirs the directions (forward/backward) for each rule step
-     * @param literalTargets the ID of the literal target for each step, or -1 if the target is a variable
-     * @param varNames the variable names to be bound at each step
-     * @param stepIndex the current step index in the rule (depth of the search)
-     * @param bindings the current state of variable bindings
-     * @param ruleGroundings the list where successful groundings are stored
-     * @param headRelationId the ID of the relation being predicted
-     * @param predictObject {@code true} if predicting the object, {@code false} if predicting the subject
-     * @return {@code true} to continue the search across other branches, {@code false} to abort
      */
     private boolean doPathSearch(int startNodeId, int currentNode, int[] relations, Direction[] dirs, int[] literalTargets,
                                  String[] varNames, int stepIndex, int[] bindings,
-                                 List<Map<String, String>> ruleGroundings, int headRelationId, String headVariable, Boolean predictObject, int[] branchCounter) {
+                                 List<GroundingResult> ruleGroundings, int headRelationId, String startVarName, String headVariable, Boolean predictObject, int[] branchCounter) {
 
         // --- Base case: reached the end of the rule steps ---
         if (stepIndex == relations.length) {
-            return checkSuccess(graph,startNodeId, headVariable, bindings, varNames, ruleGroundings, headRelationId, predictObject);
+            // Reconstruct triples for this path
+            List<Triple> triples = new ArrayList<>();
+            int prevNode = startNodeId;
+            for (int i = 0; i < relations.length; i++) {
+                int nextNode = (literalTargets[i] != -1) ? literalTargets[i] : bindings[i];
+                String s = entityDict.getString(prevNode);
+                String p = relationDict.getString(relations[i]);
+                String o = entityDict.getString(nextNode);
+                if (dirs[i] == Direction.FORWARD) {
+                    triples.add(new Triple(s, p, o));
+                } else {
+                    triples.add(new Triple(o, p, s));
+                }
+                prevNode = nextNode;
+            }
+            return checkSuccess(graph, startNodeId, startVarName, headVariable, bindings, varNames, ruleGroundings, triples, headRelationId, predictObject);
         }
 
         // --- Forward case: look for groundings of the next step
         int relId = relations[stepIndex];
         if (relId == -1) {
-            return true; // Relation isn't found in the graph; dead end this branch but continue searching for others
+            return true;
         }
 
         int[] targets = (dirs[stepIndex] == Direction.FORWARD) ?
@@ -236,34 +233,29 @@ public class GroundingEngine {
                 graph.getBackwardTargets(currentNode, relId);
 
         if (targets == null) {
-            return true; // No targets found; dead end this branch but continue searching for others
+            return true;
         }
 
         for (int nextNode : targets) {
-            // Iterate over candidate target nodes
             if (branchCounter[0] <= 0) {
-                return true; //branch limit reached
+                return true;
             }
             branchCounter[0]--;
 
             if (literalTargets[stepIndex] != -1) {
-                // Analyzing an atom with a literal: check if the target matches the required literal
                 if (nextNode != literalTargets[stepIndex]) {
                     continue;
                 }
             } else {
-                // Analyzing an atom with variables: ensure the variable value is unique in the current path
                 if (containsValue(bindings, nextNode, stepIndex)) {
                     continue;
                 }
                 bindings[stepIndex] = nextNode;
             }
 
-            // RECURSE: Move to the next step
             boolean continueSearch = doPathSearch(startNodeId, nextNode, relations, dirs, literalTargets, varNames,
-                    stepIndex + 1, bindings, ruleGroundings, headRelationId, headVariable, predictObject, branchCounter);
+                    stepIndex + 1, bindings, ruleGroundings, headRelationId, startVarName, headVariable, predictObject, branchCounter);
 
-            // BACKTRACK: Reset the binding for this step if it was a variable
             if (literalTargets[stepIndex] == -1) {
                 bindings[stepIndex] = -1;
             }
@@ -273,29 +265,20 @@ public class GroundingEngine {
             }
         }
 
-        return true; // Finished this branch normally
+        return true;
     }
 
 
     /**
      * Finds groundings using Subgraph Isomorphism for AMIE-style rules.
      * This method is used when the rule is defined as a general graph pattern rather than a simple path.
-     *
-     * @param startNodeStr The entity string we are starting from (e.g., "e1")
-     * @param steps The ordered list of rule pattern steps
-     * @param headRelation The relation in the head of the rule
-     * @param startVarName The variable name of the start node (e.g., "A")
-     * @param headVariable The variable name we want to predict (e.g., "B")
-     * @param predictObject  {@code true} if predicting the object, {@code false} if predicting the subject
-     *
-     * @return a list of maps, where each map represents a set of variable bindings that satisfy the rule
      */
-    public List<Map<String, String>> findPatternGroundings(String startNodeStr, List<RulePatternStep> steps, String headRelation, String startVarName, String headVariable, Boolean predictObject) {
+    public List<GroundingResult> findPatternGroundings(String startNodeStr, List<RulePatternStep> steps, String headRelation, String startVarName, String headVariable, Boolean predictObject) {
         if (!isQueryValid(startNodeStr, headRelation, predictObject)) {
             return new ArrayList<>();
         }
 
-        List<Map<String, String>> results = new ArrayList<>();
+        List<GroundingResult> results = new ArrayList<>();
         int startNodeId = entityDict.lookup(startNodeStr);
         if (startNodeId == -1) {
             return results;
@@ -305,7 +288,6 @@ public class GroundingEngine {
         Map<String, Integer> varToIndex = new HashMap<>();
         List<String> indexToVar = new ArrayList<>();
 
-        // Ensure the start and target variables exist in our mapping
         varToIndex.put(startVarName, 0);
         indexToVar.add(startVarName);
 
@@ -331,6 +313,7 @@ public class GroundingEngine {
         Direction[] dirs = new Direction[numSteps];
         int[] sourceVarIndices = new int[numSteps];
         int[] targetVarIndices = new int[numSteps];
+        int[] literalTargets = new int[numSteps];
         int targetRelationId = relationDict.lookup(headRelation);
 
         for (int i = 0; i < numSteps; i++) {
@@ -339,6 +322,7 @@ public class GroundingEngine {
             dirs[i] = step.direction;
             sourceVarIndices[i] = varToIndex.get(step.sourceVarName);
             targetVarIndices[i] = step.targetVarName != null ? varToIndex.get(step.targetVarName) : -1;
+            literalTargets[i] = step.targetLiteral != null ? entityDict.lookup(step.targetLiteral) : -1;
         }
 
         // 3. Set up the bindings array and bind the start node
@@ -346,103 +330,90 @@ public class GroundingEngine {
         Arrays.fill(bindings, -1);
         bindings[varToIndex.get(startVarName)] = startNodeId;
 
-        // Convert our index mapping to an array to pass into checkSuccess
         String[] varNames = indexToVar.toArray(new String[0]);
         int[] branchCounter = {this.maxBranchCount};
         // 4. Execute recursive search
-        doPatternSearch(startNodeId, 0, relations, dirs, sourceVarIndices, targetVarIndices, varNames, bindings, results, targetRelationId, headVariable, predictObject, branchCounter);
+        doPatternSearch(startNodeId, 0, relations, dirs, sourceVarIndices, targetVarIndices, literalTargets, varNames, bindings, results, targetRelationId, startVarName, headVariable, predictObject, branchCounter);
 
         return results;
     }
 
-    // AMIE Rules section.
-
     /**
      * Performs a depth-first search (DFS) to find all satisfying groundings for an AMIE-style graph pattern.
-     * This method recursively explores the graph, binding variables defined in the {@link RulePatternStep} list.
-     *
-     * @param stepIndex The current step index in the pattern (depth of the search).
-     * @param relations The pre-compiled list of relation IDs in steps.
-     * @param dirs The pre-compiled list of directions (forward/backward) in steps.
-     * @param sourceVarIndices The list of source variable indices in steps.
-     * @param targetVarIndices The list of target variable indices in steps.
-     * @param bindings A map of variable names to their current entity ID bindings.
-     * @param results A list to store the entity IDs that satisfy the target variable.
      */
     private boolean doPatternSearch(int startNodeId, int stepIndex, int[] relations, Direction[] dirs,
-                                    int[] sourceVarIndices, int[] targetVarIndices, String[] varNames, int[] bindings,
-                                    List<Map<String, String>> results, int targetRelationId, String headVariable,
+                                    int[] sourceVarIndices, int[] targetVarIndices, int[] literalTargets, String[] varNames, int[] bindings,
+                                    List<GroundingResult> results, int targetRelationId, String startVarName, String headVariable,
                                     Boolean predictObject, int[] branchCounter) {
 
-        // Base case: We successfully mapped all steps
         if (stepIndex == relations.length) {
-            return checkSuccess(graph,startNodeId, headVariable, bindings, varNames, results, targetRelationId, predictObject);
+            // Reconstruct triples for this pattern
+            List<Triple> triples = new ArrayList<>();
+            for (int i = 0; i < relations.length; i++) {
+                int sourceNodeId = bindings[sourceVarIndices[i]];
+                int targetNodeId = (targetVarIndices[i] != -1) ? bindings[targetVarIndices[i]] : literalTargets[i];
+                String s = entityDict.getString(sourceNodeId);
+                String p = relationDict.getString(relations[i]);
+                String o = entityDict.getString(targetNodeId);
+                if (dirs[i] == Direction.FORWARD) {
+                    triples.add(new Triple(s, p, o));
+                } else {
+                    triples.add(new Triple(o, p, s));
+                }
+            }
+            return checkSuccess(graph, startNodeId, startVarName, headVariable, bindings, varNames, results, triples, targetRelationId, predictObject);
         }
 
         int relId = relations[stepIndex];
         if (relId == -1) {
-            return true; // Relation isn't found in the graph, skip this branch
+            return true;
         }
 
-        // The source node for this step is guaranteed to be bound based on buildOrderedPattern logic
         int sourceNodeId = bindings[sourceVarIndices[stepIndex]];
-
-        // Fetch targets based on direction
         int[] targets = (dirs[stepIndex] == Direction.FORWARD) ?
                 graph.getForwardTargets(sourceNodeId, relId) :
                 graph.getBackwardTargets(sourceNodeId, relId);
 
         if (targets == null) {
-            return true; // No edges found, skip
+            return true;
         }
 
         int targetVarIdx = targetVarIndices[stepIndex];
+        int litTargetId = literalTargets[stepIndex];
 
         for (int nextNode : targets) {
             if (branchCounter[0] <= 0) {
-                return true; //branch limit reached
+                return true;
             }
             branchCounter[0]--;
 
             if (targetVarIdx != -1) {
                 if (bindings[targetVarIdx] != -1) {
-                    // CRITICAL LOGIC: The target variable is ALREADY bound.
-                    // This means we are closing a loop in the graph pattern. The node MUST match the bound entity.
                     if (bindings[targetVarIdx] != nextNode) {
                         continue;
                     }
-
-                    boolean continueSearch = doPatternSearch(startNodeId, stepIndex + 1, relations, dirs, sourceVarIndices, targetVarIndices, varNames, bindings, results, targetRelationId, headVariable,predictObject, branchCounter);
+                    boolean continueSearch = doPatternSearch(startNodeId, stepIndex + 1, relations, dirs, sourceVarIndices, targetVarIndices, literalTargets, varNames, bindings, results, targetRelationId, startVarName, headVariable,predictObject, branchCounter);
                     if (!continueSearch) return false;
-
                 } else {
-                    // Variable is not bound yet. Enforce injectivity (prevent mapping different variables to the same entity).
                     if (containsValueForPattern(bindings, nextNode)) {
                         continue;
                     }
-
-                    // Bind the new variable and recurse
                     bindings[targetVarIdx] = nextNode;
-                    boolean continueSearch = doPatternSearch(startNodeId, stepIndex + 1, relations, dirs, sourceVarIndices, targetVarIndices, varNames, bindings, results, targetRelationId, headVariable,predictObject, branchCounter);
-
-                    // Backtrack
+                    boolean continueSearch = doPatternSearch(startNodeId, stepIndex + 1, relations, dirs, sourceVarIndices, targetVarIndices, literalTargets, varNames, bindings, results, targetRelationId, startVarName, headVariable,predictObject, branchCounter);
                     bindings[targetVarIdx] = -1;
-
                     if (!continueSearch) return false;
                 }
             } else {
-                // Target is not a variable (e.g., a literal). Skip variable binding and proceed.
-                boolean continueSearch = doPatternSearch(startNodeId, stepIndex + 1, relations, dirs, sourceVarIndices, targetVarIndices, varNames, bindings, results, targetRelationId, headVariable,predictObject, branchCounter);
+                if (litTargetId != -1 && nextNode != litTargetId) {
+                    continue;
+                }
+                boolean continueSearch = doPatternSearch(startNodeId, stepIndex + 1, relations, dirs, sourceVarIndices, targetVarIndices, literalTargets, varNames, bindings, results, targetRelationId, startVarName, headVariable,predictObject, branchCounter);
                 if (!continueSearch) return false;
             }
         }
         return true;
     }
 
-    /**
-     * Checks if a given value is already present anywhere in the bindings array.
-     * Unlike the standard path method, pattern arrays are populated out of order.
-     */
     protected boolean containsValueForPattern(int[] bindings, int value) {
         for (int binding : bindings) {
             if (binding == value) {
@@ -452,60 +423,97 @@ public class GroundingEngine {
         return false;
     }
 
-    // Useful methods section.
-
-    /**
-     * Hook for subclasses to perform early validation on the query node and relation.
-     * Overridden by SemanticGroundingEngine.
-     */
     protected boolean isQueryValid(String queryNodeStr, String targetRelationStr, Boolean predictObject) {
-        return true; // Standard engine has no constraints, always proceed.
+        return true;
     }
 
-    /**
-     * Checks if a completed path through the graph constitutes a successful rule grounding.
-     * This method can be overridden in subclasses to apply additional constraints.
-     *
-     * @param graph the graph instance
-     * @param startNodeId the ID of the starting node
-     * @param headVariable the name of the head variable being grounded
-     * @param bindings the array of node IDs bound to each step in the rule
-     * @param varNames the array of variable names corresponding to each step
-     * @param ruleGroundings the list to which the successful binding should be added
-     * @param targetRelationId the ID of the relation being predicted
-     * @param predictObject {@code true} if predicting the object, {@code false} if predicting the subject. Not used in this Class
-     * @return {@code true} to continue searching for more groundings, {@code false} to stop
-     */
-    protected boolean checkSuccess(Graph graph, int startNodeId,String headVariable, int[] bindings, String[] varNames, List<Map<String, String>> ruleGroundings, int targetRelationId, Boolean predictObject) {
+    protected boolean checkStartingNodeSuccess(Graph graph, int uniqueEntitiesCount, int knownEntityId, int headRelationId, int startNodeId, Boolean predictObject) {
+        return true;
+    }
+
+    protected boolean checkSuccess(Graph graph, int startNodeId, String startVarName, String headVariable, int[] bindings, String[] varNames, List<GroundingResult> ruleGroundings, List<Triple> triples, int targetRelationId, Boolean predictObject) {
 
         Map<String, String> successfulBinding = new HashMap<>();
+
+        if (startVarName != null && startVarName.length() == 1) {
+            successfulBinding.put(startVarName, entityDict.getString(startNodeId));
+        }
+
+        boolean headVarInBindings = false;
+        int headVarIdx = -1;
+        for (int i = 0; i < varNames.length; i++) {
+            if (nameEquals(varNames[i], headVariable)) {
+                headVarInBindings = true;
+                headVarIdx = i;
+                break;
+            }
+        }
+        if (!headVarInBindings && headVariable != null && headVariable.length() == 1 && this.entityDict.lookup(headVariable) == -1) {
+             successfulBinding.put(headVariable, entityDict.getString(startNodeId));
+        }
+
         for (int i = 0; i < bindings.length; i++) {
             if (varNames[i] != null && bindings[i] != -1) {
                 successfulBinding.put(varNames[i], entityDict.getString(bindings[i]));
             }
         }
-        ruleGroundings.add(successfulBinding);
 
-        return true; // Base class has no additional constraints, so always continue searching
+        // --- Extension Logic ---
+        int predictedNodeId = (headVarIdx != -1) ? bindings[headVarIdx] : startNodeId;
+
+        // 1. Add the predicted triple
+        String s = entityDict.getString(predictObject ? startNodeId : predictedNodeId);
+        String p = relationDict.getString(targetRelationId);
+        String o = entityDict.getString(predictObject ? predictedNodeId : startNodeId);
+        triples.add(new Triple(s, p, o));
+
+        // Compute 1-hop neighborhood stats using integer IDs — no string allocation
+        Set<Integer> nodeIds = new HashSet<>();
+        int neighborhoodEdgeCount = 0;
+        Set<Integer> entities = new HashSet<>();
+        entities.add(startNodeId);
+        for (int b : bindings) if (b != -1) entities.add(b);
+        for (int entityId : entities) {
+            neighborhoodEdgeCount += addNeighborhood(entityId, nodeIds);
+        }
+
+        ruleGroundings.add(new GroundingResult(successfulBinding, triples, neighborhoodEdgeCount, nodeIds));
+
+        return true;
     }
-    /**
-     * Returns the total number of entities in the graph dictionary.
-     *
-     * @return the size of the entity dictionary
-     */
+
+    private boolean nameEquals(String varName, String target) {
+        return varName != null && varName.equals(target);
+    }
+
+    /** Counts neighborhood edges and collects unique neighbor entity IDs without string allocation. */
+    private int addNeighborhood(int entityId, Set<Integer> nodeIds) {
+        nodeIds.add(entityId);
+        int[] count = {0};
+
+        graph.forEachEdge(entityId, true, (relId, targetIds) -> {
+            for (int tId : targetIds) {
+                if (count[0] >= maxDegree) return;
+                nodeIds.add(tId);
+                count[0]++;
+            }
+        });
+
+        graph.forEachEdge(entityId, false, (relId, sourceIds) -> {
+            for (int sId : sourceIds) {
+                if (count[0] >= maxDegree) return;
+                nodeIds.add(sId);
+                count[0]++;
+            }
+        });
+
+        return count[0];
+    }
+    
     public int entityCount() {
         return entityDict.size();
     }
 
-    /**
-     * Checks if a given value is already present in the bindings up to the current index.
-     * Used to enforce that different variables in a rule path map to different entities.
-     *
-     * @param bindings the array of current bindings
-     * @param value the value to check for
-     * @param currentIndex the current step index
-     * @return {@code true} if the value is already bound, {@code false} otherwise
-     */
     protected boolean containsValue(int[] bindings, int value, int currentIndex) {
         for (int i = 0; i < currentIndex; i++) {
             if (bindings[i] == value) {
@@ -515,22 +523,10 @@ public class GroundingEngine {
         return false;
     }
 
-    /**
-     * Converts an entity string to its corresponding ID.
-     *
-     * @param entity the string representation of an entity
-     * @return the ID of the entity, or -1 if not found
-     */
     public int entityToId(String entity) {
         return entityDict.lookup(entity);
     }
 
-    /**
-     * Converts an entity ID back to its string representation.
-     *
-     * @param id the ID of the entity
-     * @return the string representation of the entity
-     */
     public String idToEntity(int id) {
         return entityDict.getString(id);
     }

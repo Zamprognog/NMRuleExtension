@@ -4,6 +4,7 @@ import ruleMiningSemanticExtension.groundingEngine.GroundingEngine;
 import ruleMiningSemanticExtension.groundingEngine.RankingTree;
 import ruleMiningSemanticExtension.groundingEngine.RuleRegistry;
 import ruleMiningSemanticExtension.rules.Rule;
+import ruleMiningSemanticExtension.domain.PredictionCandidate;
 import ruleMiningSemanticExtension.graphTools.SemanticGraphManager;
 
 import ruleMiningSemanticExtension.utils.DualLogger;
@@ -89,7 +90,7 @@ public class Evaluator {
         return (double) ranksInK / totalRanks;
     }
 
-    private RankResult calculateMetrics(Map<String, List<Float>> predictions, String sourceEntity,
+    private RankResult calculateMetrics(Map<String, PredictionCandidate> predictions, String sourceEntity,
                                         String predicate, String correctEntity, boolean predictingObject,
                                         int maxRanks, SemanticGraphManager semanticManager, boolean recordCandidates) {
 
@@ -234,7 +235,7 @@ public class Evaluator {
                 candidateRules.sort((r1, r2) -> Float.compare(r2.getConfidence(), r1.getConfidence()));
 
                 // --- Object prediction ---
-                Map<String, List<Float>> objectPredictions = new HashMap<>();
+                Map<String, PredictionCandidate> objectPredictions = new HashMap<>();
                 String subPredKey = subject + "\t" + predicate;
                 int objectStopThreshold = K_RANKS + knownObjectCounts.getOrDefault(subPredKey, 0);
 
@@ -271,7 +272,7 @@ public class Evaluator {
                 totalPredictions.incrementAndGet();
 
                 // --- Subject prediction ---
-                Map<String, List<Float>> subjectPredictions = new HashMap<>();
+                Map<String, PredictionCandidate> subjectPredictions = new HashMap<>();
                 String predObjKey = predicate + "\t" + object;
                 int subjectStopThreshold = K_RANKS + knownSubjectCounts.getOrDefault(predObjKey, 0);
 

@@ -1,5 +1,6 @@
 package ruleMiningSemanticExtension.rules;
 
+import ruleMiningSemanticExtension.domain.PredictionCandidate;
 import ruleMiningSemanticExtension.groundingEngine.GroundingEngine;
 
 import java.util.*;
@@ -31,24 +32,21 @@ public class BinaryRule extends Rule{
     }
 
     @Override
-    public void apply(GroundingEngine engine, Boolean predictObject, String startNodeString, String headRelation, Map<String, List<Float>> predictions) {
+    public void apply(GroundingEngine engine, Boolean predictObject, String startNodeString, String headRelation, Map<String, PredictionCandidate> predictions) {
 
-        List<Map<String, String>> results = predictObject ?
-                engine.findPathGroundings(startNodeString, getForwardSteps(), headRelation, head.getObject(), true) :
-                engine.findPathGroundings(startNodeString, getBackwardSteps(), headRelation, head.getSubject(), false);
+        String startVarName = predictObject ? head.getSubject() : head.getObject();
+        String targetVarName = predictObject ? head.getObject() : head.getSubject();
 
-        // 1. Deduplicate predictions made by THIS specific rule
-        Set<String> uniquePredictions = new HashSet<>();
-        for (Map<String, String> bindings : results) {
-            String predictedNode = predictObject ? bindings.get(head.getObject()) : bindings.get(head.getSubject());
+        List<ruleMiningSemanticExtension.domain.GroundingResult> results = predictObject ?
+                engine.findPathGroundings(startNodeString, getForwardSteps(), headRelation, startVarName, targetVarName, true) :
+                engine.findPathGroundings(startNodeString, getBackwardSteps(), headRelation, startVarName, targetVarName, false);
+
+        for (ruleMiningSemanticExtension.domain.GroundingResult result : results) {
+            String predictedNode = predictObject ? result.bindings().get(head.getObject()) : result.bindings().get(head.getSubject());
             if (predictedNode != null) {
-                uniquePredictions.add(predictedNode);
+                predictions.computeIfAbsent(predictedNode, ent -> new PredictionCandidate(ent, headRelation))
+                        .addGrounding(this, result.triples(), result.neighborhoodEdgeCount(), result.neighborhoodNodeIds());
             }
-        }
-
-        // 2. Add this rule's confidence exactly ONCE per candidate
-        for (String predictedNode : uniquePredictions) {
-            predictions.computeIfAbsent(predictedNode, k -> new ArrayList<>()).add(getConfidence());
         }
     }
 

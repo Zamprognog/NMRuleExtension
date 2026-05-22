@@ -1,5 +1,7 @@
 package ruleMiningSemanticExtension.rules;
 
+import ruleMiningSemanticExtension.domain.GroundingResult;
+import ruleMiningSemanticExtension.domain.PredictionCandidate;
 import ruleMiningSemanticExtension.groundingEngine.GroundingEngine;
 
 import java.util.*;
@@ -63,7 +65,7 @@ public class AMIERule extends Rule {
     }
 
     @Override
-    public void apply(GroundingEngine engine, Boolean predictObject, String startNodeString, String targetRelation, Map<String, List<Float>> predictions) {
+    public void apply(GroundingEngine engine, Boolean predictObject, String startNodeString, String targetRelation, Map<String, PredictionCandidate> predictions) {
         // Determine what variable we are starting from and what we want to predict
         String startVar = predictObject ? head.getSubject() : head.getObject();
         String targetVar = predictObject ? head.getObject() : head.getSubject();
@@ -71,26 +73,14 @@ public class AMIERule extends Rule {
         List<RulePatternStep> orderedSteps = buildOrderedPattern(startVar);
 
         // Call the new pattern matching engine
-        List<Map<String, String>> results = engine.findPatternGroundings(startNodeString, orderedSteps, head.getPredicate(), startVar, targetVar, predictObject);
+        List<GroundingResult> results = engine.findPatternGroundings(startNodeString, orderedSteps, head.getPredicate(), startVar, targetVar, predictObject);
 
-//        for (Map<String, String> grounding : results) {
-//            String predictedEntity = grounding.get(targetVar);
-//            if (predictedEntity != null) {
-//                predictions.computeIfAbsent(predictedEntity, k -> new ArrayList<>()).add(getConfidence());
-//            }
-//        }
-        // 1. Deduplicate predictions made by THIS specific AMIE rule
-        Set<String> uniquePredictions = new HashSet<>();
-        for (Map<String, String> grounding : results) {
-            String predictedEntity = grounding.get(targetVar);
+        for (GroundingResult result : results) {
+            String predictedEntity = result.bindings().get(targetVar);
             if (predictedEntity != null) {
-                uniquePredictions.add(predictedEntity);
+                predictions.computeIfAbsent(predictedEntity, ent -> new PredictionCandidate(ent, targetRelation))
+                        .addGrounding(this, result.triples(), result.neighborhoodEdgeCount(), result.neighborhoodNodeIds());
             }
-        }
-
-        // 2. Add this rule's confidence exactly ONCE per candidate
-        for (String predictedEntity : uniquePredictions) {
-            predictions.computeIfAbsent(predictedEntity, k -> new ArrayList<>()).add(getConfidence());
         }
     }
 }

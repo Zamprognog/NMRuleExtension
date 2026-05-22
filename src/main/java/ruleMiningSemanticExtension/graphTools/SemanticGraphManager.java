@@ -182,6 +182,46 @@ public class SemanticGraphManager extends GraphManager {
         return !Collections.disjoint(entTypes, constraint.disjointWithRange);
     }
 
+    /**
+     * Checks if the entity's types match the domain classes of the predicate.
+     * Returns true if there's at least one common type, or if no domain is defined.
+     * Used for subject-prediction queries (?, p, o).
+     */
+    public boolean matchesDomain(String entityStr, String predicateStr) {
+        int entId = getEntityDict().lookup(entityStr);
+        int predId = getRelationDict().lookup(predicateStr);
+
+        if (entId == -1 || predId == -1) return false;
+
+        IntPropertyConstraint constraint = propertyIdConstraints.get(predId);
+        if (constraint == null || constraint.domainClasses.isEmpty()) return true;
+
+        Set<Integer> entTypes = entityIdTypes.get(entId);
+        if (entTypes == null || entTypes.isEmpty()) return false;
+
+        return !Collections.disjoint(entTypes, constraint.domainClasses);
+    }
+
+    /**
+     * Checks if the entity's types match the range classes of the predicate.
+     * Returns true if there's at least one common type, or if no range is defined.
+     * Used for object-prediction queries (s, p, ?).
+     */
+    public boolean matchesRange(String entityStr, String predicateStr) {
+        int entId = getEntityDict().lookup(entityStr);
+        int predId = getRelationDict().lookup(predicateStr);
+
+        if (entId == -1 || predId == -1) return false;
+
+        IntPropertyConstraint constraint = propertyIdConstraints.get(predId);
+        if (constraint == null || constraint.rangeClasses.isEmpty()) return true;
+
+        Set<Integer> entTypes = entityIdTypes.get(entId);
+        if (entTypes == null || entTypes.isEmpty()) return false;
+
+        return !Collections.disjoint(entTypes, constraint.rangeClasses);
+    }
+
     public void precomputeDisjointConstraints() {
         for (IntPropertyConstraint constraint : propertyIdConstraints.values()) {
 

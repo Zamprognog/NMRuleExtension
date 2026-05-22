@@ -1,5 +1,7 @@
 package ruleMiningSemanticExtension.rules;
 
+import ruleMiningSemanticExtension.domain.GroundingResult;
+import ruleMiningSemanticExtension.domain.PredictionCandidate;
 import ruleMiningSemanticExtension.groundingEngine.GroundingEngine;
 
 import java.util.*;
@@ -45,50 +47,50 @@ public class UnaryRule extends Rule {
 
 
     
-@Override
-public void apply(GroundingEngine engine, Boolean predictObject, String startNodeString, String headRelation, Map<String, List<Float>> predictions) {
+    @Override
+    public void apply(GroundingEngine engine, Boolean predictObject, String startNodeString, String headRelation, Map<String, PredictionCandidate> predictions) {
 
-    // Determine if we are trying to predict the exact variable that forms the starting point of this unary rule's path.
-    // For example: head is p(c, X) and query is (s, p, ?) -> predictObject=true, head.isSubjectVariable()=false -> predictHeadVariable=true
-    boolean predictHeadVariable = (predictObject && !head.isSubjectVariable()) || (!predictObject && head.isSubjectVariable());
+        // Determine if we are trying to predict the exact variable that forms the starting point of this unary rule's path.
+        boolean predictHeadVariable = (predictObject && !head.isSubjectVariable()) || (!predictObject && head.isSubjectVariable());
 
-    if (predictHeadVariable) {
-        // Query asks for the rule's variable.
-        // First, verify that the known entity from the query matches the literal in the rule head.
-        if (startNodeString != null) {
-            String requiredLiteral = predictObject ? head.getSubject() : head.getObject();
-            if (!startNodeString.equals(requiredLiteral)) {
-                return; // The rule's head literal doesn't match the query's known entity; skip this rule.
+        if (predictHeadVariable) {
+            // Query asks for the rule's variable.
+            if (startNodeString != null) {
+                String requiredLiteral = predictObject ? head.getSubject() : head.getObject();
+                if (!startNodeString.equals(requiredLiteral)) {
+                    return;
+                }
             }
-        }
 
-        // Loop over all nodes in the graph to find candidate starting nodes that satisfy the rule's body path.
-        // (Assumes GroundingEngine.findSatisfyingStartNodes() is implemented as previously discussed)
+            String predictedVarName = predictObject ? head.getObject() : head.getSubject();
+            List<GroundingResult> validGroundings = engine.findSatisfyingStartNodes(getForwardSteps(), headRelation, predictedVarName, predictObject, startNodeString);
 
-        List<String> validStarts = engine.findSatisfyingStartNodes(getForwardSteps(), headRelation, null, predictObject, startNodeString);
+            for (GroundingResult result : validGroundings) {
+                String candidateEntityStr = result.bindings().get(predictedVarName);
+                if (candidateEntityStr != null) {
+                    predictions.computeIfAbsent(candidateEntityStr, ent -> new PredictionCandidate(ent, headRelation))
+                            .addGrounding(this, result.triples(), result.neighborhoodEdgeCount(), result.neighborhoodNodeIds());
+                }
+            }
 
-        for (String candidateEntityStr : validStarts) {
-            // The candidate starting node IS the predicted variable (e.g. 'X')!
-            predictions.computeIfAbsent(candidateEntityStr, k -> new ArrayList<>()).add(getConfidence());
-        }
+        } else {
+            // Query asks for the part that is a literal constant in the rule head.
+            if (startNodeString == null) {
+                return;
+            }
+            String headVariable = predictObject ? head.getObject() : head.getSubject();
+            String startVarName = predictObject ? head.getSubject() : head.getObject(); // This is a literal in the rule head for UnaryRule
 
-    } else {
-        // Query asks for the part that is a literal constant in the rule head.
-        // For example: head is p(c, X) but query is (?, p, o).
-        // This means the query's known entity ('o') maps to the variable ('X'), so we can start our path search directly from it.
-        if (startNodeString == null) {
-            return; // We need a starting point to run a direct path search.
-        }
-        String headVariable = predictObject ? head.getObject() : head.getSubject();
-        List<Map<String, String>> results = engine.findPathGroundings(startNodeString, getForwardSteps(), headRelation, headVariable, predictObject);
+            List<GroundingResult> results = engine.findPathGroundings(startNodeString, getForwardSteps(), headRelation, startVarName, headVariable, predictObject);
 
-        if (!results.isEmpty()) {
-            String predictedNode = predictObject ? head.getObject() : head.getSubject();
-            if (predictedNode != null) {
-                predictions.computeIfAbsent(predictedNode, k -> new ArrayList<>()).add(getConfidence());
+            if (!results.isEmpty()) {
+                String predictedNode = predictObject ? head.getObject() : head.getSubject();
+                for (GroundingResult result : results) {
+                    predictions.computeIfAbsent(predictedNode, ent -> new PredictionCandidate(ent, headRelation))
+                            .addGrounding(this, result.triples(), result.neighborhoodEdgeCount(), result.neighborhoodNodeIds());
+                }
             }
         }
     }
-}
 
 }
