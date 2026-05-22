@@ -42,5 +42,16 @@
             <version>RELEASE</version>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>io.jenetics</groupId>
+            <artifactId>jenetics</artifactId>
+            <version>8.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.jenetics</groupId>
+            <artifactId>jenetics.prog</artifactId>
+            <version>8.1.0</version>
+        </dependency>
     </dependencies>
 </project>
