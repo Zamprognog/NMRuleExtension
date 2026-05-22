@@ -128,8 +128,10 @@ public class Evaluator {
                 if (isConsistent) {
                     if (predictingObject) {
                         if (semanticManager.violatesRange(predictedEntity, predicate)) isConsistent = false;
+                        if (isConsistent && semanticManager.violatesInverseFunctionalityAsObject(predictedEntity, predicate, sourceEntity)) isConsistent = false;
                     } else {
                         if (semanticManager.violatesDomain(predictedEntity, predicate)) isConsistent = false;
+                        if (isConsistent && semanticManager.violatesFunctionalityAsSubject(predictedEntity, predicate, sourceEntity)) isConsistent = false;
                     }
                 }
                 if (rawRank <= 1) { result.totalAt1++; if (isConsistent) result.consistentAt1++; }

@@ -116,6 +116,15 @@ public class SemanticGroundingEngine extends GroundingEngine{
                     ruleGroundings.clear();
                     return false;
                 }
+                // Predicting (s, p, o_candidate): if o_candidate already has an incoming subject for p,
+                // predicting it would give p two subjects for the same object, violating inverse functionality.
+                if (targetRelationConstraints.isInverseFunctional) {
+                    int[] existingSubjects = graph.getBackwardTargets(predictedEntityId, targetRelationId);
+                    if (existingSubjects != null && existingSubjects.length > 0) {
+                        ruleGroundings.clear();
+                        return false;
+                    }
+                }
             } else {
                 if (targetRelationConstraints.isFunctional) {
                     int[] existingTargets = graph.getForwardTargets(predictedEntityId, targetRelationId);
@@ -163,6 +172,12 @@ public class SemanticGroundingEngine extends GroundingEngine{
             // functional and inverse functional case - in rule issue (in-graph dealt by @isQueryValid)
             if (predictObject) {
                 if (targetRelationConstraints.isFunctional && validStartNodes.size() > 1) return false;
+                // Predicting (s, p, o_candidate) via unary rule: if o_candidate already has an incoming
+                // subject for p, it violates inverse functionality.
+                if (targetRelationConstraints.isInverseFunctional) {
+                    int[] existingSubjects = graph.getBackwardTargets(startNodeId, headRelationId);
+                    if (existingSubjects != null && existingSubjects.length > 0) return false;
+                }
             } else {
                 if (targetRelationConstraints.isFunctional) {
                     int[] existingTargets = graph.getForwardTargets(startNodeId, headRelationId);

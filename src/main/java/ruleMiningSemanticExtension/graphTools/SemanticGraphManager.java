@@ -144,6 +144,54 @@ public class SemanticGraphManager extends GraphManager {
     }
 
     /**
+     * Checks if a candidate object already has an incoming subject for the predicate
+     * (other than anchorSubject), which would violate inverse functionality.
+     * Used when predicting the object: (anchorSubject, predicate, candidateObject).
+     */
+    public boolean violatesInverseFunctionalityAsObject(String candidateObject, String predicate, String anchorSubject) {
+        int relId = getRelationDict().lookup(predicate);
+        if (relId == -1) return false;
+        IntPropertyConstraint constraint = propertyIdConstraints.get(relId);
+        if (constraint == null || !constraint.isInverseFunctional) return false;
+
+        int objId = getEntityDict().lookup(candidateObject);
+        if (objId == -1) return false;
+
+        int[] existingSubjects = getGraph().getBackwardTargets(objId, relId);
+        if (existingSubjects == null || existingSubjects.length == 0) return false;
+
+        int anchorId = getEntityDict().lookup(anchorSubject);
+        for (int sid : existingSubjects) {
+            if (sid != anchorId) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Checks if a candidate subject already has an outgoing object for the predicate
+     * (other than anchorObject), which would violate functionality.
+     * Used when predicting the subject: (candidateSubject, predicate, anchorObject).
+     */
+    public boolean violatesFunctionalityAsSubject(String candidateSubject, String predicate, String anchorObject) {
+        int relId = getRelationDict().lookup(predicate);
+        if (relId == -1) return false;
+        IntPropertyConstraint constraint = propertyIdConstraints.get(relId);
+        if (constraint == null || !constraint.isFunctional) return false;
+
+        int subjectId = getEntityDict().lookup(candidateSubject);
+        if (subjectId == -1) return false;
+
+        int[] existingObjects = getGraph().getForwardTargets(subjectId, relId);
+        if (existingObjects == null || existingObjects.length == 0) return false;
+
+        int anchorId = getEntityDict().lookup(anchorObject);
+        for (int oid : existingObjects) {
+            if (oid != anchorId) return true;
+        }
+        return false;
+    }
+
+    /**
      * Checks if the predicted entity violates the Domain constraint of the predicate.
      * (Used when predicting the Subject backwards)
      */
