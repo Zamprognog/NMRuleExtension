@@ -4,7 +4,7 @@ This project implements a framework for evaluating and enhancing Rule Mining (sp
 
 ## Features
 
-- **Semantic Constraint Extraction**: Automatically extracts domain, range, functional, symmetric, transitive, and disjointness constraints from OWL/RDF ontologies using Apache Jena.
+- **Semantic Constraint Extraction**: Automatically extracts domain, range, functional, inverse-functional, and disjoint-class constraints from OWL/RDF ontologies using Apache Jena.
 - **Dual Grounding Engines**:
     - **Standard Engine**: Traditional rule grounding.
     - **Semantic Engine**: Incorporates semantic consistency checks during the grounding process to improve precision.
@@ -54,15 +54,21 @@ Each dataset requires a `.json` configuration file. Example structure:
 
 ```json
 {
-  "datasetName": "OWL2Bench",
-  "train": "data/OWL2Bench/data/train.txt",
-  "valid": "data/OWL2Bench/data/valid.txt",
-  "test": "data/OWL2Bench/data/test.txt",
+  "dataset_name": "OWL2Bench",
+  "graph": "data/OWL2Bench/data/OWL2Bench_full_graph.nt",
+  "train": "data/OWL2Bench/data/train.tsv",
+  "valid": "data/OWL2Bench/data/valid.tsv",
+  "test": "data/OWL2Bench/data/test.tsv",
   "schema": "data/OWL2Bench/data/ontology.owl",
-  "typesFile": "data/OWL2Bench/data/types.nt",
-  "predictionsDir": "data/OWL2Bench/predictions",
-  "anyburlRules": "data/OWL2Bench/rules/anyburl_rules.txt",
-  "amieRules": "data/OWL2Bench/rules/amie_rules.tsv"
+  "types_file": "data/OWL2Bench/data/entity_types.nt",
+  "predictions_dir": "data/OWL2Bench/predictions/",
+  "anyburl_rules": "data/OWL2Bench/rules/anyburl_rules_ALL-100",
+  "anyburl_rules_CP": "data/OWL2Bench/rules/anyburl_rules_CP-100",
+  "amie_rules": "data/OWL2Bench/rules/amie_rules_ALL.tsv",
+  "amie_rules_CP": "data/OWL2Bench/rules/amie_rules_CP.tsv",
+  "def_uri": "http://example.org/",
+  "grounding_type": "both",
+  "materialize_rules": "both"
 }
 ```
 
@@ -72,6 +78,7 @@ Each dataset requires a `.json` configuration file. Example structure:
     - `evaluation`: Evaluator and Metrics logic.
     - `graphTools`: Logic for loading semantic constraints (Jena) and managing the triple graph.
     - `groundingEngine`: Standard and Semantic implementation of the grounding logic.
+    - `materialization`: Triple materialization from inferred constraints.
     - `rules`: Rule models and parsers.
     - `utils`: Data loading and configuration utilities.
 - `data/`: Contains datasets, rules, and prediction outputs.
