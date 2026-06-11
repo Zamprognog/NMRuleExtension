@@ -98,10 +98,19 @@ public abstract class Rule {
         return new AMIERule(headAtom, bodyAtoms, ruleString, confidence);
     }
 
+    private static String stripAngleBrackets(String s) {
+        s = s.trim();
+        if (s.startsWith("<") && s.endsWith(">")) return s.substring(1, s.length() - 1);
+        return s;
+    }
+
     private static RuleAtom parseAtom(String atomStr) {
         Matcher m = ATOM_PATTERN.matcher(atomStr);
         if (m.find()) {
-            return new RuleAtom(m.group(1), m.group(2), m.group(3));
+            return new RuleAtom(
+                stripAngleBrackets(m.group(1)),
+                stripAngleBrackets(m.group(2)),
+                stripAngleBrackets(m.group(3)));
         }
         return null;
     }

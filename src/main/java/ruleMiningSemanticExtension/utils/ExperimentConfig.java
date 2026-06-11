@@ -9,6 +9,14 @@ import java.util.Map;
 public class ExperimentConfig {
     public String datasetName, graph, train, valid, test, testDebug;
     public String schema, typesFile, anyburlRules, anyburlRulesCP, amieRules, amieRulesCP, predictionsDir, defUri, materializeRules, groundingType;
+    /** Aggregator to evolve: "hybrid" (default), "linear", "symbolic" */
+    public String aggregatorType;
+    /** Base random seed for evolution; run i uses seed+i. Default 42. */
+    public long seed;
+    /** Number of independent evolution runs. Default 1. */
+    public int numRuns;
+    /** Fraction of the validation set used for GP training. Default 0.7. */
+    public double validationFraction;
 
     public static ExperimentConfig load(String jsonPath) throws IOException {
         String content = new String(Files.readAllBytes(Paths.get(jsonPath)));
@@ -42,6 +50,10 @@ public class ExperimentConfig {
         config.defUri = map.get("def_uri");
         config.materializeRules = map.get("materialize_rules");
         config.groundingType = map.get("grounding_type");
+        config.aggregatorType = map.getOrDefault("aggregator_type", "hybrid");
+        config.seed = Long.parseLong(map.getOrDefault("seed", "42"));
+        config.numRuns = Integer.parseInt(map.getOrDefault("num_runs", "1"));
+        config.validationFraction = Double.parseDouble(map.getOrDefault("validation_fraction", "0.7"));
 
         return config;
     }

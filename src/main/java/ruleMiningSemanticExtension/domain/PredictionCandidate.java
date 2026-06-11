@@ -11,6 +11,9 @@ public class PredictionCandidate {
     private int groundingCount;
     private final Set<Rule> rules;
 
+    /** Lazily-computed cache; null whenever a new rule has been added since last access. */
+    private float[] cachedConfidences;
+
     public PredictionCandidate(String entity, String targetRelation) {
         this.entity = entity;
         this.targetRelation = targetRelation;
@@ -20,7 +23,8 @@ public class PredictionCandidate {
 
     public void addGrounding(Rule rule, List<Triple> pathTriples, int neighborhoodEdgeCount, Set<Integer> neighborhoodNodeIds) {
         this.groundingCount++;
-        this.rules.add(rule);
+        boolean isNew = this.rules.add(rule);
+        if (isNew) cachedConfidences = null; // invalidate on genuinely new rule
         this.subgraphEdgeCount += pathTriples.size() + neighborhoodEdgeCount;
         this.subgraphNodeIds.addAll(neighborhoodNodeIds);
     }
@@ -45,16 +49,27 @@ public class PredictionCandidate {
         return subgraphNodeIds.size();
     }
 
+    public Set<Integer> getSubgraphNodeIds() {
+        return subgraphNodeIds;
+    }
+
     public int getGroundingCount() {
         return groundingCount;
     }
 
-    public List<Float> getConfidences() {
-        List<Float> confidences = new ArrayList<>();
-        for (Rule r : rules) {
-            confidences.add(r.getConfidence());
+    /**
+     * Returns rule confidences as a primitive float array.
+     * Result is cached after first call; the cache is invalidated whenever a new
+     * (distinct) rule is added via {@link #addGrounding}.
+     */
+    public float[] getConfidences() {
+        if (cachedConfidences == null) {
+            float[] arr = new float[rules.size()];
+            int i = 0;
+            for (Rule r : rules) arr[i++] = r.getConfidence();
+            cachedConfidences = arr;
         }
-        return confidences;
+        return cachedConfidences;
     }
 
     private boolean predictObject = true;

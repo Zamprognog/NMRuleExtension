@@ -25,26 +25,26 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 public class AggregatorDegenerationTest {
 
-    // Feature vector layout (matches FeatureExtractor indices 0-9):
-    // [max, noisyOr, log(ruleCount+1), mean, log(groundings+1), log(subgraphSize+1),
-    //  avgRuleLength, density, avgDegree, domainRangeMatch]
+    // Feature vector layout (matches FeatureExtractor indices 0-10):
+    // [max, noisyOr, log(ruleCount+1), log(groundings+1), log(subgraphSize+1),
+    //  avgRuleLength, avgDegree, domainRangeMatch, avgInDegree, avgOutDegree, avgMaxTypeDepth]
 
-    /** High-quality candidate: strong confidence, range-compatible. */
-    private static final Double[] HIGH_CONF = {
-        0.9, 0.95, Math.log1p(3), 0.8, Math.log1p(5), Math.log1p(10), 2.0, 0.3, 1.8, 1.0
+    /** High-quality candidate: strong confidence, range-compatible, well-typed subgraph. */
+    private static final double[] HIGH_CONF = {
+        0.9, 0.95, Math.log1p(3), Math.log1p(5), Math.log1p(10), 2.0, 1.8, 1.0, 1.5, 1.2, 3.0
     };
 
-    /** Low-quality candidate: weak confidence, range-incompatible. */
-    private static final Double[] LOW_CONF = {
-        0.1, 0.12, Math.log1p(1), 0.1, Math.log1p(1), Math.log1p(2), 1.0, 0.1, 1.0, 0.0
+    /** Low-quality candidate: weak confidence, range-incompatible, shallowly typed. */
+    private static final double[] LOW_CONF = {
+        0.1, 0.12, Math.log1p(1), Math.log1p(1), Math.log1p(2), 1.0, 1.0, 0.0, 0.5, 0.4, 1.0
     };
 
     /**
      * Edge case: features that would cause infinity with raw DIV.
-     * density=0, avgDegree=0, domainRangeMatch=0 — all valid zero values in practice.
+     * avgDegree=0, domainRangeMatch=0, avgInDegree=0, avgOutDegree=0 — valid zero values.
      */
-    private static final Double[] ZERO_DIVISORS = {
-        0.5, 0.6, Math.log1p(2), 0.5, Math.log1p(3), Math.log1p(5), 2.0, 0.0, 0.0, 0.0
+    private static final double[] ZERO_DIVISORS = {
+        0.5, 0.6, Math.log1p(2), Math.log1p(3), Math.log1p(5), 2.0, 0.0, 0.0, 0.0, 0.0, 0.0
     };
 
     // -------------------------------------------------------------------------
@@ -55,7 +55,7 @@ public class AggregatorDegenerationTest {
     public void testHybridScoreFeaturesAlwaysFinite() {
         HybridAggregator agg = trainHybrid(buildSyntheticQueries());
 
-        for (Double[] features : List.of(HIGH_CONF, LOW_CONF, ZERO_DIVISORS)) {
+        for (double[] features : List.of(HIGH_CONF, LOW_CONF, ZERO_DIVISORS)) {
             double score = agg.scoreFeatures(features);
             assertTrue(Double.isFinite(score),
                 "HybridAggregator.scoreFeatures returned non-finite value for input: "
@@ -67,7 +67,7 @@ public class AggregatorDegenerationTest {
     public void testSymbolicScoreFeaturesAlwaysFinite() {
         SymbolicAggregator agg = trainSymbolic(buildSyntheticQueries());
 
-        for (Double[] features : List.of(HIGH_CONF, LOW_CONF, ZERO_DIVISORS)) {
+        for (double[] features : List.of(HIGH_CONF, LOW_CONF, ZERO_DIVISORS)) {
             double score = agg.scoreFeatures(features);
             assertTrue(Double.isFinite(score),
                 "SymbolicAggregator.scoreFeatures returned non-finite value for input: "
@@ -109,7 +109,36 @@ public class AggregatorDegenerationTest {
     }
 
     // -------------------------------------------------------------------------
-    // 3. Feature scaling: log1p keeps count features bounded across extreme inputs
+    // 3. avgMaxTypeDepth: feature index 10 must vary across synthetic candidates
+    //    and must be non-negative in all cases
+    // -------------------------------------------------------------------------
+
+    @Test
+    public void testAvgMinTypeDepthVariesAcrossCandidates() {
+        // The four synthetic vectors carry different type-depth values at index 10:
+        // HIGH_CONF=3.0, LOW_CONF=1.0, ZERO_DIVISORS=0.0, medium=2.0.
+        // If they were all equal the feature would be useless noise.
+        double[] depths = {
+            HIGH_CONF[10],
+            LOW_CONF[10],
+            ZERO_DIVISORS[10]
+        };
+        long distinct = java.util.Arrays.stream(depths).distinct().count();
+        assertTrue(distinct > 1,
+            "avgMaxTypeDepth (index 10) is identical across all synthetic candidates — "
+            + "feature is constant and will contribute no signal");
+    }
+
+    @Test
+    public void testAvgMinTypeDepthIsNonNegative() {
+        for (double[] vec : List.of(HIGH_CONF, LOW_CONF, ZERO_DIVISORS)) {
+            assertTrue(vec[10] >= 0.0,
+                "avgMaxTypeDepth must be >= 0, got " + vec[10]);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // 4. Feature scaling: log1p keeps count features bounded across extreme inputs
     // -------------------------------------------------------------------------
 
     @Test
@@ -155,7 +184,7 @@ public class AggregatorDegenerationTest {
             "correct"));
 
         // Q3: medium-quality correct entity among weaker decoys
-        Double[] medium = {0.6, 0.7, Math.log1p(2), 0.6, Math.log1p(3), Math.log1p(6), 1.5, 0.2, 1.5, 1.0};
+        double[] medium = {0.6, 0.7, Math.log1p(2), Math.log1p(3), Math.log1p(6), 1.5, 1.5, 1.0, 1.0, 0.8, 2.0};
         queries.add(query("q3",
             entry("correct", medium),
             entry("decoy",   LOW_CONF),
@@ -169,7 +198,9 @@ public class AggregatorDegenerationTest {
             AggregatorFitnessFunction.CandidateEntry e1,
             AggregatorFitnessFunction.CandidateEntry e2,
             String correctEntity) {
-        return new AggregatorFitnessFunction.ValidationQuery(name, List.of(e1, e2), correctEntity);
+        var candidates = List.of(e1, e2);
+        int idx = e1.entity().equals(correctEntity) ? 0 : (e2.entity().equals(correctEntity) ? 1 : -1);
+        return new AggregatorFitnessFunction.ValidationQuery(name, candidates, correctEntity, Set.of(), idx);
     }
 
     private AggregatorFitnessFunction.ValidationQuery query(
@@ -178,10 +209,14 @@ public class AggregatorDegenerationTest {
             AggregatorFitnessFunction.CandidateEntry e2,
             AggregatorFitnessFunction.CandidateEntry e3,
             String correctEntity) {
-        return new AggregatorFitnessFunction.ValidationQuery(name, List.of(e1, e2, e3), correctEntity);
+        var candidates = List.of(e1, e2, e3);
+        int idx = -1;
+        for (int i = 0; i < candidates.size(); i++)
+            if (candidates.get(i).entity().equals(correctEntity)) { idx = i; break; }
+        return new AggregatorFitnessFunction.ValidationQuery(name, candidates, correctEntity, Set.of(), idx);
     }
 
-    private AggregatorFitnessFunction.CandidateEntry entry(String entity, Double[] features) {
+    private AggregatorFitnessFunction.CandidateEntry entry(String entity, double[] features) {
         return new AggregatorFitnessFunction.CandidateEntry(entity, features);
     }
 

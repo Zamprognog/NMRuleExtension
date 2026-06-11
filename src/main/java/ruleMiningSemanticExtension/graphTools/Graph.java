@@ -13,6 +13,11 @@ public class Graph {
     /** Stores backward edges (object -> relation -> subject) in the frozen phase. */
     private NodeData[] backwardEdges;
 
+    /** Pre-computed out-degree per node, filled at freeze time. O(1) lookup. */
+    private int[] outDegreeCache;
+    /** Pre-computed in-degree per node, filled at freeze time. O(1) lookup. */
+    private int[] inDegreeCache;
+
     /** Temporary list for building forward edges. */
     private List<Map<Integer, List<Integer>>> tempForward;
     /** Temporary list for building backward edges. */
@@ -121,9 +126,16 @@ public class Graph {
         forwardEdges = new NodeData[numNodes];
         backwardEdges = new NodeData[numNodes];
 
+        outDegreeCache = new int[numNodes];
+        inDegreeCache  = new int[numNodes];
+
         for (int i = 0; i < numNodes; i++) {
-            forwardEdges[i] = freezeNode(tempForward.get(i));
+            forwardEdges[i]  = freezeNode(tempForward.get(i));
             backwardEdges[i] = freezeNode(tempBackward.get(i));
+            if (forwardEdges[i]  != null)
+                for (int[] t : forwardEdges[i].targets)  outDegreeCache[i] += t.length;
+            if (backwardEdges[i] != null)
+                for (int[] t : backwardEdges[i].targets) inDegreeCache[i]  += t.length;
         }
 
         // Free memory
@@ -175,6 +187,24 @@ public class Graph {
         if (nodeId < 0 || backwardEdges == null || nodeId >= backwardEdges.length) return null;
         NodeData data = backwardEdges[nodeId];
         return data == null ? null : data.getTargets(relationId);
+    }
+
+    /**
+     * Returns the total out-degree of a node (number of triples where the node is subject).
+     * O(1) — value is pre-computed at freeze time.
+     */
+    public int getOutDegree(int nodeId) {
+        return (outDegreeCache == null || nodeId < 0 || nodeId >= outDegreeCache.length)
+                ? 0 : outDegreeCache[nodeId];
+    }
+
+    /**
+     * Returns the total in-degree of a node (number of triples where the node is object).
+     * O(1) — value is pre-computed at freeze time.
+     */
+    public int getInDegree(int nodeId) {
+        return (inDegreeCache == null || nodeId < 0 || nodeId >= inDegreeCache.length)
+                ? 0 : inDegreeCache[nodeId];
     }
 
     /**

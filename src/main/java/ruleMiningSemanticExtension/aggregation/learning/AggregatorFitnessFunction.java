@@ -5,7 +5,9 @@ import io.jenetics.Genotype;
 import ruleMiningSemanticExtension.aggregation.PredictionPool;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class AggregatorFitnessFunction<G extends Gene<?, G>> {
@@ -42,60 +44,83 @@ public class AggregatorFitnessFunction<G extends Gene<?, G>> {
     }
 
     private double scoreQuery(EvolvableAggregator<G> aggregator, ValidationQuery query) {
-        double correctScore = Double.NEGATIVE_INFINITY;
-        for (CandidateEntry e : query.candidates()) {
-            if (e.entity().equals(query.correctEntity())) {
-                correctScore = aggregator.scoreFeatures(e.features());
-                break;
-            }
-        }
-        if (correctScore == Double.NEGATIVE_INFINITY) return 0.0;
+        // Fix 5: O(1) lookup via pre-indexed position — no linear scan for correct entity.
+        int ci = query.correctIndex();
+        if (ci < 0) return 0.0;
+        double correctScore = aggregator.scoreFeatures(query.candidates().get(ci).features());
 
-        // Pessimistic tie-breaking: correct entity is ranked last among tied candidates.
-        // Prevents constant-output trees (e.g. weight-only nodes) from scoring 1.0 on every query.
+        // Filtered rank: skip candidates that are known true answers for this query.
+        // Expected MRR: average over the tie block [rank, rank+ties], matching eval protocol.
         int rank = 1;
         int ties = 0;
-        for (CandidateEntry e : query.candidates()) {
-            if (e.entity().equals(query.correctEntity())) continue;
+        List<CandidateEntry> candidates = query.candidates();
+        for (int i = 0; i < candidates.size(); i++) {
+            if (i == ci) continue;
+            CandidateEntry e = candidates.get(i);
+            if (query.filteredEntities().contains(e.entity())) continue;
             double s = aggregator.scoreFeatures(e.features());
             if (s > correctScore)       rank++;
             else if (s == correctScore) ties++;
         }
-        return 1.0 / (rank + ties);
+        if (ties == 0) return 1.0 / rank;
+        double mrrSum = 0;
+        for (int r = rank; r <= rank + ties; r++) mrrSum += 1.0 / r;
+        return mrrSum / (ties + 1);
     }
 
-    /** Partial Fisher-Yates: O(batchSize) sampling without full list copy. */
+    /**
+     * Fix 1: Knuth's Algorithm S — reservoir sampling without allocating an int[n] array.
+     * O(n) sequential scan, zero heap allocations beyond the result list itself.
+     * Thread-safe: uses only ThreadLocalRandom and local variables.
+     */
     private List<ValidationQuery> selectBatch() {
         int n = validationSet.size();
         if (batchSize <= 0 || batchSize >= n) return validationSet;
 
         ThreadLocalRandom rng = ThreadLocalRandom.current();
-        int[] indices = new int[n];
-        for (int i = 0; i < n; i++) indices[i] = i;
-
         List<ValidationQuery> batch = new ArrayList<>(batchSize);
-        for (int i = 0; i < batchSize; i++) {
-            int j = rng.nextInt(i, n);
-            int tmp = indices[i]; indices[i] = indices[j]; indices[j] = tmp;
-            batch.add(validationSet.get(indices[i]));
+        int needed = batchSize;
+        for (int i = 0; i < n && needed > 0; i++) {
+            // Include element i with probability needed / (n - i)
+            if (rng.nextInt(n - i) < needed) {
+                batch.add(validationSet.get(i));
+                needed--;
+            }
         }
         return batch;
     }
 
     /** Pre-computed features for one candidate. Immutable after construction. */
-    public record CandidateEntry(String entity, Double[] features) {}
+    // Fix 2: double[] instead of Double[] — eliminates boxing overhead in the hot GP loop.
+    public record CandidateEntry(String entity, double[] features) {}
 
     /**
      * A validation query backed by pre-extracted feature arrays.
-     * Use the factory method to build from a PredictionPool.
+     * {@code filteredEntities} contains known true answers for this query (excluding the
+     * correct entity) that should be skipped when computing rank.
+     * {@code correctIndex} is the index of the correct entity in {@code candidates}, or -1
+     * if it is absent (Fix 5: avoids a linear scan per fitness call).
      */
-    public record ValidationQuery(String queryInfo, List<CandidateEntry> candidates, String correctEntity) {
+    public record ValidationQuery(String queryInfo, List<CandidateEntry> candidates,
+                                  String correctEntity, Set<String> filteredEntities,
+                                  int correctIndex) {
 
-        public static ValidationQuery from(String queryInfo, PredictionPool pool, String correctEntity) {
+        public static ValidationQuery from(String queryInfo, PredictionPool pool,
+                                           String correctEntity, Set<String> filteredEntities) {
             List<CandidateEntry> entries = pool.getCandidates().stream()
                     .map(c -> new CandidateEntry(c.getEntity(), FeatureExtractor.extract(c)))
                     .toList();
-            return new ValidationQuery(queryInfo, entries, correctEntity);
+            // Fix 5: find correct entity index once at construction time.
+            int idx = -1;
+            for (int i = 0; i < entries.size(); i++) {
+                if (entries.get(i).entity().equals(correctEntity)) { idx = i; break; }
+            }
+            return new ValidationQuery(queryInfo, entries, correctEntity, filteredEntities, idx);
+        }
+
+        /** Convenience overload for tests / callers without filtering information. */
+        public static ValidationQuery from(String queryInfo, PredictionPool pool, String correctEntity) {
+            return from(queryInfo, pool, correctEntity, Collections.emptySet());
         }
     }
 }

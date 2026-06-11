@@ -21,6 +21,10 @@ public class SemanticConstraintLoader {
 
     //3. Disjoint Classes Map: Class URI -> Set of Disjoint Class URIs
     private final Map<String, Set<String>> disjointClassesMap = new HashMap<>();
+
+    // 4. Direct (non-transitive) superclass edges, including owl:Thing as a parent.
+    //    Used to compute hop-distance from each class to owl:Thing.
+    private final Map<String, Set<String>> directSuperClasses = new HashMap<>();
     /**
      * Data structure to hold domain, range, and characteristics of a property.
      */
@@ -170,6 +174,18 @@ public class SemanticConstraintLoader {
                 }
             }
             classHierarchy.put(classUri, superClasses);
+
+            // Collect direct (one-hop) superclass edges for depth computation.
+            // listSuperClasses(true) returns only direct parents; we keep owl:Thing here
+            // (don't filter it) so the BFS can root itself there.
+            Set<String> directParents = new HashSet<>();
+            ExtendedIterator<OntClass> directSupers = cls.listSuperClasses(true);
+            while (directSupers.hasNext()) {
+                OntClass s = directSupers.next();
+                if (!s.isAnon() && s.getURI() != null) directParents.add(s.getURI());
+            }
+            directSuperClasses.put(classUri, directParents);
+
             ExtendedIterator<OntClass> disjointIter = cls.listDisjointWith();
             while (disjointIter.hasNext()) {
                 OntClass disj = disjointIter.next();
@@ -224,5 +240,6 @@ public class SemanticConstraintLoader {
     public Map<String, Set<String>> getEntityTypes() { return entityTypes; }
     public Map<String, PropertyConstraint> getPropertyConstraints() { return propertyConstraints; }
     public Map<String, Set<String>> getDisjointClasses() { return disjointClassesMap; }
+    public Map<String, Set<String>> getDirectSuperClasses() { return directSuperClasses; }
 
 }

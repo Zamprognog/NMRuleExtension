@@ -1,5 +1,6 @@
 package ruleMiningSemanticExtension.evaluation;
 
+import ruleMiningSemanticExtension.aggregation.PredictionAggregator;
 import ruleMiningSemanticExtension.groundingEngine.GroundingEngine;
 import ruleMiningSemanticExtension.groundingEngine.RankingTree;
 import ruleMiningSemanticExtension.groundingEngine.RuleRegistry;
@@ -14,6 +15,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.DoubleAdder;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Evaluator {
@@ -90,22 +92,31 @@ public class Evaluator {
         return (double) ranksInK / totalRanks;
     }
 
-    private RankResult calculateMetrics(Map<String, PredictionCandidate> predictions, String sourceEntity,
+    /** Sorts candidates by aggregator score (descending) for use with {@link #calculateMetrics}. */
+    private List<RankingTree.Candidate> sortByAggregator(
+            Map<String, PredictionCandidate> predictions, PredictionAggregator aggregator) {
+        return predictions.values().stream()
+                .map(pc -> {
+                    float score = (float) aggregator.aggregate(pc);
+                    return new RankingTree.Candidate(pc.getEntity(), new float[]{score});
+                })
+                .sorted((a, b) -> Float.compare(b.confidences[0], a.confidences[0]))
+                .collect(Collectors.toList());
+    }
+
+    private RankResult calculateMetrics(List<RankingTree.Candidate> sortedCandidates, String sourceEntity,
                                         String predicate, String correctEntity, boolean predictingObject,
                                         int maxRanks, SemanticGraphManager semanticManager, boolean recordCandidates) {
 
         RankResult result = new RankResult();
-        if (predictions.isEmpty()) return result;
-
-        RankingTree tree = new RankingTree();
-        List<RankingTree.Candidate> sortedCandidates = tree.getFinalRanking(predictions);
+        if (sortedCandidates.isEmpty()) return result;
 
         int rawRank = 1;
         int currentFilteredRank = 1;
         int tieBlockStartRank = 1;
         int entitiesInTieBlock = 0;
         boolean targetInBlock = false;
-        List<Float> currentTieScore = null;
+        float[] currentTieScore = null;
 
         boolean isFunc = predictingObject ? semanticManager.isFunctional(predicate) : semanticManager.isInverseFunctional(predicate);
 //        boolean isFunc = (predictingObject && semanticManager.isFunctional(predicate)); //todo:double check
@@ -150,7 +161,7 @@ public class Evaluator {
             }
 
             // --- 3. TIE DETECTION ---
-            if (currentTieScore == null || !candidate.confidences.equals(currentTieScore)) {
+            if (currentTieScore == null || !Arrays.equals(candidate.confidences, currentTieScore)) {
                 if (targetInBlock) break;
 
                 currentTieScore = candidate.confidences;
@@ -190,8 +201,72 @@ public class Evaluator {
         return result;
     }
 
+    /**
+     * Evaluates a learned aggregator on the test set using the same protocol as the AnyBURL baseline:
+     * filtered ranking, expected MRR over tie blocks, and semantic consistency metrics.
+     * Candidates are sorted by aggregator score (descending); ties are detected on the score value.
+     */
+    public Metrics evaluate(String testPath, PredictionAggregator aggregator, int limitN) {
+        DoubleAdder hits1 = new DoubleAdder(), hits5 = new DoubleAdder(), hits10 = new DoubleAdder();
+        DoubleAdder mrr   = new DoubleAdder();
+        DoubleAdder sem1  = new DoubleAdder(), sem5  = new DoubleAdder();
+        DoubleAdder sem10 = new DoubleAdder(), sem100 = new DoubleAdder();
+        AtomicInteger semQueriesAt1   = new AtomicInteger(0), semQueriesAt5   = new AtomicInteger(0);
+        AtomicInteger semQueriesAt10  = new AtomicInteger(0), semQueriesAt100 = new AtomicInteger(0);
+        AtomicInteger totalPredictions = new AtomicInteger(0);
+        AtomicInteger processedLines  = new AtomicInteger(0);
+        int K_RANKS = 100;
+
+        try (Stream<String> lines = Files.lines(Paths.get(testPath))) {
+            Stream<String> stream = limitN > 0 ? lines.limit(limitN) : lines;
+            stream.parallel().forEach(line -> {
+                String[] parts = line.split("\\s+");
+                if (parts.length < 3) return;
+                String subject = parts[0], predicate = parts[1], object = parts[2];
+
+                List<Rule> candidateRules = new ArrayList<>(registry.getPredictingRules(predicate));
+                candidateRules.sort((r1, r2) -> Float.compare(r2.getConfidence(), r1.getConfidence()));
+
+                // --- Object prediction ---
+                Map<String, PredictionCandidate> objectPredictions = new HashMap<>();
+                for (Rule r : candidateRules) r.apply(engine, true, subject, predicate, objectPredictions);
+
+                RankResult objectResult = calculateMetrics(
+                        sortByAggregator(objectPredictions, aggregator),
+                        subject, predicate, object, true, K_RANKS, semanticManager, false);
+                accumulateResult(objectResult, mrr, hits1, hits5, hits10,
+                        sem1, sem5, sem10, sem100, semQueriesAt1, semQueriesAt5, semQueriesAt10, semQueriesAt100);
+                totalPredictions.incrementAndGet();
+
+                // --- Subject prediction ---
+                Map<String, PredictionCandidate> subjectPredictions = new HashMap<>();
+                String predObjKey = predicate + "\t" + object;
+                int subjectStopThreshold = K_RANKS + knownSubjectCounts.getOrDefault(predObjKey, 0);
+                for (Rule r : candidateRules) {
+                    r.apply(engine, false, object, predicate, subjectPredictions);
+                    if (subjectPredictions.size() >= subjectStopThreshold) break;
+                }
+
+                RankResult subjectResult = calculateMetrics(
+                        sortByAggregator(subjectPredictions, aggregator),
+                        object, predicate, subject, false, K_RANKS, semanticManager, false);
+                accumulateResult(subjectResult, mrr, hits1, hits5, hits10,
+                        sem1, sem5, sem10, sem100, semQueriesAt1, semQueriesAt5, semQueriesAt10, semQueriesAt100);
+                totalPredictions.incrementAndGet();
+
+                if (processedLines.incrementAndGet() % 1000 == 0)
+                    DualLogger.getOriginalOut().println("Processed " + processedLines.get() + " test facts...");
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return buildMetrics(mrr, hits1, hits5, hits10, sem1, sem5, sem10, sem100,
+                semQueriesAt1, semQueriesAt5, semQueriesAt10, semQueriesAt100, totalPredictions);
+    }
+
     public Metrics evaluate(String testPath, int limitN) {
-        return evaluate(testPath, null, limitN);
+        return evaluate(testPath, (String) null, limitN);
     }
 
     public Metrics evaluate(String testPath, String logPath, int limitN) {
@@ -244,31 +319,12 @@ public class Evaluator {
                     // if (objectPredictions.size() >= objectStopThreshold) break;
                 }
 
-                RankResult objectResult = calculateMetrics(objectPredictions, subject, predicate, object, true, K_RANKS, semanticManager, doLogging);
+                RankResult objectResult = calculateMetrics(
+                        new RankingTree().getFinalRanking(objectPredictions),
+                        subject, predicate, object, true, K_RANKS, semanticManager, doLogging);
 
-                if (objectResult.mrrContribution > 0) {
-                    hits1.add(objectResult.expectedHitsAt1);
-                    hits5.add(objectResult.expectedHitsAt5);
-                    hits10.add(objectResult.expectedHitsAt10);
-                    mrr.add(objectResult.mrrContribution);
-                }
-
-                if (objectResult.totalAt1 > 0) {
-                    sem1.add((double) objectResult.consistentAt1 / objectResult.totalAt1);
-                    semQueriesAt1.incrementAndGet();
-                }
-                if (objectResult.totalAt5 > 0) {
-                    sem5.add((double) objectResult.consistentAt5 / objectResult.totalAt5);
-                    semQueriesAt5.incrementAndGet();
-                }
-                if (objectResult.totalAt10 > 0) {
-                    sem10.add((double) objectResult.consistentAt10 / objectResult.totalAt10);
-                    semQueriesAt10.incrementAndGet();
-                }
-                if (objectResult.totalAt100 > 0) {
-                    sem100.add((double) objectResult.consistentAt100 / objectResult.totalAt100);
-                    semQueriesAt100.incrementAndGet();
-                }
+                accumulateResult(objectResult, mrr, hits1, hits5, hits10,
+                        sem1, sem5, sem10, sem100, semQueriesAt1, semQueriesAt5, semQueriesAt10, semQueriesAt100);
                 totalPredictions.incrementAndGet();
 
                 // --- Subject prediction ---
@@ -281,31 +337,12 @@ public class Evaluator {
                     if (subjectPredictions.size() >= subjectStopThreshold) break;
                 }
 
-                RankResult subjectResult = calculateMetrics(subjectPredictions, object, predicate, subject, false, K_RANKS, semanticManager, doLogging);
+                RankResult subjectResult = calculateMetrics(
+                        new RankingTree().getFinalRanking(subjectPredictions),
+                        object, predicate, subject, false, K_RANKS, semanticManager, doLogging);
 
-                if (subjectResult.mrrContribution > 0) {
-                    hits1.add(subjectResult.expectedHitsAt1);
-                    hits5.add(subjectResult.expectedHitsAt5);
-                    hits10.add(subjectResult.expectedHitsAt10);
-                    mrr.add(subjectResult.mrrContribution);
-                }
-
-                if (subjectResult.totalAt1 > 0) {
-                    sem1.add((double) subjectResult.consistentAt1 / subjectResult.totalAt1);
-                    semQueriesAt1.incrementAndGet();
-                }
-                if (subjectResult.totalAt5 > 0) {
-                    sem5.add((double) subjectResult.consistentAt5 / subjectResult.totalAt5);
-                    semQueriesAt5.incrementAndGet();
-                }
-                if (subjectResult.totalAt10 > 0) {
-                    sem10.add((double) subjectResult.consistentAt10 / subjectResult.totalAt10);
-                    semQueriesAt10.incrementAndGet();
-                }
-                if (subjectResult.totalAt100 > 0) {
-                    sem100.add((double) subjectResult.consistentAt100 / subjectResult.totalAt100);
-                    semQueriesAt100.incrementAndGet();
-                }
+                accumulateResult(subjectResult, mrr, hits1, hits5, hits10,
+                        sem1, sem5, sem10, sem100, semQueriesAt1, semQueriesAt5, semQueriesAt10, semQueriesAt100);
                 totalPredictions.incrementAndGet();
 
                 if (doLogging) {
@@ -313,12 +350,12 @@ public class Evaluator {
                     sb.append(subject).append(" ").append(predicate).append(" ").append(object).append("\n");
                     sb.append("Heads: ");
                     for (RankingTree.Candidate c : subjectResult.filteredCandidates) {
-                        sb.append(c.entity).append("\t").append(c.confidences.get(0)).append("\t");
+                        sb.append(c.entity).append("\t").append(c.confidences[0]).append("\t");
                     }
                     sb.append("\n");
                     sb.append("Tails: ");
                     for (RankingTree.Candidate c : objectResult.filteredCandidates) {
-                        sb.append(c.entity).append("\t").append(c.confidences.get(0)).append("\t");
+                        sb.append(c.entity).append("\t").append(c.confidences[0]).append("\t");
                     }
                     sb.append("\n\n");
                     logLines.add(sb.toString());
@@ -338,23 +375,44 @@ public class Evaluator {
             e.printStackTrace();
         }
 
-        int total = totalPredictions.get();
-        if (total > 0) {
-            double h1 = hits1.sum() / total;
-            double h5 = hits5.sum() / total;
-            double h10 = hits10.sum() / total;
-            double finalMrr = mrr.sum() / total;
+        return buildMetrics(mrr, hits1, hits5, hits10, sem1, sem5, sem10, sem100,
+                semQueriesAt1, semQueriesAt5, semQueriesAt10, semQueriesAt100, totalPredictions);
+    }
 
-            double s1 = semQueriesAt1.get() > 0 ? sem1.sum() / semQueriesAt1.get() : 0.0;
-            double s5 = semQueriesAt5.get() > 0 ? sem5.sum() / semQueriesAt5.get() : 0.0;
-            double s10 = semQueriesAt10.get() > 0 ? sem10.sum() / semQueriesAt10.get() : 0.0;
-            double s100 = semQueriesAt100.get() > 0 ? sem100.sum() / semQueriesAt100.get() : 0.0;
+    // -------------------------------------------------------------------------
+    // Shared helpers
+    // -------------------------------------------------------------------------
 
-            System.out.printf("  Evaluated %d total predictions across %d facts.\n", total, processedLines.get());
-
-            return new Metrics(h1, h5, h10, finalMrr, s1, s5, s10, s100, total);
+    private void accumulateResult(RankResult r,
+            DoubleAdder mrr, DoubleAdder hits1, DoubleAdder hits5, DoubleAdder hits10,
+            DoubleAdder sem1, DoubleAdder sem5, DoubleAdder sem10, DoubleAdder sem100,
+            AtomicInteger semQ1, AtomicInteger semQ5, AtomicInteger semQ10, AtomicInteger semQ100) {
+        if (r.mrrContribution > 0) {
+            mrr.add(r.mrrContribution);
+            hits1.add(r.expectedHitsAt1);
+            hits5.add(r.expectedHitsAt5);
+            hits10.add(r.expectedHitsAt10);
         }
+        if (r.totalAt1   > 0) { sem1.add((double)   r.consistentAt1   / r.totalAt1);   semQ1.incrementAndGet(); }
+        if (r.totalAt5   > 0) { sem5.add((double)   r.consistentAt5   / r.totalAt5);   semQ5.incrementAndGet(); }
+        if (r.totalAt10  > 0) { sem10.add((double)  r.consistentAt10  / r.totalAt10);  semQ10.incrementAndGet(); }
+        if (r.totalAt100 > 0) { sem100.add((double) r.consistentAt100 / r.totalAt100); semQ100.incrementAndGet(); }
+    }
 
-        return new Metrics(0, 0, 0, 0, 0, 0, 0, 0, 0);
+    private Metrics buildMetrics(
+            DoubleAdder mrr, DoubleAdder hits1, DoubleAdder hits5, DoubleAdder hits10,
+            DoubleAdder sem1, DoubleAdder sem5, DoubleAdder sem10, DoubleAdder sem100,
+            AtomicInteger semQ1, AtomicInteger semQ5, AtomicInteger semQ10, AtomicInteger semQ100,
+            AtomicInteger totalPredictions) {
+        int total = totalPredictions.get();
+        if (total == 0) return new Metrics(0, 0, 0, 0, 0, 0, 0, 0, 0);
+        return new Metrics(
+            hits1.sum() / total, hits5.sum() / total, hits10.sum() / total, mrr.sum() / total,
+            semQ1.get()   > 0 ? sem1.sum()   / semQ1.get()   : 0.0,
+            semQ5.get()   > 0 ? sem5.sum()   / semQ5.get()   : 0.0,
+            semQ10.get()  > 0 ? sem10.sum()  / semQ10.get()  : 0.0,
+            semQ100.get() > 0 ? sem100.sum() / semQ100.get() : 0.0,
+            total
+        );
     }
 }

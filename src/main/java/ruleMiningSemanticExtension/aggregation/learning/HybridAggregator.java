@@ -24,20 +24,24 @@ public class HybridAggregator implements EvolvableAggregator {
 
     private ProgramGene<Double> program;
     private double[] weightsPool;
+    private int treeDepth = 5;
 
     private static final int WEIGHT_POOL_SIZE = 20;
     private static final int TOTAL_INPUTS = FeatureExtractor.FEATURE_COUNT + WEIGHT_POOL_SIZE;
-
-    // condition > 0 → true branch, else → false branch
-    private static final Op<Double> IF_POSITIVE =
-        Op.of("if", 3, args -> args[0] > 0.0 ? args[1] : args[2]);
 
     // Protected division: returns 1.0 when denominator ≈ 0 (avoids infinity → 0.0 fallback gaming fitness)
     private static final Op<Double> SAFE_DIV =
         Op.of("sdiv", 2, v -> Math.abs(v[1]) < 1e-9 ? 1.0 : v[0] / v[1]);
 
+    // "max2"/"min2" to avoid name collision with the terminal "max" (feature index 0)
+    private static final Op<Double> MAX_OP =
+        Op.of("max2", 2, args -> Math.max(args[0], args[1]));
+
+    private static final Op<Double> MIN_OP =
+        Op.of("min2", 2, args -> Math.min(args[0], args[1]));
+
     private static final ISeq<Op<Double>> OPERATIONS = ISeq.of(
-        MathOp.ADD, MathOp.SUB, MathOp.MUL, SAFE_DIV, IF_POSITIVE
+        MathOp.ADD, MathOp.SUB, MathOp.MUL, SAFE_DIV, MAX_OP, MIN_OP
     );
 
     private static final ISeq<Op<Double>> TERMINALS;
@@ -46,13 +50,14 @@ public class HybridAggregator implements EvolvableAggregator {
         terms[0] = Var.of("max", 0);
         terms[1] = Var.of("noisyOr", 1);
         terms[2] = Var.of("ruleCount", 2);
-        terms[3] = Var.of("mean", 3);
-        terms[4] = Var.of("totalGroundings", 4);
-        terms[5] = Var.of("subgraphSize", 5);
-        terms[6] = Var.of("avgRuleLength", 6);
-        terms[7] = Var.of("density", 7);
-        terms[8] = Var.of("avgDegree", 8);
-        terms[9] = Var.of("domainRangeMatch", 9);
+        terms[3] = Var.of("totalGroundings", 3);
+        terms[4] = Var.of("subgraphSize", 4);
+        terms[5] = Var.of("avgRuleLength", 5);
+        terms[6] = Var.of("avgDegree", 6);
+        terms[7] = Var.of("domainRangeMatch", 7);
+        terms[8] = Var.of("avgInDegree", 8);
+        terms[9] = Var.of("avgOutDegree", 9);
+        terms[10] = Var.of("avgMaxTypeDepth", 10);
         for (int i = 0; i < WEIGHT_POOL_SIZE; i++) {
             terms[FeatureExtractor.FEATURE_COUNT + i] = Var.of("w" + i, FeatureExtractor.FEATURE_COUNT + i);
         }
@@ -66,22 +71,31 @@ public class HybridAggregator implements EvolvableAggregator {
     }
 
     @Override
+    public void setTreeDepth(int depth) { this.treeDepth = depth; }
+
+    @Override
     public Factory<Genotype> getGenotypeFactory() {
         return (Factory) Genotype.of(
-            (Chromosome) ProgramChromosome.of(5, OPERATIONS, TERMINALS),
+            (Chromosome) ProgramChromosome.of(treeDepth, OPERATIONS, TERMINALS),
             (Chromosome) DoubleChromosome.of(0.0, 1.0, WEIGHT_POOL_SIZE)
         );
     }
 
+    /**
+     * Thread-local boxing buffer: Jenetics' ProgramGene.apply() requires Double[].
+     * Features are primitive double[] everywhere else; we box once here per call.
+     * The buffer covers both the feature slots and the weight-pool slots.
+     */
+    private static final ThreadLocal<Double[]> INPUTS_BUF =
+        ThreadLocal.withInitial(() -> new Double[TOTAL_INPUTS]);
+
     @Override
-    public double scoreFeatures(Double[] features) {
+    public double scoreFeatures(double[] features) {
         if (program == null || weightsPool == null) return 0.0;
-        // Pre-computed features cover slots 0..FEATURE_COUNT-1; weights fill the rest.
-        Double[] inputs = new Double[TOTAL_INPUTS];
-        System.arraycopy(features, 0, inputs, 0, FeatureExtractor.FEATURE_COUNT);
-        for (int i = 0; i < WEIGHT_POOL_SIZE; i++) {
-            inputs[FeatureExtractor.FEATURE_COUNT + i] = weightsPool[i];
-        }
+        // Box into thread-local buffer — pre-computed features + evolved weights.
+        Double[] inputs = INPUTS_BUF.get();
+        for (int i = 0; i < FeatureExtractor.FEATURE_COUNT; i++) inputs[i] = features[i];
+        for (int i = 0; i < WEIGHT_POOL_SIZE; i++) inputs[FeatureExtractor.FEATURE_COUNT + i] = weightsPool[i];
         try {
             double result = program.apply(inputs);
             return Double.isFinite(result) ? result : 0.0;
@@ -97,7 +111,9 @@ public class HybridAggregator implements EvolvableAggregator {
 
     @Override
     public EvolvableAggregator newInstance() {
-        return new HybridAggregator();
+        HybridAggregator a = new HybridAggregator();
+        a.treeDepth = this.treeDepth;
+        return a;
     }
 
     @Override

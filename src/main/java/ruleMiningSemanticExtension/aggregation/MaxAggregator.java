@@ -9,9 +9,9 @@ import ruleMiningSemanticExtension.domain.PredictionCandidate;
 public class MaxAggregator implements PredictionAggregator {
     @Override
     public double aggregate(PredictionCandidate candidate) {
-        return candidate.getConfidences().stream()
-                .mapToDouble(Float::doubleValue)
-                .max()
-                .orElse(0.0);
+        float[] confs = candidate.getConfidences();
+        float max = 0f;
+        for (float c : confs) if (c > max) max = c;
+        return max;
     }
 }
