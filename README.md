@@ -22,7 +22,7 @@ This project implements a framework for evaluating and enhancing Rule Mining (sp
 1. Clone the repository:
    ```bash
    git clone <repository-url>
-   cd EvolveAggregation
+   cd NMRuleExtension
    ```
 
 2. Build the project using Maven:
@@ -37,10 +37,10 @@ This project implements a framework for evaluating and enhancing Rule Mining (sp
 
 ### Running Experiments
 
-The main entry point for running experiments is `ruleMiningSemanticExtension.RunExperiment`. It requires a path to a dataset configuration JSON and an optional execution mode.
+The main entry point for running experiments is `nmRuleExtension.RunExperiment`. It requires a path to a dataset configuration JSON and an optional execution mode.
 
 ```bash
-mvn exec:java -Dexec.mainClass="ruleMiningSemanticExtension.RunExperiment" -Dexec.args="path/to/config.json [mode]"
+mvn exec:java -Dexec.mainClass="nmRuleExtension.RunExperiment" -Dexec.args="path/to/config.json [mode]"
 ```
 
 **Modes:**
@@ -74,7 +74,7 @@ Each dataset requires a `.json` configuration file. Example structure:
 
 ## Project Structure
 
-- `src/main/java/ruleMiningSemanticExtension`:
+- `src/main/java/nmRuleExtension`:
     - `evaluation`: Evaluator and Metrics logic.
     - `graphTools`: Logic for loading semantic constraints (Jena) and managing the triple graph.
     - `groundingEngine`: Standard and Semantic implementation of the grounding logic.
