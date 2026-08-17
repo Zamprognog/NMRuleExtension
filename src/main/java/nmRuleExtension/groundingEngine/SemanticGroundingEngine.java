@@ -83,7 +83,16 @@ public class SemanticGroundingEngine extends GroundingEngine{
     @Override
     protected boolean checkSuccess(Graph graph, int startNodeId, String headVariable, int[] bindings, String[] varNames, List<Map<String, String>> ruleGroundings, int targetRelationId, Boolean predictObject) {
 
-        if (headVariable ==null) return true; //happens only in unary rules when doing findSatisfyingStart nodes, deals with it in the method
+        // Happens only for unary rules, via findSatisfyingStartNodes. The semantic checks for
+        // that path live in checkStartingNodeSuccess, so none are applied here — but the
+        // grounding must still be RECORDED, because findSatisfyingStartNodes decides whether a
+        // start node satisfied the rule by testing whether the results list is non-empty.
+        // Returning early without delegating leaves that list empty for every node, so no start
+        // node is ever collected.
+        if (headVariable == null) {
+            return super.checkSuccess(graph, startNodeId, headVariable, bindings, varNames,
+                    ruleGroundings, targetRelationId, predictObject);
+        }
 
         int predictedEntityId =  this.entityDict.lookup(headVariable); //clunky but unary rules don't have a head variable usually
         if (predictedEntityId == -1) {

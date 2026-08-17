@@ -3,7 +3,6 @@ package nmRuleExtension.groundingEngine;
 import nmRuleExtension.graphTools.SemanticGraphManager;
 import nmRuleExtension.rules.Direction;
 import nmRuleExtension.rules.RulePathStep;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -174,16 +173,7 @@ public class SemanticGroundingEngineTest {
      * fix it aborted the whole scan and returned nothing.
      *
      * <p>"d" is written first so it receives a lower entity ID and is scanned before "v".
-     *
-     * <p>DISABLED — currently fails for an unrelated, pre-existing reason. The unary path is
-     * dead under the semantic engine: {@code SemanticGroundingEngine.checkSuccess} returns
-     * early when {@code headVariable == null} (the unary case) without adding the binding to
-     * {@code ruleGroundings}, which the base implementation does. {@code dummyResults} in
-     * {@code findSatisfyingStartNodes} therefore never becomes non-empty and NO start node is
-     * ever collected, valid or not. Re-enable once that is resolved; the assertion here is the
-     * intended behaviour.
      */
-    @Disabled("blocked by the unary-path recording bug in SemanticGroundingEngine.checkSuccess")
     @Test
     public void nonSatisfyingNodeDoesNotWipeUnaryResults() throws IOException {
         SemanticGraphManager gm = graphOf(
@@ -202,12 +192,7 @@ public class SemanticGroundingEngineTest {
 
     /**
      * Control: when the SATISFYING node itself violates the constraint, the rule is still dropped.
-     *
-     * <p>DISABLED — this currently passes VACUOUSLY: the unary path returns an empty list for
-     * every input (see the note above), so the assertion cannot distinguish correct pruning from
-     * the path being dead. Re-enable alongside its sibling.
      */
-    @Disabled("would pass vacuously while the unary path returns nothing for any input")
     @Test
     public void satisfyingNodeViolatingConstraintDropsUnaryRule() throws IOException {
         SemanticGraphManager gm = graphOf(
