@@ -170,10 +170,11 @@ public class GroundingEngine {
             // If the search yielded results, this node satisfies the rule!
             if (!dummyResults.isEmpty()) {
                 validStartNodes.add(entityDict.getString(startNodeId));
-            }
-            if (!checkStartingNodeSuccess(graph, validStartNodes, this.entityDict.lookup(knownEntity), headRelationId, startNodeId, predictObject)) {
-                //semantic check failed
-                return new ArrayList<>();
+                // Only candidates that satisfy the rule body are subject to semantic checks
+                if (!checkStartingNodeSuccess(graph, validStartNodes, this.entityDict.lookup(knownEntity), headRelationId, startNodeId, predictObject)) {
+                    //semantic check failed
+                    return new ArrayList<>();
+                }
             }
         }
 

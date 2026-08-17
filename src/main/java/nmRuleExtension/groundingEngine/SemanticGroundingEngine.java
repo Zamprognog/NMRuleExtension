@@ -94,6 +94,7 @@ public class SemanticGroundingEngine extends GroundingEngine{
 
             if (headVariableIndex == -1) return true;
             predictedEntityId = bindings[headVariableIndex];
+            if (predictedEntityId == -1) return true; // head variable unbound, nothing to check
         }
 
         // 1. Process the standard success binding
@@ -110,17 +111,19 @@ public class SemanticGroundingEngine extends GroundingEngine{
 
         if (targetRelationConstraints != null) {
             // functional and inverse functional case - in rule issue (in-graph dealt by @isQueryValid)
+            String predictedEntityStr = entityDict.getString(predictedEntityId);
             if (predictObject) {
-                if (targetRelationConstraints.isFunctional && ruleGroundings.size() > 1) {
+                if (targetRelationConstraints.isFunctional && predictsSecondDistinctValue(ruleGroundings, headVariable, predictedEntityStr)) {
                     // Clear the results because this rule is fundamentally invalid
                     ruleGroundings.clear();
                     return false;
                 }
-                // Predicting (s, p, o_candidate): if o_candidate already has an incoming subject for p,
-                // predicting it would give p two subjects for the same object, violating inverse functionality.
+                // Predicting (s, p, o_candidate): if o_candidate already has an incoming subject for p
+                // other than the anchor s, predicting it would give p two subjects for the same object,
+                // violating inverse functionality.
                 if (targetRelationConstraints.isInverseFunctional) {
                     int[] existingSubjects = graph.getBackwardTargets(predictedEntityId, targetRelationId);
-                    if (existingSubjects != null && existingSubjects.length > 0) {
+                    if (hasEdgeToOther(existingSubjects, startNodeId)) {
                         ruleGroundings.clear();
                         return false;
                     }
@@ -128,12 +131,12 @@ public class SemanticGroundingEngine extends GroundingEngine{
             } else {
                 if (targetRelationConstraints.isFunctional) {
                     int[] existingTargets = graph.getForwardTargets(predictedEntityId, targetRelationId);
-                    if (existingTargets != null && existingTargets.length > 0) {
+                    if (hasEdgeToOther(existingTargets, startNodeId)) {
                         ruleGroundings.clear();
                         return false;
                     }
                 }
-                if (targetRelationConstraints.isInverseFunctional && ruleGroundings.size() > 1) {
+                if (targetRelationConstraints.isInverseFunctional && predictsSecondDistinctValue(ruleGroundings, headVariable, predictedEntityStr)) {
                     // Clear the results because this rule is fundamentally invalid
                     ruleGroundings.clear();
                     return false;
@@ -170,18 +173,19 @@ public class SemanticGroundingEngine extends GroundingEngine{
 
         if (targetRelationConstraints != null) {
             // functional and inverse functional case - in rule issue (in-graph dealt by @isQueryValid)
+            // validStartNodes holds distinct entities, so its size is a valid distinct-value count here.
             if (predictObject) {
                 if (targetRelationConstraints.isFunctional && validStartNodes.size() > 1) return false;
                 // Predicting (s, p, o_candidate) via unary rule: if o_candidate already has an incoming
-                // subject for p, it violates inverse functionality.
+                // subject for p other than the anchor s, it violates inverse functionality.
                 if (targetRelationConstraints.isInverseFunctional) {
                     int[] existingSubjects = graph.getBackwardTargets(startNodeId, headRelationId);
-                    if (existingSubjects != null && existingSubjects.length > 0) return false;
+                    if (hasEdgeToOther(existingSubjects, knownEntityId)) return false;
                 }
             } else {
                 if (targetRelationConstraints.isFunctional) {
                     int[] existingTargets = graph.getForwardTargets(startNodeId, headRelationId);
-                    if (existingTargets != null && existingTargets.length > 0) return false;
+                    if (hasEdgeToOther(existingTargets, knownEntityId)) return false;
                 }
                 if (targetRelationConstraints.isInverseFunctional && validStartNodes.size() > 1) return false;
             }
@@ -201,6 +205,31 @@ public class SemanticGroundingEngine extends GroundingEngine{
             }
         }
         return true;
+    }
+
+    /**
+     * Returns TRUE if the current grounding predicts a head entity different from the one
+     * predicted by earlier groundings of the same rule. Counts distinct predicted values
+     * rather than raw groundings, since the same entity can be reached via multiple paths.
+     * Assumes earlier groundings all agree (a second value aborts the search immediately).
+     * For constant heads the variable is absent from the binding maps, so this never fires.
+     */
+    private boolean predictsSecondDistinctValue(List<Map<String, String>> ruleGroundings, String headVariable, String predictedEntityStr) {
+        if (ruleGroundings.size() <= 1) return false;
+        String firstPredicted = ruleGroundings.get(0).get(headVariable);
+        return firstPredicted != null && !firstPredicted.equals(predictedEntityStr);
+    }
+
+    /**
+     * Returns TRUE if the array contains an entity other than the anchor (query) entity.
+     * An existing edge back to the anchor is the queried fact itself, not a violation.
+     */
+    private boolean hasEdgeToOther(int[] targets, int anchorId) {
+        if (targets == null) return false;
+        for (int target : targets) {
+            if (target != anchorId) return true;
+        }
+        return false;
     }
 
     /**
