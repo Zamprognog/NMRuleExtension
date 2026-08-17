@@ -1,0 +1,111 @@
+% Supplementary material for the paper
+% Compile this file separately.
+
+\documentclass[runningheads]{llncs}
+
+\usepackage[T1]{fontenc}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{hyperref}
+
+% Springer LNCS URL styling (matches submission.tex)
+\usepackage{color}
+\renewcommand\UrlFont{\color{blue}\rmfamily}
+\urlstyle{rm}
+
+% Simple helper for consistent link formatting
+\newcommand{\suppurl}[2]{\noindent\textbf{#1:} \url{#2}\\}
+
+\begin{document}
+
+\title{Supplementary Material: Extending Mined Rules for Link Prediction with Schema-based Exceptions}
+\author{}
+\institute{}
+\maketitle
+
+\section*{Overview}
+This document provides additional resources to support reproducibility and reuse of the artifacts associated with the paper.
+
+\section{Code Repository}
+% Replace the placeholder URLs below.
+\suppurl{Main repository}{https://anonymous.4open.science/r/NMRextension-6928/}
+\suppurl{Artifact/Zenodo snapshot}{https://zenodo.org/records/20067594?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6ImJlMThhYTc4LWU5ZTgtNDZhOS04MzY0LWI5YTVmNmFiMGIzMyIsImRhdGEiOnt9LCJyYW5kb20iOiI4NGQwYzdmODJkZmI1MzVmMDc3NDUxNDliZDdjN2JlMCJ9.-D2d2bDBK-thqNrgkqk-Rcwa587pfovN6RBAlAD4idjWdKyUSvZcf-SglIZt2TFv8-rhRispAaZsGK_Io0BoaA}
+
+\subsection{Repository structure}
+\begin{itemize}
+    \item \texttt{src/}: implementation
+    \item \texttt{scripts/}: experiment and evaluation scripts
+    \item \texttt{configs/}: configuration files for datasets/rule miners
+    \item \texttt{results/}: generated outputs (or instructions to download)
+    \item \texttt{tools/}: various scripts and tools for preprocessing and rule mining
+\end{itemize}
+
+\subsection{Environment and installation}\label{sec:env}
+\begin{itemize}
+    \item OS tested: macOS 14.6.1 , Rocky Linux 8.10
+    \item Language/runtime: Java 21
+    \item Dependencies: See repository 
+    \item Installation instructions: see \texttt{README.md} in the repository.
+\end{itemize}
+
+\section{Datasets}\label{sec:datasets}
+
+\subsection*{Nell995}
+\begin{itemize}
+    \item Schema and ontology reachable \href{https://github.com/bagindokemas/SAIKGC?tab=readme-ov-file}{here}
+\end{itemize}
+
+\subsection*{CSKG2.0}
+\begin{itemize}
+    \item Dataset and benchmark reachable \href{https://doi.org/10.5281/zenodo.14167682}{here}
+    \item Schema reachable \href{https://scholkg.kmi.open.ac.uk/cskg/ontology}{here}
+\end{itemize}
+
+\subsection*{Hetionet}
+\begin{itemize}
+    \item Splits are generated from the \texttt{pykeen.datasets.hetionet} dataset
+    \item Metaedges from hetionet \href{https://github.com/hetio/hetionet/blob/main/describe/edges/metaedges.tsv}{release}
+\end{itemize}
+
+\subsection*{YAGO4.5-10}
+\begin{itemize}
+    \item Data from the official \href{https://yago-knowledge.org/downloads/yago-4-5}{release}
+    \item Preprocessing:
+    \begin{itemize}
+        \item \texttt{yago-disjoints.ttl} manually extracted from \texttt{yago-schema.ttl}
+        \item \texttt{properties\_d\_r\_f.csv} manually extracted from \texttt{yago-schema.ttl}
+        \item Convert \texttt{yago-facts.hdt} into \texttt{.nt} (rdf2hdt library)
+        \item Remove all literals and triples not relevant for LP via \texttt{tools/filterOut\_literals}, obtaining \texttt{yago4.5\_triples.txt} (or \texttt{.nt})
+        \item Run \texttt{filter\_ntfile.ipynb} to obtain \texttt{yago4.5-10}
+    \end{itemize}
+\end{itemize}
+
+
+\section{Rule miners and configurations}
+\begin{itemize}
+    \item \textbf{AnyBURL}: 23-1-x, configuration can be found in \texttt{tools/setup/[dataset]}.
+    \item \textbf{AMIE3}: 3.5.1, command lines used can be found in \texttt{tools/amie\_calls.txt}.
+\end{itemize}
+
+\section{Reproducing the experiments}
+\begin{enumerate}
+    \item Download datasets (Section~\ref{sec:datasets}).
+    \item Install dependencies (Section~\ref{sec:env}).
+    \item Run the pipeline (see readme.md):
+\end{enumerate}
+
+% Provide copy-pasteable commands when ready.
+\begin{verbatim}
+# Example 
+# mvn exec:java -Dexec.mainClass="ruleMiningSemanticExtension.RunExperiment" \
+     -Dexec.args="path/to/config.json [mode]"
+
+\end{verbatim}
+
+\section{License}
+This work is licensed under a \suppurl{Creative Commons Attribution 4.0 International License}{https://creativecommons.org/licenses/by/4.0/}.
+
+
+\end{document}
