@@ -26,6 +26,14 @@
 \usepackage{hyperref}
 \usepackage{placeins}
 
+% More permissive float placement: the results section carries several large tables
+\renewcommand{\topfraction}{0.9}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.07}
+\renewcommand{\floatpagefraction}{0.75}
+\setcounter{topnumber}{3}
+\setcounter{totalnumber}{5}
+
 \usepackage[linesnumbered,ruled,vlined]{algorithm2e}
 \bibliographystyle{plainurl}% the mandatory bibstyle
 
@@ -304,14 +312,14 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 %%%%%%%%%%%
 \begin{table}[]
     \centering
-    \caption{Analyzed datasets, when marked with * the dataset result will be found in the Appendix.}
+    \caption{Analyzed datasets.}
     \begin{tabular}{l|c|c|c|c}
          name & graph size (triples) & available restrictions & train size & test size \\
          \hline
          NELL995 & $500k$& f,d,r & 114k & 14.2k \\
          YAGO4.5-10 & 3.997M & f,d,r & 3.22M & 16.2k\\
-         Hetionet* & 2,275M & d,r & 2.21M & 22.5k \\
-         CSKG-490K* & 633k & d,r & 335k & 98.5k \\
+         Hetionet & 2,275M & d,r & 2.21M & 22.5k \\
+         CSKG-490K & 633k & d,r & 335k & 98.5k \\
     \end{tabular}
     \label{tab:datasets}
 \end{table}
@@ -386,6 +394,182 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 10\% & time      & 72s & 44s & 160s & 176s \\
 \bottomrule
 \end{tabular}
+\end{minipage}\\[2ex]
+
+\begin{minipage}[t]{0.49\linewidth}
+\centering
+\textbf{Hetionet}\\
+\begin{tabular}{c l | r r r r}
+\toprule
+\% & Metric & CP & \shortstack{CP\\nmr} & Full & \shortstack{Full\\nmr} \\
+\midrule
+1\%  & \# applied & 4 & 4 & 9 & 9 \\
+1\%  & \# target  & 4 & 4 & 10 & 10 \\
+1\%  & \# inc     & 0 & 0 & 0 & 0 \\
+1\%  & triples    & 444k & 444k & 1.2k & 1.2k \\
+1\% & sem       & 1.0 & 1.0  & 1.0 & 1.0\\
+1\%  & time      & 4s & 8s & 1s & 1s \\
+\addlinespace
+5\%  & \# applied & 19 & 19 & 44 & 44 \\
+5\%  & \# target  & 19 & 19 & 50 & 50 \\
+5\%  & \# inc     & 218865 & 0 & 0 & 0 \\
+5\%  & triples    & 2.0m & 1.7m & 13k & 13k \\
+5\% & sem       & 0.89 & 1.0 & 1.0 &  1.0 \\
+5\%  & time      & 35s & 112s & 6s & 18s \\
+\addlinespace
+10\% & \# applied & 38 & 38 & 86 & 86 \\
+10\% & \# target  & 38 & 38 & 100 & 100 \\
+10\% & \# inc     & 233122 & 0 & 0 & 0 \\
+10\% & triples    & 4.0m & 3.8m & 31k & 31k \\
+10\% & sem       & 0.94 & 1.0  & 1.0 & 1.0\\
+10\% & time      & 284s & 801s & 6s & 19s \\
+\bottomrule
+\end{tabular}
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.49\linewidth}
+\centering
+\textbf{CSKG-490K}\\
+\begin{tabular}{c l | r r r r}
+\toprule
+\% & Metric & CP & \shortstack{CP\\nmr} & Full & \shortstack{Full\\nmr} \\
+\midrule
+1\%  & \# applied & 14 & 15 & 668 & 665 \\
+1\%  & \# target  & 15 & 15 & 779 & 779 \\
+1\%  & \# inc     & 15 & 0 & 97 & 0 \\
+1\%  & triples    & 925 & 910 & 5.4k & 5.3k \\
+1\% & sem       & 0.98 & 1.0  & 0.98& 1.0\\
+1\%  & time      & 1s & 1s & 18s & 23s \\
+\addlinespace
+5\%  & \# applied & 69 & 69 & 3328 & 3297 \\
+5\%  & \# target  & 71 & 71 & 3894 & 3894 \\
+5\%  & \# inc     & 2393 & 0 & 1099 & 0 \\
+5\%  & triples    & 27k & 25k & 35k & 34k \\
+5\% & sem       &0.91 &1.0 & 0.97&1.0\\
+5\%  & time      & 2s & 3s & 93s & 109s \\
+\addlinespace
+10\% & \# applied & 140 & 140 & 6272 & 6181 \\
+10\% & \# target  & 142 & 142 & 7787 & 7787 \\
+10\% & \# inc     & 8392 & 0 & 2688 & 0 \\
+10\% & triples    & 54k & 46k & 71k & 68k \\
+10\% & sem       &0.84 & 1.0&0.96 &1.0\\
+10\% & time      & 4s & 5s & 188s & 218s \\
+\bottomrule
+\end{tabular}
+\end{minipage}
+\end{table}
+
+\begin{table}[]
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\renewcommand{\arraystretch}{1.12}
+\caption{Materialization metrics for AnyBURL (with and without non-monotonic rules), with dis-aggregated inconsistency counts.}
+\label{tab:mat_anyburl_10_30_notot_time}
+\begin{minipage}[t]{0.49\linewidth}
+\centering
+\textbf{NELL995}\\
+\begin{tabular}{c l | r r r r}
+\toprule
+\% & Metric & CP & \shortstack{CP\\nmr} & Full & \shortstack{Full\\nmr} \\
+\midrule
+
+1\%  & \# triples & 1.8k & 1.4k & 4.7k & 4.5k \\
+1\%  & func      & 217 & 0 & 28 & 0 \\
+1\%  & dom       & 38 & 0 & 55 & 0 \\
+1\%  & ran       & 153 & 0 & 78 & 0 \\
+\addlinespace
+
+5\%  & \# triples & 16k & 6k & 24k & 19k \\
+5\%  & func      & 8819 & 56 & 4835 & 73 \\
+5\%  & dom       & 768 & 0 & 830 & 0 \\
+5\%  & ran       & 263 & 0 & 409 & 0 \\
+\addlinespace
+
+10\% & \# triples & 28k & 11k & 55k & 44k \\
+10\% & func      & 17550 & 259 & 10568 & 355 \\
+10\% & dom       & 951 & 0 & 1513 & 0 \\
+10\% & ran       & 269 & 0 & 610 & 0 \\
+\bottomrule
+\end{tabular}
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.49\linewidth}
+\centering
+\textbf{YAGO4.5-10}\\
+\begin{tabular}{c l | r r r r}
+\toprule
+\% & Metric & CP & \shortstack{CP\\nmr} & Full & \shortstack{Full\\nmr} \\
+\midrule
+
+1\%  & \# triples & 29k & 29k & 53k & 30k \\
+1\%  & func      & 48 & 0 & 23180 & 0 \\
+1\%  & dom       & 0 & 0 & 1 & 0 \\
+1\%  & ran       & 0 & 0 & 0 & 0 \\
+\addlinespace
+
+5\%  & \# triples & 182k & 83k & 156k & 124k \\
+5\%  & func      & 97664 & 0 & 26128 & 0 \\
+5\%  & dom       & 2253 & 0 & 5986 & 0 \\
+5\%  & ran       & 0 & 0 & 0 & 0 \\
+\addlinespace
+
+10\% & \# triples & 358k & 229k & 331k & 297k \\
+10\% & func      & 127176 & 0 & 28191 & 0 \\
+10\% & dom       & 2999 & 0 & 6004 & 0 \\
+10\% & ran       & 0 & 0 & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\end{minipage}\\[2ex]
+
+\begin{minipage}[t]{0.49\linewidth}
+\centering
+\textbf{Hetionet}\\
+\begin{tabular}{c l | r r r r}
+\toprule
+\% & Metric & CP & \shortstack{CP\\nmr} & Full & \shortstack{Full\\nmr} \\
+\midrule
+1\%  & \# triples & 443k & 443k & 1.2k & 1.2k \\
+1\%  & func      & -- & -- & -- & -- \\
+1\%  & dom       & 0 & 0 & 0 & 0 \\
+1\%  & ran       & 0 & 0 & 0 & 0 \\
+\addlinespace
+5\%  & \# triples & 2.0m & 1.7m & 13k & 13k \\
+5\%  & func      & -- & -- & -- & -- \\
+5\%  & dom       & 218865 & 0 & 0 & 0 \\
+5\%  & ran       & 0 & 0 & 0 & 0 \\
+\addlinespace
+10\% & \# triples & 4.0m & 3.8m & 31k & 31k \\
+10\% & func      & -- & -- & -- & -- \\
+10\% & dom       & 233122 & 0 & 0 & 0 \\
+10\% & ran       & 0 & 0 & 0 & 0 \\
+\bottomrule
+\end{tabular}
+\end{minipage}%
+\hfill
+\begin{minipage}[t]{0.49\linewidth}
+\centering
+\textbf{CSKG-490K}\\
+\begin{tabular}{c l | r r r r}
+\toprule
+\% & Metric & CP & \shortstack{CP\\nmr} & Full & \shortstack{Full\\nmr} \\
+\midrule
+1\%  & \# triples & 0.9k & 0.9k & 5.4k & 5.3k \\
+1\%  & func      & -- & -- & -- & -- \\
+1\%  & dom       & 0 & 0 & 0 & 0 \\
+1\%  & ran       & 15 & 0 & 97 & 0 \\
+\addlinespace
+5\%  & \# triples & 27k & 25k & 35k & 34k \\
+5\%  & func      & -- & -- & -- & -- \\
+5\%  & dom       & 0 & 0 & 0 & 0 \\
+5\%  & ran       & 2393 & 0 & 1099 & 0 \\
+\addlinespace
+10\% & \# triples & 54k & 46k & 71k & 68k \\
+10\% & func      & -- & -- & -- & -- \\
+10\% & dom       & 0 & 0 & 0 & 0 \\
+10\% & ran       & 8392 & 0 & 2688 & 0 \\
+\bottomrule
+\end{tabular}
 \end{minipage}
 \end{table}
 
@@ -395,8 +579,8 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \scriptsize
 \begin{tikzpicture}
 \begin{groupplot}[
-  group style={group size=1 by 2, horizontal sep=1.0cm, vertical sep=1.5cm},
-  width=0.90\textwidth,
+  group style={group size=2 by 2, horizontal sep=1.1cm, vertical sep=1.5cm},
+  width=0.45\textwidth,
   height=3.0cm,
   ybar,
   enlarge x limits=0.20,
@@ -412,12 +596,12 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
   grid=both,
   major grid style={draw=gray!25},
   minor grid style={draw=gray!10},
-  legend style=legend style={
-    font=\scriptsize, 
-    draw=none, 
+  legend style={
+    font=\scriptsize,
+    draw=none,
     fill=none,
     % These two lines do the magic:
-    at={(0.5, 1.25)}, % (x, y) coordinates relative to the axis
+    at={(1.1, 1.3)}, % (x, y) coordinates relative to the axis
     anchor=south,     % The legend's bottom-center point attaches to those coordinates
     legend columns=4
 },
@@ -436,6 +620,20 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \addplot+[draw=black, fill=blue!55,   bar width=6pt, bar shift=-9pt] coordinates {(1,0.99) (5,0.46) (10,0.64)};
 \addplot+[draw=black, fill=blue!20,   bar width=6pt, bar shift=-3pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
 \addplot+[draw=black, fill=orange!65, bar width=6pt, bar shift= 3pt] coordinates {(1,0.56) (5,0.79) (10,0.90)};
+\addplot+[draw=black, fill=orange!25, bar width=6pt, bar shift= 9pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
+
+% --- Hetionet ---
+\nextgroupplot[title={Hetionet}]
+\addplot+[draw=black, fill=blue!55,   bar width=6pt, bar shift=-9pt] coordinates {(1,1.00) (5,0.89) (10,0.94)};
+\addplot+[draw=black, fill=blue!20,   bar width=6pt, bar shift=-3pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
+\addplot+[draw=black, fill=orange!65, bar width=6pt, bar shift= 3pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
+\addplot+[draw=black, fill=orange!25, bar width=6pt, bar shift= 9pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
+
+% --- CSKG-490K ---
+\nextgroupplot[title={CSKG-490K}]
+\addplot+[draw=black, fill=blue!55,   bar width=6pt, bar shift=-9pt] coordinates {(1,0.98) (5,0.91) (10,0.84)};
+\addplot+[draw=black, fill=blue!20,   bar width=6pt, bar shift=-3pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
+\addplot+[draw=black, fill=orange!65, bar width=6pt, bar shift= 3pt] coordinates {(1,0.98) (5,0.97) (10,0.96)};
 \addplot+[draw=black, fill=orange!25, bar width=6pt, bar shift= 9pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
 
 \end{groupplot}
@@ -518,303 +716,7 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 10\% & time      & 43s & 41s & 883s & 835s \\
 \bottomrule
 \end{tabular}
-\end{minipage}
-\end{table}
-
-
-
-% Consistency trend plots derived from Table \ref{tab:mat_amie_10_30}
-\begin{figure}[t]
-\centering
-\scriptsize
-\begin{tikzpicture}
-\begin{groupplot}[
-  group style={group size=1 by 2, horizontal sep=1.0cm, vertical sep=1.5cm},
-  width=0.90\textwidth,
-  height=3.0cm,
-  ybar,
-  enlarge x limits=0.20,
-  xlabel={\% rules},
-  xtick={1,5,10},
-  xmin=0.5,
-  xmax=10.5,
-  ymin=0,
-  ymax=1.05,
-  ytick={0,0.5,1.0},
-  ylabel={sem},
-  yticklabel style={/pgf/number format/fixed},
-  grid=both,
-  major grid style={draw=gray!25},
-  minor grid style={draw=gray!10},
-  legend style={
-    font=\scriptsize, 
-    draw=none, 
-    fill=none,
-    % These two lines do the magic:
-    at={(0.5, 1.25)}, % (x, y) coordinates relative to the axis
-    anchor=south,     % The legend's bottom-center point attaches to those coordinates
-    legend columns=4
-},
-]
-
-% --- NELL995 ---
-\nextgroupplot[title={NELL995}]
-\addplot+[draw=black, fill=blue!55,   bar width=6pt, bar shift=-9pt] coordinates {(1,0.76) (5,0.97) (10,0.89)};
-\addplot+[draw=black, fill=blue!20,   bar width=6pt, bar shift=-3pt] coordinates {(1,1.00) (5,1.00) (10,0.98)};
-\addplot+[draw=black, fill=orange!65, bar width=6pt, bar shift= 3pt] coordinates {(1,0.71) (5,0.72) (10,0.37)};
-\addplot+[draw=black, fill=orange!25, bar width=6pt, bar shift= 9pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
-\legend{L3 std, L3 nmr, L4 std, L4 nmr}
-
-% --- YAGO4.5-10 ---
-\nextgroupplot[title={YAGO4.5-10}]
-\addplot+[draw=black, fill=blue!55,   bar width=6pt, bar shift=-9pt] coordinates {(1,0.99) (5,0.97) (10,0.99)};
-\addplot+[draw=black, fill=blue!20,   bar width=6pt, bar shift=-3pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
-\addplot+[draw=black, fill=orange!65, bar width=6pt, bar shift= 3pt] coordinates {(1,0.96) (5,0.78) (10,0.77)};
-\addplot+[draw=black, fill=orange!25, bar width=6pt, bar shift= 9pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
-
-\end{groupplot}
-\end{tikzpicture}
-\caption{Semantic consistency for AMIE rules as a function of the percentage of applied rules (1\%, 5\%, 10\%), extracted from Table~\ref{tab:mat_amie_10_30}. Grouped bars (per percentage): L3 std, L3 nmr, L4 std, L4 nmr.}
-\label{fig:amie_inc_trend}
-\end{figure}
-
-%%%%%%%%%%%%
-
-\begin{table}[h]
-\centering
-\caption{Ranking-based LP metrics - CP and Full rules.}
-\label{tab:metrics_part1}
-\begin{tabular}{l | c | c c c | c | c c c}
-\toprule
-\multicolumn{9}{c}{NELL995} \\
-\midrule
-& \multicolumn{4}{c|}{CP rules} & \multicolumn{4}{c}{Full rules} \\
-\cmidrule(lr){2-5} \cmidrule(lr){6-9}
-Ruleset & sem@10 & hits@1 & hits@10 & mrr & sem@10 & hits@1 & hits@10 & mrr \\
-\midrule
-AnyBURL & 0.9927 & 0.1938 & 0.3256 & 0.2409 & 0.9965 & 0.3162 & 0.5318 & 0.3918 \\
-AnyBURL nmr & 1.0 & 0.1764 & 0.2911 & 0.2177 & 1.0 & 0.3064 & 0.4907 & 0.3732 \\
-AMIE & 0.9897 & 0.1442 & 0.2166 & 0.1703 & 0.9671 & 0.1897 & 0.3230 & 0.2344 \\
-AMIE nmr & 1.0 & 0.1404 & 0.2067 & 0.1644 & 1.0 &  0.1839 & 0.3117 & 0.2263 \\
-\midrule
-\multicolumn{9}{c}{YAGO4.5-10} \\
-\midrule
-& \multicolumn{4}{c|}{CP rules} & \multicolumn{4}{c}{Full rules} \\
-\cmidrule(lr){2-5} \cmidrule(lr){6-9}
-Ruleset & sem@10 & hits@1 & hits@10 & mrr & sem@10 & hits@1 & hits@10 & mrr \\
-\midrule
-AnyBURL & 0.9954 & 0.2800 & 0.3389 & 0.3016 & 0.9999 & 0.2566 & 0.2956 & 0.2723 \\
-AnyBURL nmr & 1.0 & 0.2731 & 0.3276 & 0.2927 & 1.0 & 0.2562 & 0.2943 & 0.2716 \\
-AMIE & 0.9997 & 0.2524 & 0.2873 & 0.2655 & 0.9980 & 0.2797 & 0.3320 & 0.2993\\
-AMIE nmr & 1.0 & 0.2517 & 0.2853 & 0.2643 & 1.0 & 0.2780 & 0.3264 & 0.2958\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-%%%%%%%%%%%%
-
-\section{Experiments} \label{sec:exp}
-We now proceed to illustrate and analyze our empirical experiment setup.
-\subsection{Experimental Setup}
-
-\paragraph{Rule Miners.} In principle, our method can be applied on any rule set consisting of closed path rules. To perform an empirical evaluation, we study the effects of schema-based non-monotonic extensions of rules mined using two highly performing rule miners, AnyBurl and AMIE3. As  the methods mine different type of rules and with different criteria, we do not aim to directly compare the two, but intend instead to evaluate the effect of non-monotonic extensions on rule set of different types. We thus use the following settings:
-\begin{itemize}
-    \item AnyBURL `CP': only cyclic rules, runtime 100s, min confidence: 0.1, min support: 2, rule length: 3 body atoms.
-    \item AnyBURL 'Full': fully expressive AnyBURL, runtime 100s (to limit the number of mined rules), min confidence: 0.1, min support: 2, rule length: 3 body atoms.
-    \item AMIE3 `L3': min PCA confidence: 0.1, min confidence: 0.1, min support: 2, rule length: 2 body atoms.
-    \item AMIE3 `L4': min PCA confidence: 0.1, min confidence: 0.1, min support: 2, rule length: 3 body atoms.
-\end{itemize}
-
-\noindent Since AMIE3 performs a full search even on large KGs, we limit the expressivity of its rules for performance reasons. In practice, we excluded any AMIE-mined rules with constants, as well as the longer rules in the case of CSKG, which our resource could not mine within several days. Despite the trade-off, we obtain in this way closed path rules which are not strictly cyclic, thus integrating a different type of expressivity.
-
-\paragraph{Datasets.} We extract rules from the following Knowledge Graphs, which are selected as they come with a defined schema, summarized in Table \ref{tab:datasets}. As it can be noted from the table, while our method implements inverse functionality, we could not find a dataset taht included such restriction:
-
-\begin{itemize}
-    \item NELL995 \cite{xiong_deeppath_2017}, a benchmark knowledge base completion dataset based on the Never-Ending Language Learning (NELL) system.
-    \item YAGO4.5-10: YAGO4.5 \cite{suchanek_yago_2024} is a general-purpose Knowledge Graph, which combines entity data from Wikidata with a cleaned, logic-consistent taxonomy primarily derived from schema.org. We build a Link Prediction-oriented version of YAGO4.5, following the same approach of its ancestor YAGO3.10 \cite{dettmers_convolutional_2018}.  We maintain only A-box triples that involve entities appearing themselves in at least 10 other similar triples. 
-    \item Hetionet \cite{himmelstein_systematic_nodate} a large, heterogeneous biomedical Knowledge Graph that integrates data from a collection public databases to connect various entities like genes, compounds, and diseases.
-    \item CSKG-490K: CSKG-2.0 \cite{dessi_cs-kg_2025} is an automatically generated Knowledge Graph collecting statements from 15 million research papers from the field of Computer Science, based on an expert-defined and evaluated ontology with a high granularity of properties. It provides LP-targeted splits, CSKG-490K is generated by collecting all triples with support $\geq5$.
-\end{itemize}
-
-\noindent When computing standard LP metrics, we use the max-aggregation approach for matching rules. In other words, we sort the predictions in lexicographic order according to the confidence of the rules inferring such predictions, with ties broken by the further highest confidence rules. While we are aware of its practical limitations~\cite{ott_rule-based_2023,ott_safran_2021}, it allows to focus on the single rules, which better fits our objective of seeing the effect of extending them with schema-based exceptions.
-%%%%%%%%
-\subsection{Results}
-
-Due to space constraints, here we report the results of two datasets (NELL995 and YAGO4.5-10), while additional results and the other datasets can be found in Appendix~\ref{sec:app1} and \ref{sec:app2}.  
-
-\paragraph{Materialization results.} Tables \ref{tab:mat_anyburl_10_30} and \ref{tab:mat_amie_10_30} report the results for the materialization at thresholds of, respectively, 1\% and 5\% and 10\% sorted rules. `\# applied' and `\# target' refer to respectively the number of rules that produced triples and the number of rules considering the target percentage. `\# inc' refers to the total number of distinct inconsistent triples (see Appendix \ref{sec:app2} for results including dis-aggregated inconsistency counts), while `\# triples' and `time' intuitively refer to the number of materialized triples and the runtime of the scenario, `sem' is the ratio of triples that are consistent compared to the total number of new triples. Figures \ref{fig:anyburl_inc_trend} and \ref{fig:amie_inc_trend} visualize this latter value.
- 
-The discrepancy between the target number of rules and the actually applied number of rules has two causes: first, some rules are mined in the training set and when the full graph is re-composed for prediction, rules that have high accuracy and low support might find all their heads already satisfied, becoming unable to predict new triples (for example AMIE L3 and L3 nmr with NELL995 5\%) . Second, and more relevant to our method, is that some rules might always predict exceptions and will be stopped by the pruning, thus causing the difference between the scenarios (seen by the difference between the number of rules applied by the standard methods and the nmr methods).
-% `Func', `dom' and `ran' refer to the number of inconsistent triples among the materialized ones according to, respectively functional, domain and range restrictions, `tot' is the absolute number of inconsistent new triples, and the `nmr' suffix refers to the non-monotonic extensions of the rule sets. Anyburl rulesets are named `Only CP' and `Full' based on the type of rules included, AMIE rules L3 and L4 based on the maximum length parameter.
-
-The results show that violations appear in most scenarios, even if their number relative to the total materialized triples can vary widely (focusing on the top 1\% rules, semantic consistency drops to 0.56 in YAGO4.5-10 with AnyBURL full rules, but the same miner reaches 0.97 and more in the other datasets). In the datasets where functionality constraint can be evaluated, the related inconsistencies can scale up to considerable percentages also with respect to the materialized triples (see Tables \ref{tab:mat_anyburl_10_30_notot_time} and \ref{tab:mat_amie_10_30_notot_time_appendix} in Appendix \ref{sec:app2}), making it particularly problematic if a repair needs to be performed. 
-
-The application of the non-monotonic extensions allows to improve consistency in  all cases, and seems to be particularly effective for the domain/range restrictions, consistently removing them. The remaining influence of out-rule exceptions seems to be largely minimal and we observed it only in one dataset (NELL995). This improvement generally comes at the expense of processing time, both as it requires to parse the schema, and to further process of exception conditions, but the empirical results show that the time increase is generally within the same order of magnitude with respect to the standard condition, with a few exception especially for NELL995. In some cases (mostly in YAGO4.5-10), we notice a reduction of rule materialization time, likely due to stopping inconsistency-prone rules with many available (partial) groundings. For example, in YAGO4.5-10 many rules predicting gender are mined. However, candidate subjects often already have an existing gender relation. Any rule that would add additional gender information would either generate inconsistent facts, or not find any viable grounding. With the non-monotonic extensions, such rules are stopped early, allowing the algorithm to move on to more promising rules.
-
-Increasing rule expressivity (Anyburl CP to Full) usually, but not consistently, improves the semantic quality, while increasing the rule length (AMIE L3 to L4) causes more unpredictable behaviors, which can be explained as the former operation making the rule set more specific, and the latter extending it. 
-
-\paragraph{Rank-based metrics.} As shown in Table \ref{tab:metrics_part1}, the influence of the non-monotonic extension on hits@k and MRR tends to be negative, but very limited. We attribute this to the quality and precision of high-confidence rules, which likely dominate the results at lower $k$ values: since individual rules can generate multiple predictions for \texttt{(s,p,?)} or \texttt{(?,p,o)} queries, they have the most influence with the top ranks. Given that the sem@10 scores are still not perfect, this shows that while the majority of top-10 predictions are semantically correct, some inconsistent triples are still present. Our extension appears to remove them, but worsens the other LP scores: this suggest that, with standard LP metrics, the inconsistency generating rules could be considered of higher quality despite the certain presence of inconsistencies among the predictions, as the metrics only focus on the relative rank, without addressing the quality of the relevant predictions.\\
-\indent Finally, a note on Hetionet and its low-scored performance: compared to other work as e.g.~\cite{betz_supervised_2022}, we do not specifically target a single property, and instead tackle the general task of KG completion, which thus explains the discrepancy on the results. Our interest lies on the semantic consistency of rules with respect to the entire KG schema, and limiting the rules to only predict a specific relation when only domain and range constraints are available would have limited the conclusion we could gain from the results.
-
-\section{Conclusions}
-% \subsubsection{Contributions}
-In this paper, we analyzed the effect of schema-based exceptions in rule sets for Link Prediction, with the aim of reducing the number of inconsistencies caused by materialization of standard Horn-based rules. Our method focused on exceptions avoiding in-graph and in-rule violations of domain, range and functionality restrictions, implementing them at rule-grounding level, by stopping the DFS search for a given problematic (rule, candidate entity) pair. Our empirical experiments showed that these extensions are sufficient to reduce the number of inconsistent triples, especially when considering domain and range. The cost of such improvement is a possible increase in computational time, as the schema must be parsed and further checks are added to the algorithm, but we note that in some cases the computational time was actually improved, likely by stopping high-support inconsistency-generating rules that are instead skipped. 
-% We further reported how the quality of the original rule set is actually influenced by the granularity of the schema and the level of curation of the same, with KGs respecting highly curated and granular producing more consistent rules. 
-
-We also show how rank-based metrics are influenced in a limited (but often negative) way by the extension, suggesting that they cannot measure the semantic quality of the predicted triples, as they accept triples even if uniquely predicted by inconsistency-prone rules.
-Finally, our method is most effective and more suitable when the rule sets are less expressive and of lower quality. Given that, especially when performing a full search, computational constraints might limit the expressivity of the mined rules, we posit that our method could help reducing the overhead of performing a post-hoc repair of the inferences.
-% \subsubsection{Limitations and Future Work}
-
-As discussed, we only included a limited number of restrictions, albeit common, existing in the OWL \cite{dean_owl_2004} standard. A possible research direction would be to expand this to include more complex axioms. But our method is also dependent on the presence of a schema (ontology), which is not the common setup for Link Prediction and rarely present in such datasets beyond some simple restrictions. While we argue for the benefits of including semantic information in the pipeline, an alternative approach would be to automatically extract such information from the data, instead of having expert curation in the loop. Finally, we note the need for more semantic-aware LP metrics, either by integration of the available ones, or by the development of alternatives, which would allow to have a more realistic idea of the quality of the methods.
-
-%%
-%% Bibliography
-%%
-
-%% Please use bibtex, 
-
-\bibliography{references}
-
-\appendix
-
-\section{Additional results for Hetionet and CSKG-490K}
-\label{sec:app1}
-
-
-
-\begin{table}[]
-\centering
-\scriptsize
-\setlength{\tabcolsep}{3pt}
-\renewcommand{\arraystretch}{1.12}
-\caption{Materialization results for AnyBURL.}
-\label{tab:mat_anyburl_10_30_appendix}
-
-\begin{minipage}[t]{0.49\linewidth}
-\centering
-\textbf{Hetionet}\\
-\begin{tabular}{c l | r r r r}
-\toprule
-\% & Metric & CP & \shortstack{CP\\nmr} & Full & \shortstack{Full\\nmr} \\
-\midrule
-1\%  & \# applied & 4 & 4 & 9 & 9 \\
-1\%  & \# target  & 4 & 4 & 10 & 10 \\
-1\%  & \# inc     & 0 & 0 & 0 & 0 \\
-1\%  & triples    & 444k & 444k & 1.2k & 1.2k \\
-1\% & sem       & 1.0 & 1.0  & 1.0 & 1.0\\
-1\%  & time      & 4s & 8s & 1s & 1s \\
-\addlinespace
-5\%  & \# applied & 19 & 19 & 44 & 44 \\
-5\%  & \# target  & 19 & 19 & 50 & 50 \\
-5\%  & \# inc     & 218865 & 0 & 0 & 0 \\
-5\%  & triples    & 2.0m & 1.7m & 13k & 13k \\
-5\% & sem       & 0.89 & 1.0 & 1.0 &  1.0 \\
-5\%  & time      & 35s & 112s & 6s & 18s \\
-\addlinespace
-10\% & \# applied & 38 & 38 & 86 & 86 \\
-10\% & \# target  & 38 & 38 & 100 & 100 \\
-10\% & \# inc     & 233122 & 0 & 0 & 0 \\
-10\% & triples    & 4.0m & 3.8m & 31k & 31k \\
-10\% & sem       & 0.94 & 1.0  & 1.0 & 1.0\\
-10\% & time      & 284s & 801s & 6s & 19s \\
-\bottomrule
-\end{tabular}
-\end{minipage}%
-\hfill
-\begin{minipage}[t]{0.49\linewidth}
-\centering
-\textbf{CSKG-490K}\\
-\begin{tabular}{c l | r r r r}
-\toprule
-\% & Metric & CP & \shortstack{CP\\nmr} & Full & \shortstack{Full\\nmr} \\
-\midrule
-1\%  & \# applied & 14 & 15 & 668 & 665 \\
-1\%  & \# target  & 15 & 15 & 779 & 779 \\
-1\%  & \# inc     & 15 & 0 & 97 & 0 \\
-1\%  & triples    & 925 & 910 & 5.4k & 5.3k \\
-1\% & sem       & 0.98 & 1.0  & 0.98& 1.0\\
-1\%  & time      & 1s & 1s & 18s & 23s \\
-\addlinespace
-5\%  & \# applied & 69 & 69 & 3328 & 3297 \\
-5\%  & \# target  & 71 & 71 & 3894 & 3894 \\
-5\%  & \# inc     & 2393 & 0 & 1099 & 0 \\
-5\%  & triples    & 27k & 25k & 35k & 34k \\
-5\% & sem       &0.91 &1.0 & 0.97&1.0\\
-5\%  & time      & 2s & 3s & 93s & 109s \\
-\addlinespace
-10\% & \# applied & 140 & 140 & 6272 & 6181 \\
-10\% & \# target  & 142 & 142 & 7787 & 7787 \\
-10\% & \# inc     & 8392 & 0 & 2688 & 0 \\
-10\% & triples    & 54k & 46k & 71k & 68k \\
-10\% & sem       &0.84 & 1.0&0.96 &1.0\\
-10\% & time      & 4s & 5s & 188s & 218s \\
-\bottomrule
-\end{tabular}
-\end{minipage}
-\end{table}
-
-\begin{figure}[]
-\centering
-\scriptsize
-\begin{tikzpicture}
-\begin{groupplot}[
-  group style={group size=1 by 2, horizontal sep=1.0cm, vertical sep=1.5cm},
-  width=0.90\textwidth,
-  height=3.0cm,
-  ybar,
-  enlarge x limits=0.20,
-  xlabel={\% rules},
-  xtick={1,5,10},
-  xmin=0.5,
-  xmax=10.5,
-  ymin=0,
-  ymax=1.05,
-  ytick={0,0.5,1.0},
-  ylabel={sem},
-  yticklabel style={/pgf/number format/fixed},
-  grid=both,
-  major grid style={draw=gray!25},
-  minor grid style={draw=gray!10},
-  legend style={
-    font=\scriptsize, 
-    draw=none, 
-    fill=none,
-    % These two lines do the magic:
-    at={(0.5, 1.25)}, % (x, y) coordinates relative to the axis
-    anchor=south,     % The legend's bottom-center point attaches to those coordinates
-    legend columns=4
-},
-]
-
-\nextgroupplot[title={Hetionet}]
-\addplot+[draw=black, fill=blue!55,   bar width=6pt, bar shift=-9pt] coordinates {(1,1.00) (5,0.89) (10,0.94)};
-\addplot+[draw=black, fill=blue!20,   bar width=6pt, bar shift=-3pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
-\addplot+[draw=black, fill=orange!65, bar width=6pt, bar shift= 3pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
-\addplot+[draw=black, fill=orange!25, bar width=6pt, bar shift= 9pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
-\legend{CP std, CP nmr, Full std, Full nmr}
-
-\nextgroupplot[title={CSKG-490K}]
-\addplot+[draw=black, fill=blue!55,   bar width=6pt, bar shift=-9pt] coordinates {(1,0.98) (5,0.91) (10,0.84)};
-\addplot+[draw=black, fill=blue!20,   bar width=6pt, bar shift=-3pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
-\addplot+[draw=black, fill=orange!65, bar width=6pt, bar shift= 3pt] coordinates {(1,0.98) (5,0.97) (10,0.96)};
-\addplot+[draw=black, fill=orange!25, bar width=6pt, bar shift= 9pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
-
-\end{groupplot}
-\end{tikzpicture}
-\caption{Semantic consistency for AnyBURL rules on Hetionet and CSKG-490K (appendix). Grouped bars (per percentage): CP std, CP nmr, Full std, Full nmr.}
-\label{fig:anyburl_inc_trend_appendix}
-\end{figure}
-
-
-
-
-\begin{table}[]
-\centering
-\scriptsize
-\setlength{\tabcolsep}{4pt}
-\renewcommand{\arraystretch}{1.15}
-\caption{Materialization results for AMIE.}
-\label{tab:mat_amie_10_30_appendix}
+\end{minipage}\\[2ex]
 
 \begin{minipage}[t]{0.49\linewidth}
 \centering
@@ -879,225 +781,12 @@ As discussed, we only included a limited number of restrictions, albeit common, 
 \end{minipage}
 \end{table}
 
-\begin{figure}[]
-\centering
-\scriptsize
-\begin{tikzpicture}
-\begin{groupplot}[
-  group style={group size=1 by 2, horizontal sep=1.0cm, vertical sep=1.5cm},
-  width=0.90\textwidth,
-  height=3.0cm,
-  ybar,
-  enlarge x limits=0.20,
-  xlabel={\% rules},
-  xtick={1,5,10},
-  xmin=0.5,
-  xmax=10.5,
-  ymin=0,
-  ymax=1.05,
-  ytick={0,0.5,1.0},
-  ylabel={sem},
-  yticklabel style={/pgf/number format/fixed},
-  grid=both,
-  major grid style={draw=gray!25},
-  minor grid style={draw=gray!10},
-  legend style={
-    font=\scriptsize, 
-    draw=none, 
-    fill=none,
-    % These two lines do the magic:
-    at={(0.5, 1.25)}, % (x, y) coordinates relative to the axis
-    anchor=south,     % The legend's bottom-center point attaches to those coordinates
-    legend columns=4
-},
-]
-
-\nextgroupplot[title={Hetionet}]
-\addplot+[draw=black, fill=blue!55,   bar width=6pt, bar shift=-9pt] coordinates {(1,0.34) (5,0.95) (10,0.97)};
-\addplot+[draw=black, fill=blue!20,   bar width=6pt, bar shift=-3pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
-\addplot+[draw=black, fill=orange!65, bar width=6pt, bar shift= 3pt] coordinates {(1,1.00) (5,0.79) (10,0.55)};
-\addplot+[draw=black, fill=orange!25, bar width=6pt, bar shift= 9pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
-\legend{L3 std, L3 nmr, L4 std, L4 nmr}
-
-\nextgroupplot[title={CSKG-490K}]
-\addplot+[draw=black, fill=blue!55,   bar width=6pt, bar shift=-9pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
-\addplot+[draw=black, fill=blue!20,   bar width=6pt, bar shift=-3pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
-% L4 is not available for CSKG-490K in Table~\ref{tab:mat_amie_10_30_appendix}; plotted at 0 for scale consistency.
-\addplot+[draw=black, fill=orange!65, bar width=6pt, bar shift= 3pt] coordinates {(1,0.00) (5,0.00) (10,0.00)};
-\addplot+[draw=black, fill=orange!25, bar width=6pt, bar shift= 9pt] coordinates {(1,0.00) (5,0.00) (10,0.00)};
-
-\end{groupplot}
-\end{tikzpicture}
-\caption{Semantic consistency for AMIE rules on Hetionet and CSKG-490K (appendix). Grouped bars (per percentage): L3 std, L3 nmr, L4 std, L4 nmr. (L4 is not available for CSKG-490K and is shown at 0.)}
-\label{fig:amie_inc_trend_appendix}
-\end{figure}
-
-
-%%%%%%%%%%%%%%%
-
-\begin{table}[]
-\centering
-\caption{Ranking-based LP metrics - CP and Full rules (appendix).}
-\label{tab:metrics_part1_appendix}
-\begin{tabular}{l | c | c c c | c | c c c}
-\toprule
-\multicolumn{9}{c}{Hetionet} \\
-\midrule
-& \multicolumn{4}{c|}{CP rules} & \multicolumn{4}{c}{Full rules} \\
-\cmidrule(lr){2-5} \cmidrule(lr){6-9}
-Ruleset & sem@10 & hits@1 & hits@10 & mrr & sem@10 & hits@1 & hits@10 & mrr \\
-\midrule
-AnyBURL  & 0.9999 & 0.0169 & 0.0804 & 0.0382 & 0.9999 & 0.0549 & 0.1310 & 0.0792 \\
-AnyBURL nmr & 1.0 & 0.0156 & 0.0797 & 0.0370 & 1.0 & 0.0548 & 0.1306 & 0.0791\\
-AMIE & 0.9801 & 0.0283 & 0.1002 & 0.0508 & 0.9902 & 0.0275 & 0.1017 & 0.0506 \\
-AMIE nmr & 1.0 & 0.0270 & 0.0992 & 0.0494 & 1.0 & 0.0320 & 0.1063 & 0.0554\\
-\midrule
-\multicolumn{9}{c}{CSKG-490K} \\
-\midrule
-& \multicolumn{4}{c|}{CP rules} & \multicolumn{4}{c}{Full rules} \\
-\cmidrule(lr){2-5} \cmidrule(lr){6-9}
-Ruleset & sem@10 & hits@1 & hits@10 & mrr & sem@10 & hits@1 & hits@10 & mrr \\
-\midrule
-AnyBURL & 0.9658 & 0.0617 & 0.1390 & 0.0874 & 0.9920 & 0.1018 & 0.2255 & 0.1432 \\
-AnyBURL nmr & 1.0 & 0.0620 & 0.1363 & 0.0869 & 1.0 & 0.1002 & 0.2191 & 0.1396 \\
-AMIE & 0.9759 & 0.1012 & 0.2162 & 0.1397 & -- & -- & -- & --  \\
-AMIE nmr & 1.0 & 0.1020 & 0.2167 & 0.1404 & -- & -- & -- & --\\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\FloatBarrier
-\section{Result tables with disaggregated inconsistencies}
-\label{sec:app2}
-
 \begin{table}[]
 \centering
 \scriptsize
 \setlength{\tabcolsep}{3pt}
 \renewcommand{\arraystretch}{1.12}
-\caption{Materialization metrics for AnyBURL (with and without non-monotonic rules) on NELL995 and YAGO4.5-10.}
-\label{tab:mat_anyburl_10_30_notot_time}
-\begin{minipage}[t]{0.49\linewidth}
-\centering
-\textbf{NELL995}\\
-\begin{tabular}{c l | r r r r}
-\toprule
-\% & Metric & CP & \shortstack{CP\\nmr} & Full & \shortstack{Full\\nmr} \\
-\midrule
-
-1\%  & \# triples & 1.8k & 1.4k & 4.7k & 4.5k \\
-1\%  & func      & 217 & 0 & 28 & 0 \\
-1\%  & dom       & 38 & 0 & 55 & 0 \\
-1\%  & ran       & 153 & 0 & 78 & 0 \\
-\addlinespace
-
-5\%  & \# triples & 16k & 6k & 24k & 19k \\
-5\%  & func      & 8819 & 56 & 4835 & 73 \\
-5\%  & dom       & 768 & 0 & 830 & 0 \\
-5\%  & ran       & 263 & 0 & 409 & 0 \\
-\addlinespace
-
-10\% & \# triples & 28k & 11k & 55k & 44k \\
-10\% & func      & 17550 & 259 & 10568 & 355 \\
-10\% & dom       & 951 & 0 & 1513 & 0 \\
-10\% & ran       & 269 & 0 & 610 & 0 \\
-\bottomrule
-\end{tabular}
-\end{minipage}%
-\hfill
-\begin{minipage}[t]{0.49\linewidth}
-\centering
-\textbf{YAGO4.5-10}\\
-\begin{tabular}{c l | r r r r}
-\toprule
-\% & Metric & CP & \shortstack{CP\\nmr} & Full & \shortstack{Full\\nmr} \\
-\midrule
-
-1\%  & \# triples & 29k & 29k & 53k & 30k \\
-1\%  & func      & 48 & 0 & 23180 & 0 \\
-1\%  & dom       & 0 & 0 & 1 & 0 \\
-1\%  & ran       & 0 & 0 & 0 & 0 \\
-\addlinespace
-
-5\%  & \# triples & 182k & 83k & 156k & 124k \\
-5\%  & func      & 97664 & 0 & 26128 & 0 \\
-5\%  & dom       & 2253 & 0 & 5986 & 0 \\
-5\%  & ran       & 0 & 0 & 0 & 0 \\
-\addlinespace
-
-10\% & \# triples & 358k & 229k & 331k & 297k \\
-10\% & func      & 127176 & 0 & 28191 & 0 \\
-10\% & dom       & 2999 & 0 & 6004 & 0 \\
-10\% & ran       & 0 & 0 & 0 & 0 \\
-\bottomrule
-\end{tabular}
-\end{minipage}
-\end{table}
-
-\begin{table}[]
-\centering
-\scriptsize
-\setlength{\tabcolsep}{3pt}
-\renewcommand{\arraystretch}{1.12}
-\caption{Materialization metrics for AnyBURL (with and without non-monotonic rules) on Hetionet and CSKG-490K.}
-\label{tab:mat_anyburl_10_30_notot_time_appendix}
-\begin{minipage}[t]{0.49\linewidth}
-\centering
-\textbf{Hetionet}\\
-\begin{tabular}{c l | r r r r}
-\toprule
-\% & Metric & CP & \shortstack{CP\\nmr} & Full & \shortstack{Full\\nmr} \\
-\midrule
-1\%  & \# triples & 443k & 443k & 1.2k & 1.2k \\
-1\%  & func      & -- & -- & -- & -- \\
-1\%  & dom       & 0 & 0 & 0 & 0 \\
-1\%  & ran       & 0 & 0 & 0 & 0 \\
-\addlinespace
-5\%  & \# triples & 2.0m & 1.7m & 13k & 13k \\
-5\%  & func      & -- & -- & -- & -- \\
-5\%  & dom       & 218865 & 0 & 0 & 0 \\
-5\%  & ran       & 0 & 0 & 0 & 0 \\
-\addlinespace
-10\% & \# triples & 4.0m & 3.8m & 31k & 31k \\
-10\% & func      & -- & -- & -- & -- \\
-10\% & dom       & 233122 & 0 & 0 & 0 \\
-10\% & ran       & 0 & 0 & 0 & 0 \\
-\bottomrule
-\end{tabular}
-\end{minipage}%
-\hfill
-\begin{minipage}[t]{0.49\linewidth}
-\centering
-\textbf{CSKG-490K}\\
-\begin{tabular}{c l | r r r r}
-\toprule
-\% & Metric & CP & \shortstack{CP\\nmr} & Full & \shortstack{Full\\nmr} \\
-\midrule
-1\%  & \# triples & 0.9k & 0.9k & 5.4k & 5.3k \\
-1\%  & func      & -- & -- & -- & -- \\
-1\%  & dom       & 0 & 0 & 0 & 0 \\
-1\%  & ran       & 15 & 0 & 97 & 0 \\
-\addlinespace
-5\%  & \# triples & 27k & 25k & 35k & 34k \\
-5\%  & func      & -- & -- & -- & -- \\
-5\%  & dom       & 0 & 0 & 0 & 0 \\
-5\%  & ran       & 2393 & 0 & 1099 & 0 \\
-\addlinespace
-10\% & \# triples & 54k & 46k & 71k & 68k \\
-10\% & func      & -- & -- & -- & -- \\
-10\% & dom       & 0 & 0 & 0 & 0 \\
-10\% & ran       & 8392 & 0 & 2688 & 0 \\
-\bottomrule
-\end{tabular}
-\end{minipage}
-\end{table}
-
-\begin{table}[]
-\centering
-\scriptsize
-\setlength{\tabcolsep}{3pt}
-\renewcommand{\arraystretch}{1.12}
-\caption{Materialization metrics for AMIE (with and without non-monotonic rules) on NELL995 and YAGO4.5-10.}
+\caption{Materialization metrics for AMIE (with and without non-monotonic rules), with dis-aggregated inconsistency counts.}
 \label{tab:mat_amie_10_30_notot_time}
 \begin{minipage}[t]{0.49\linewidth}
 \centering
@@ -1147,16 +836,8 @@ AMIE nmr & 1.0 & 0.1020 & 0.2167 & 0.1404 & -- & -- & -- & --\\
 10\% & ran       & 0 & 0 & 14 & 0 \\
 \bottomrule
 \end{tabular}
-\end{minipage}
-\end{table}
+\end{minipage}\\[2ex]
 
-\begin{table}[]
-\centering
-\scriptsize
-\setlength{\tabcolsep}{3pt}
-\renewcommand{\arraystretch}{1.12}
-\caption{Materialization metrics for AMIE (with and without non-monotonic rules) on Hetionet and CSKG-490K.}
-\label{tab:mat_amie_10_30_notot_time_appendix}
 \begin{minipage}[t]{0.49\linewidth}
 \centering
 \textbf{Hetionet}\\
@@ -1207,4 +888,195 @@ AMIE nmr & 1.0 & 0.1020 & 0.2167 & 0.1404 & -- & -- & -- & --\\
 \end{tabular}
 \end{minipage}
 \end{table}
+
+
+
+% Consistency trend plots derived from Table \ref{tab:mat_amie_10_30}
+\begin{figure}[t]
+\centering
+\scriptsize
+\begin{tikzpicture}
+\begin{groupplot}[
+  group style={group size=2 by 2, horizontal sep=1.1cm, vertical sep=1.5cm},
+  width=0.45\textwidth,
+  height=3.0cm,
+  ybar,
+  enlarge x limits=0.20,
+  xlabel={\% rules},
+  xtick={1,5,10},
+  xmin=0.5,
+  xmax=10.5,
+  ymin=0,
+  ymax=1.05,
+  ytick={0,0.5,1.0},
+  ylabel={sem},
+  yticklabel style={/pgf/number format/fixed},
+  grid=both,
+  major grid style={draw=gray!25},
+  minor grid style={draw=gray!10},
+  legend style={
+    font=\scriptsize,
+    draw=none,
+    fill=none,
+    % These two lines do the magic:
+    at={(1.1, 1.3)}, % (x, y) coordinates relative to the axis
+    anchor=south,     % The legend's bottom-center point attaches to those coordinates
+    legend columns=4
+},
+]
+
+% --- NELL995 ---
+\nextgroupplot[title={NELL995}]
+\addplot+[draw=black, fill=blue!55,   bar width=6pt, bar shift=-9pt] coordinates {(1,0.76) (5,0.97) (10,0.89)};
+\addplot+[draw=black, fill=blue!20,   bar width=6pt, bar shift=-3pt] coordinates {(1,1.00) (5,1.00) (10,0.98)};
+\addplot+[draw=black, fill=orange!65, bar width=6pt, bar shift= 3pt] coordinates {(1,0.71) (5,0.72) (10,0.37)};
+\addplot+[draw=black, fill=orange!25, bar width=6pt, bar shift= 9pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
+\legend{L3 std, L3 nmr, L4 std, L4 nmr}
+
+% --- YAGO4.5-10 ---
+\nextgroupplot[title={YAGO4.5-10}]
+\addplot+[draw=black, fill=blue!55,   bar width=6pt, bar shift=-9pt] coordinates {(1,0.99) (5,0.97) (10,0.99)};
+\addplot+[draw=black, fill=blue!20,   bar width=6pt, bar shift=-3pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
+\addplot+[draw=black, fill=orange!65, bar width=6pt, bar shift= 3pt] coordinates {(1,0.96) (5,0.78) (10,0.77)};
+\addplot+[draw=black, fill=orange!25, bar width=6pt, bar shift= 9pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
+
+% --- Hetionet ---
+\nextgroupplot[title={Hetionet}]
+\addplot+[draw=black, fill=blue!55,   bar width=6pt, bar shift=-9pt] coordinates {(1,0.34) (5,0.95) (10,0.97)};
+\addplot+[draw=black, fill=blue!20,   bar width=6pt, bar shift=-3pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
+\addplot+[draw=black, fill=orange!65, bar width=6pt, bar shift= 3pt] coordinates {(1,1.00) (5,0.79) (10,0.55)};
+\addplot+[draw=black, fill=orange!25, bar width=6pt, bar shift= 9pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
+
+% --- CSKG-490K ---
+% L4 is not available for CSKG-490K in Table~\ref{tab:mat_amie_10_30}; plotted at 0 for scale consistency.
+\nextgroupplot[title={CSKG-490K}]
+\addplot+[draw=black, fill=blue!55,   bar width=6pt, bar shift=-9pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
+\addplot+[draw=black, fill=blue!20,   bar width=6pt, bar shift=-3pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
+\addplot+[draw=black, fill=orange!65, bar width=6pt, bar shift= 3pt] coordinates {(1,0.00) (5,0.00) (10,0.00)};
+\addplot+[draw=black, fill=orange!25, bar width=6pt, bar shift= 9pt] coordinates {(1,0.00) (5,0.00) (10,0.00)};
+
+\end{groupplot}
+\end{tikzpicture}
+\caption{Semantic consistency for AMIE rules as a function of the percentage of applied rules (1\%, 5\%, 10\%), extracted from Table~\ref{tab:mat_amie_10_30}. Grouped bars (per percentage): L3 std, L3 nmr, L4 std, L4 nmr. (L4 is not available for CSKG-490K and is shown at 0.)}
+\label{fig:amie_inc_trend}
+\end{figure}
+
+%%%%%%%%%%%%
+
+\begin{table}[h]
+\centering
+\caption{Ranking-based LP metrics - CP and Full rules.}
+\label{tab:metrics_part1}
+\begin{tabular}{l | c | c c c | c | c c c}
+\toprule
+\multicolumn{9}{c}{NELL995} \\
+\midrule
+& \multicolumn{4}{c|}{CP rules} & \multicolumn{4}{c}{Full rules} \\
+\cmidrule(lr){2-5} \cmidrule(lr){6-9}
+Ruleset & sem@10 & hits@1 & hits@10 & mrr & sem@10 & hits@1 & hits@10 & mrr \\
+\midrule
+AnyBURL & 0.9927 & 0.1938 & 0.3256 & 0.2409 & 0.9965 & 0.3162 & 0.5318 & 0.3918 \\
+AnyBURL nmr & 1.0 & 0.1764 & 0.2911 & 0.2177 & 1.0 & 0.3064 & 0.4907 & 0.3732 \\
+AMIE & 0.9897 & 0.1442 & 0.2166 & 0.1703 & 0.9671 & 0.1897 & 0.3230 & 0.2344 \\
+AMIE nmr & 1.0 & 0.1404 & 0.2067 & 0.1644 & 1.0 &  0.1839 & 0.3117 & 0.2263 \\
+\midrule
+\multicolumn{9}{c}{YAGO4.5-10} \\
+\midrule
+& \multicolumn{4}{c|}{CP rules} & \multicolumn{4}{c}{Full rules} \\
+\cmidrule(lr){2-5} \cmidrule(lr){6-9}
+Ruleset & sem@10 & hits@1 & hits@10 & mrr & sem@10 & hits@1 & hits@10 & mrr \\
+\midrule
+AnyBURL & 0.9954 & 0.2800 & 0.3389 & 0.3016 & 0.9999 & 0.2566 & 0.2956 & 0.2723 \\
+AnyBURL nmr & 1.0 & 0.2731 & 0.3276 & 0.2927 & 1.0 & 0.2562 & 0.2943 & 0.2716 \\
+AMIE & 0.9997 & 0.2524 & 0.2873 & 0.2655 & 0.9980 & 0.2797 & 0.3320 & 0.2993\\
+AMIE nmr & 1.0 & 0.2517 & 0.2853 & 0.2643 & 1.0 & 0.2780 & 0.3264 & 0.2958\\
+\midrule
+\multicolumn{9}{c}{Hetionet} \\
+\midrule
+& \multicolumn{4}{c|}{CP rules} & \multicolumn{4}{c}{Full rules} \\
+\cmidrule(lr){2-5} \cmidrule(lr){6-9}
+Ruleset & sem@10 & hits@1 & hits@10 & mrr & sem@10 & hits@1 & hits@10 & mrr \\
+\midrule
+AnyBURL  & 0.9999 & 0.0169 & 0.0804 & 0.0382 & 0.9999 & 0.0549 & 0.1310 & 0.0792 \\
+AnyBURL nmr & 1.0 & 0.0156 & 0.0797 & 0.0370 & 1.0 & 0.0548 & 0.1306 & 0.0791\\
+AMIE & 0.9801 & 0.0283 & 0.1002 & 0.0508 & 0.9902 & 0.0275 & 0.1017 & 0.0506 \\
+AMIE nmr & 1.0 & 0.0270 & 0.0992 & 0.0494 & 1.0 & 0.0320 & 0.1063 & 0.0554\\
+\midrule
+\multicolumn{9}{c}{CSKG-490K} \\
+\midrule
+& \multicolumn{4}{c|}{CP rules} & \multicolumn{4}{c}{Full rules} \\
+\cmidrule(lr){2-5} \cmidrule(lr){6-9}
+Ruleset & sem@10 & hits@1 & hits@10 & mrr & sem@10 & hits@1 & hits@10 & mrr \\
+\midrule
+AnyBURL & 0.9658 & 0.0617 & 0.1390 & 0.0874 & 0.9920 & 0.1018 & 0.2255 & 0.1432 \\
+AnyBURL nmr & 1.0 & 0.0620 & 0.1363 & 0.0869 & 1.0 & 0.1002 & 0.2191 & 0.1396 \\
+AMIE & 0.9759 & 0.1012 & 0.2162 & 0.1397 & -- & -- & -- & --  \\
+AMIE nmr & 1.0 & 0.1020 & 0.2167 & 0.1404 & -- & -- & -- & --\\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%%%%%%%%%%%%
+
+\section{Experiments} \label{sec:exp}
+We now proceed to illustrate and analyze our empirical experiment setup.
+\subsection{Experimental Setup}
+
+\paragraph{Rule Miners.} In principle, our method can be applied on any rule set consisting of closed path rules. To perform an empirical evaluation, we study the effects of schema-based non-monotonic extensions of rules mined using two highly performing rule miners, AnyBurl and AMIE3. As  the methods mine different type of rules and with different criteria, we do not aim to directly compare the two, but intend instead to evaluate the effect of non-monotonic extensions on rule set of different types. We thus use the following settings:
+\begin{itemize}
+    \item AnyBURL `CP': only cyclic rules, runtime 100s, min confidence: 0.1, min support: 2, rule length: 3 body atoms.
+    \item AnyBURL 'Full': fully expressive AnyBURL, runtime 100s (to limit the number of mined rules), min confidence: 0.1, min support: 2, rule length: 3 body atoms.
+    \item AMIE3 `L3': min PCA confidence: 0.1, min confidence: 0.1, min support: 2, rule length: 2 body atoms.
+    \item AMIE3 `L4': min PCA confidence: 0.1, min confidence: 0.1, min support: 2, rule length: 3 body atoms.
+\end{itemize}
+
+\noindent Since AMIE3 performs a full search even on large KGs, we limit the expressivity of its rules for performance reasons. In practice, we excluded any AMIE-mined rules with constants, as well as the longer rules in the case of CSKG, which our resource could not mine within several days. Despite the trade-off, we obtain in this way closed path rules which are not strictly cyclic, thus integrating a different type of expressivity.
+
+\paragraph{Datasets.} We extract rules from the following Knowledge Graphs, which are selected as they come with a defined schema, summarized in Table \ref{tab:datasets}. As it can be noted from the table, while our method implements inverse functionality, we could not find a dataset taht included such restriction:
+
+\begin{itemize}
+    \item NELL995 \cite{xiong_deeppath_2017}, a benchmark knowledge base completion dataset based on the Never-Ending Language Learning (NELL) system.
+    \item YAGO4.5-10: YAGO4.5 \cite{suchanek_yago_2024} is a general-purpose Knowledge Graph, which combines entity data from Wikidata with a cleaned, logic-consistent taxonomy primarily derived from schema.org. We build a Link Prediction-oriented version of YAGO4.5, following the same approach of its ancestor YAGO3.10 \cite{dettmers_convolutional_2018}.  We maintain only A-box triples that involve entities appearing themselves in at least 10 other similar triples. 
+    \item Hetionet \cite{himmelstein_systematic_nodate} a large, heterogeneous biomedical Knowledge Graph that integrates data from a collection public databases to connect various entities like genes, compounds, and diseases.
+    \item CSKG-490K: CSKG-2.0 \cite{dessi_cs-kg_2025} is an automatically generated Knowledge Graph collecting statements from 15 million research papers from the field of Computer Science, based on an expert-defined and evaluated ontology with a high granularity of properties. It provides LP-targeted splits, CSKG-490K is generated by collecting all triples with support $\geq5$.
+\end{itemize}
+
+\noindent When computing standard LP metrics, we use the max-aggregation approach for matching rules. In other words, we sort the predictions in lexicographic order according to the confidence of the rules inferring such predictions, with ties broken by the further highest confidence rules. While we are aware of its practical limitations~\cite{ott_rule-based_2023,ott_safran_2021}, it allows to focus on the single rules, which better fits our objective of seeing the effect of extending them with schema-based exceptions.
+%%%%%%%%
+\subsection{Results}
+
+\paragraph{Materialization results.} Tables \ref{tab:mat_anyburl_10_30} and \ref{tab:mat_amie_10_30} report the results for the materialization at thresholds of, respectively, 1\% and 5\% and 10\% sorted rules. `\# applied' and `\# target' refer to respectively the number of rules that produced triples and the number of rules considering the target percentage. `\# inc' refers to the total number of distinct inconsistent triples (Tables \ref{tab:mat_anyburl_10_30_notot_time} and \ref{tab:mat_amie_10_30_notot_time} report the same results with dis-aggregated inconsistency counts), while `\# triples' and `time' intuitively refer to the number of materialized triples and the runtime of the scenario, `sem' is the ratio of triples that are consistent compared to the total number of new triples. Figures \ref{fig:anyburl_inc_trend} and \ref{fig:amie_inc_trend} visualize this latter value.
+ 
+The discrepancy between the target number of rules and the actually applied number of rules has two causes: first, some rules are mined in the training set and when the full graph is re-composed for prediction, rules that have high accuracy and low support might find all their heads already satisfied, becoming unable to predict new triples (for example AMIE L3 and L3 nmr with NELL995 5\%) . Second, and more relevant to our method, is that some rules might always predict exceptions and will be stopped by the pruning, thus causing the difference between the scenarios (seen by the difference between the number of rules applied by the standard methods and the nmr methods).
+% `Func', `dom' and `ran' refer to the number of inconsistent triples among the materialized ones according to, respectively functional, domain and range restrictions, `tot' is the absolute number of inconsistent new triples, and the `nmr' suffix refers to the non-monotonic extensions of the rule sets. Anyburl rulesets are named `Only CP' and `Full' based on the type of rules included, AMIE rules L3 and L4 based on the maximum length parameter.
+
+The results show that violations appear in most scenarios, even if their number relative to the total materialized triples can vary widely (focusing on the top 1\% rules, semantic consistency drops to 0.56 in YAGO4.5-10 with AnyBURL full rules, but the same miner reaches 0.97 and more in the other datasets). In the datasets where functionality constraint can be evaluated, the related inconsistencies can scale up to considerable percentages also with respect to the materialized triples (see Tables \ref{tab:mat_anyburl_10_30_notot_time} and \ref{tab:mat_amie_10_30_notot_time}), making it particularly problematic if a repair needs to be performed. 
+
+The application of the non-monotonic extensions allows to improve consistency in  all cases, and seems to be particularly effective for the domain/range restrictions, consistently removing them. The remaining influence of out-rule exceptions seems to be largely minimal and we observed it only in one dataset (NELL995). This improvement generally comes at the expense of processing time, both as it requires to parse the schema, and to further process of exception conditions, but the empirical results show that the time increase is generally within the same order of magnitude with respect to the standard condition, with a few exception especially for NELL995. In some cases (mostly in YAGO4.5-10), we notice a reduction of rule materialization time, likely due to stopping inconsistency-prone rules with many available (partial) groundings. For example, in YAGO4.5-10 many rules predicting gender are mined. However, candidate subjects often already have an existing gender relation. Any rule that would add additional gender information would either generate inconsistent facts, or not find any viable grounding. With the non-monotonic extensions, such rules are stopped early, allowing the algorithm to move on to more promising rules.
+
+Increasing rule expressivity (Anyburl CP to Full) usually, but not consistently, improves the semantic quality, while increasing the rule length (AMIE L3 to L4) causes more unpredictable behaviors, which can be explained as the former operation making the rule set more specific, and the latter extending it. 
+
+\paragraph{Rank-based metrics.} As shown in Table \ref{tab:metrics_part1}, the influence of the non-monotonic extension on hits@k and MRR tends to be negative, but very limited. We attribute this to the quality and precision of high-confidence rules, which likely dominate the results at lower $k$ values: since individual rules can generate multiple predictions for \texttt{(s,p,?)} or \texttt{(?,p,o)} queries, they have the most influence with the top ranks. Given that the sem@10 scores are still not perfect, this shows that while the majority of top-10 predictions are semantically correct, some inconsistent triples are still present. Our extension appears to remove them, but worsens the other LP scores: this suggest that, with standard LP metrics, the inconsistency generating rules could be considered of higher quality despite the certain presence of inconsistencies among the predictions, as the metrics only focus on the relative rank, without addressing the quality of the relevant predictions.\\
+\indent Finally, a note on Hetionet and its low-scored performance: compared to other work as e.g.~\cite{betz_supervised_2022}, we do not specifically target a single property, and instead tackle the general task of KG completion, which thus explains the discrepancy on the results. Our interest lies on the semantic consistency of rules with respect to the entire KG schema, and limiting the rules to only predict a specific relation when only domain and range constraints are available would have limited the conclusion we could gain from the results.
+
+\FloatBarrier
+\section{Conclusions}
+% \subsubsection{Contributions}
+In this paper, we analyzed the effect of schema-based exceptions in rule sets for Link Prediction, with the aim of reducing the number of inconsistencies caused by materialization of standard Horn-based rules. Our method focused on exceptions avoiding in-graph and in-rule violations of domain, range and functionality restrictions, implementing them at rule-grounding level, by stopping the DFS search for a given problematic (rule, candidate entity) pair. Our empirical experiments showed that these extensions are sufficient to reduce the number of inconsistent triples, especially when considering domain and range. The cost of such improvement is a possible increase in computational time, as the schema must be parsed and further checks are added to the algorithm, but we note that in some cases the computational time was actually improved, likely by stopping high-support inconsistency-generating rules that are instead skipped. 
+% We further reported how the quality of the original rule set is actually influenced by the granularity of the schema and the level of curation of the same, with KGs respecting highly curated and granular producing more consistent rules. 
+
+We also show how rank-based metrics are influenced in a limited (but often negative) way by the extension, suggesting that they cannot measure the semantic quality of the predicted triples, as they accept triples even if uniquely predicted by inconsistency-prone rules.
+Finally, our method is most effective and more suitable when the rule sets are less expressive and of lower quality. Given that, especially when performing a full search, computational constraints might limit the expressivity of the mined rules, we posit that our method could help reducing the overhead of performing a post-hoc repair of the inferences.
+% \subsubsection{Limitations and Future Work}
+
+As discussed, we only included a limited number of restrictions, albeit common, existing in the OWL \cite{dean_owl_2004} standard. A possible research direction would be to expand this to include more complex axioms. But our method is also dependent on the presence of a schema (ontology), which is not the common setup for Link Prediction and rarely present in such datasets beyond some simple restrictions. While we argue for the benefits of including semantic information in the pipeline, an alternative approach would be to automatically extract such information from the data, instead of having expert curation in the loop. Finally, we note the need for more semantic-aware LP metrics, either by integration of the available ones, or by the development of alternatives, which would allow to have a more realistic idea of the quality of the methods.
+
+%%
+%% Bibliography
+%%
+
+%% Please use bibtex, 
+
+\bibliography{references}
+
 \end{document}
