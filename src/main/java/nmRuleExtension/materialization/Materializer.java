@@ -40,20 +40,18 @@ public class Materializer {
 
         System.out.println("Starting materialization using " + sortedRules.size() + " rules...");
 
-        int rulesWithTriplesCount = 0;
+        MaterializationStats stats = new MaterializationStats();
         for (Rule rule : sortedRules) {
             if (newlyMaterialized.size() >= targetNewCount) break;
 
             int triplesBeforeRule = newlyMaterialized.size();
-            applyRule(rule, newlyMaterialized, targetNewCount, totalEntities);
+            RuleOutcome outcome = applyRule(rule, newlyMaterialized, targetNewCount, totalEntities);
 
-            if (newlyMaterialized.size() > triplesBeforeRule) {
-                rulesWithTriplesCount++;
-            }
+            stats.record(outcome, newlyMaterialized.size() > triplesBeforeRule);
             DualLogger.getOriginalOut().println("Rule applied. Current new triples: " + newlyMaterialized.size());
         }
 
-        finishMaterialization(startTime, rulesWithTriplesCount, newlyMaterialized, outputPath);
+        finishMaterialization(startTime, stats, newlyMaterialized, outputPath);
     }
 
     /**
@@ -73,23 +71,22 @@ public class Materializer {
         Set<String> newlyMaterialized = new HashSet<>();
         int totalEntities = engine.entityCount();
 
-        int rulesWithTriplesCount = 0;
+        MaterializationStats stats = new MaterializationStats();
         for (int i = 0; i < numRulesToUse; i++) {
             Rule rule = allRules.get(i);
             int triplesBeforeRule = newlyMaterialized.size();
-            
-            applyRule(rule, newlyMaterialized, Integer.MAX_VALUE, totalEntities);
 
-            if (newlyMaterialized.size() > triplesBeforeRule) {
-                rulesWithTriplesCount++;
-            }
+            RuleOutcome outcome = applyRule(rule, newlyMaterialized, Integer.MAX_VALUE, totalEntities);
+
+            stats.record(outcome, newlyMaterialized.size() > triplesBeforeRule);
             DualLogger.getOriginalOut().println("Rule " + (i+1) + "/" + numRulesToUse + " applied. Total new triples: " + newlyMaterialized.size());
         }
 
-        finishMaterialization(startTime, rulesWithTriplesCount, newlyMaterialized, outputPath);
+        finishMaterialization(startTime, stats, newlyMaterialized, outputPath);
     }
 
-    private void applyRule(Rule rule, Set<String> newlyMaterialized, int targetNewCount, int totalEntities) {
+    private RuleOutcome applyRule(Rule rule, Set<String> newlyMaterialized, int targetNewCount, int totalEntities) {
+        RuleOutcome outcome = new RuleOutcome();
         String predicate = rule.getHead().getPredicate();
         // Try applying this rule to every entity in the graph
         for (int i = 0; i < totalEntities; i++) {
@@ -98,28 +95,79 @@ public class Materializer {
             String entity = engine.idToEntity(i);
 
             // 1. Try predicting the object (Forward)
-            Map<String, List<Float>> objPreds = new HashMap<>();
-            rule.apply(engine, true, entity, predicate, objPreds);
-            processPredictions(entity, predicate, objPreds.keySet(), true, newlyMaterialized, targetNewCount);
+            try {
+                Map<String, List<Float>> objPreds = new HashMap<>();
+                rule.apply(engine, true, entity, predicate, objPreds);
+                outcome.rawPredictions += objPreds.size();
+                processPredictions(entity, predicate, objPreds.keySet(), true, newlyMaterialized, targetNewCount);
+            } catch (Exception e) {
+                outcome.exceptions++;
+            }
 
             if (newlyMaterialized.size() >= targetNewCount) break;
 
             // 2. Try predicting the subject (Backward)
-            Map<String, List<Float>> subjPreds = new HashMap<>();
-            rule.apply(engine, false, entity, predicate, subjPreds);
-            processPredictions(entity, predicate, subjPreds.keySet(), false, newlyMaterialized, targetNewCount);
+            try {
+                Map<String, List<Float>> subjPreds = new HashMap<>();
+                rule.apply(engine, false, entity, predicate, subjPreds);
+                outcome.rawPredictions += subjPreds.size();
+                processPredictions(entity, predicate, subjPreds.keySet(), false, newlyMaterialized, targetNewCount);
+            } catch (Exception e) {
+                outcome.exceptions++;
+            }
         }
+        return outcome;
     }
 
-    private void finishMaterialization(long startTime, int rulesWithTriplesCount, Set<String> newlyMaterialized, String outputPath) {
+    private void finishMaterialization(long startTime, MaterializationStats stats, Set<String> newlyMaterialized, String outputPath) {
         long endTime = System.currentTimeMillis();
         long elapsedTime = endTime - startTime;
 
         System.out.println("Materialization complete. Writing to file...");
-        System.out.println("Applied rules that added triples: " + rulesWithTriplesCount);
+        stats.print();
         System.out.printf("Total elapsed time for materialization: %d ms (%.2f seconds)%n", elapsedTime, elapsedTime / 1000.0);
 
         writeToNTriples(newlyMaterialized, outputPath);
+    }
+
+    /** Per-rule result accumulated across all entities / both grounding directions. */
+    private static class RuleOutcome {
+        int exceptions = 0;       // number of (entity, direction) attempts that threw
+        int rawPredictions = 0;   // total candidate predictions produced (incl. known/duplicate facts)
+    }
+
+    /** Aggregates how rules behaved during a materialization run. */
+    private static class MaterializationStats {
+        int totalRulesProcessed = 0;
+        int fullyMaterialized = 0;       // 0 exceptions: rule ran clean end-to-end
+        int partialWithExceptions = 0;   // >=1 exception but still produced some predictions
+        int skippedDueToExceptions = 0;  // >=1 exception and produced 0 predictions
+        int noGroundings = 0;            // subset of fullyMaterialized: 0 exceptions, 0 predictions
+        int rulesAddingNewTriples = 0;   // produced at least one NEW (non-duplicate) triple
+
+        void record(RuleOutcome outcome, boolean addedNewTriple) {
+            totalRulesProcessed++;
+            if (addedNewTriple) rulesAddingNewTriples++;
+
+            if (outcome.exceptions == 0) {
+                fullyMaterialized++;
+                if (outcome.rawPredictions == 0) noGroundings++;
+            } else if (outcome.rawPredictions > 0) {
+                partialWithExceptions++;
+            } else {
+                skippedDueToExceptions++;
+            }
+        }
+
+        void print() {
+            System.out.println("--- Rule materialization breakdown ---");
+            System.out.println("  Rules processed:                       " + totalRulesProcessed);
+            System.out.println("  Fully materialized (no exceptions):    " + fullyMaterialized
+                    + " (of which " + noGroundings + " produced no predictions: lack of groundings)");
+            System.out.println("  Partial (some exceptions, had preds):  " + partialWithExceptions);
+            System.out.println("  Skipped (exceptions, no predictions):  " + skippedDueToExceptions);
+            System.out.println("  Rules that added new triples:          " + rulesAddingNewTriples);
+        }
     }
 
     /**
