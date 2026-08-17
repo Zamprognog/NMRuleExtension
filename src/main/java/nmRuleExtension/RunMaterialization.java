@@ -20,8 +20,8 @@ public class RunMaterialization {
     public static void main(String[] args) {
         String configPath ;
         // Pass the JSON config path as an argument, or fallback to a default
-//        configPath = args.length > 0 ? args[0] : "data/NELL995/NELL995.json";
-         configPath = args.length > 0 ? args[0] : "data/hetionet/hetionet.json";
+        configPath = args.length > 0 ? args[0] : "data/NELL995/NELL995.json";
+//         configPath = args.length > 0 ? args[0] : "data/hetionet/hetionet.json";
 //        configPath = args.length > 0 ? args[0] : "data/CSKG2/CSKG2.json";
 //        configPath = args.length > 0 ? args[0] : "data/YAGO4.5/YAGO4.5.json";
 
