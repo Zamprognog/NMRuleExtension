@@ -334,6 +334,7 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \caption{Materialization results for AnyBURL.}
 \label{tab:mat_anyburl_10_30}
 
+% ===== NELL995 — anyburl — MAIN =====
 \begin{minipage}[t]{0.49\linewidth}
 \centering
 \textbf{NELL995}\\
@@ -341,30 +342,31 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \toprule
 \% & Metric & CP & \shortstack{CP\\nmr} & Full & \shortstack{Full\\nmr} \\
 \midrule
-1\%  & \# applied & 14 & 12 & 212 & 205 \\
-1\%  & \# target  & 15 & 15 & 669 & 669 \\
-1\%  & \# inc     & 389 & 0 & 162 & 0 \\
-1\%  & triples    & 1.8k & 1.4k & 4.7k & 4.5k \\
-1\% & sem    & 0.78 & 1.0 & 0.97 & 1.0 \\
-1\%  & time      & 1s & 2s & 9s & 29s \\
+1\% & \# applied & 14 & 13 & 212 & 205 \\
+1\% & \# target & 15 & 15 & 669 & 669 \\
+1\% & \# inc & 383 & 0 & 161 & 0 \\
+1\% & triples & 1.8k & 1.4k & 4.7k & 4.5k \\
+1\% & sem & 0.79 & 1.0 & 0.97 & 1.0 \\
+1\% & time & 1s & 2s & 8s & 22s \\
 \addlinespace
-5\%  & \# applied & 69 & 60 & 1316 & 1279 \\
-5\%  & \# target  & 72 & 72 & 3343 & 3343 \\
-5\%  & \# inc     & 9292 & 56 & 5627 & 73 \\
-5\%  & triples    & 16k & 6k & 24k & 19k \\
-1\% & sem    &  0.40 & 0.99 & 0.77 & $\sim$1.0 \\
-5\%  & time      & 2s & 11s & 48s & 186s \\
+5\% & \# applied & 69 & 61 & 1316 & 1280 \\
+5\% & \# target & 72 & 72 & 3343 & 3343 \\
+5\% & \# inc & 9416 & 114 & 5583 & 95 \\
+5\% & triples & 16k & 6.5k & 24k & 19k \\
+5\% & sem & 0.40 & 0.98 & 0.77 & 0.99 \\
+5\% & time & 1s & 5s & 37s & 90s \\
 \addlinespace
-10\% & \# applied & 134 & 119 & 2859 & 2810 \\
-10\% & \# target  & 144 & 144 & 6685 & 6685 \\
-10\% & \# inc     & 17579 & 259 & 11182 & 355 \\
-10\% & triples    & 28k & 11k & 55k & 44k \\
-1\% & sem    &  0.36 & 0.98 & 0.79 & 0.99 \\
-10\% & time      & 4s & 20s & 95s & 339s \\
+10\% & \# applied & 134 & 121 & 2859 & 2809 \\
+10\% & \# target & 144 & 144 & 6685 & 6685 \\
+10\% & \# inc & 18326 & 307 & 12166 & 391 \\
+10\% & triples & 28k & 11k & 55k & 44k \\
+10\% & sem & 0.36 & 0.97 & 0.78 & 0.99 \\
+10\% & time & 3s & 10s & 72s & 168s \\
 \bottomrule
 \end{tabular}
 \end{minipage}%
 \hfill
+% ===== YAGO4.5-10 — anyburl — MAIN =====
 \begin{minipage}[t]{0.49\linewidth}
 \centering
 \textbf{YAGO4.5-10}\\
@@ -372,26 +374,26 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \toprule
 \% & Metric & CP & \shortstack{CP\\nmr} & Full & \shortstack{Full\\nmr} \\
 \midrule
-1\%  & \# applied & 6 & 4 & 34 & 29 \\
-1\%  & \# target  & 9 & 9 & 40 & 40 \\
-1\%  & \# inc     & 48 & 0 & 23182 & 0 \\
-1\%  & triples    & 29k & 29k & 53k & 29k \\
-1\%  & sem      & 0.99 & 1.0 & 0.56 &  1.0\\
-1\%  & time      & 10s & 4s & 8s & 12s \\
+1\% & \# applied & 6 & 4 & 34 & 30 \\
+1\% & \# target & 9 & 9 & 40 & 40 \\
+1\% & \# inc & 48 & 0 & 23181 & 0 \\
+1\% & triples & 29k & 29k & 53k & 30k \\
+1\% & sem & $\sim$1.0 & 1.0 & 0.56 & 1.0 \\
+1\% & time & 7s & 3s & 7s & 10s \\
 \addlinespace
-5\%  & \# applied & 39 & 26 & 99 & 89 \\
-5\%  & \# target  & 42 & 42 & 199 & 199 \\
-5\%  & \# inc     & 99289 & 0 & 32097 & 0 \\
-5\%  & triples    & 182k & 83k & 156k & 124k \\
-5\%  & sem      & 0.46 & 1.0 & 0.79 & 1.0 \\
-5\%  & time      & 66s & 19s & 70s & 72s \\
+5\% & \# applied & 39 & 27 & 99 & 90 \\
+5\% & \# target & 42 & 42 & 199 & 199 \\
+5\% & \# inc & 99270 & 0 & 32096 & 0 \\
+5\% & triples & 182k & 83k & 156k & 124k \\
+5\% & sem & 0.46 & 1.0 & 0.79 & 1.0 \\
+5\% & time & 37s & 8s & 32s & 31s \\
 \addlinespace
-10\% & \# applied & 80 & 58 & 117 & 105 \\
-10\% & \# target  & 84 & 84 & 397 & 397 \\
-10\% & \# inc     & 129099 & 0 & 34179 & 0 \\
-10\% & triples    & 358k & 229k & 331k & 297k \\
-10\%  & sem      & 0.64 & 1.0 & 0.90 &1.0 \\
-10\% & time      & 72s & 44s & 160s & 176s \\
+10\% & \# applied & 80 & 59 & 117 & 107 \\
+10\% & \# target & 84 & 84 & 397 & 397 \\
+10\% & \# inc & 129082 & 0 & 34177 & 0 \\
+10\% & triples & 358k & 229k & 331k & 297k \\
+10\% & sem & 0.64 & 1.0 & 0.90 & 1.0 \\
+10\% & time & 40s & 20s & 56s & 73s \\
 \bottomrule
 \end{tabular}
 \end{minipage}\\[2ex]
@@ -427,36 +429,37 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \end{tabular}
 \end{minipage}%
 \hfill
+% ===== CSKG2 — anyburl — MAIN =====
 \begin{minipage}[t]{0.49\linewidth}
 \centering
-\textbf{CSKG-490K}\\
+\textbf{CSKG2}\\
 \begin{tabular}{c l | r r r r}
 \toprule
 \% & Metric & CP & \shortstack{CP\\nmr} & Full & \shortstack{Full\\nmr} \\
 \midrule
-1\%  & \# applied & 14 & 15 & 668 & 665 \\
-1\%  & \# target  & 15 & 15 & 779 & 779 \\
-1\%  & \# inc     & 15 & 0 & 97 & 0 \\
-1\%  & triples    & 925 & 910 & 5.4k & 5.3k \\
-1\% & sem       & 0.98 & 1.0  & 0.98& 1.0\\
-1\%  & time      & 1s & 1s & 18s & 23s \\
+1\% & \# applied & 14 & 14 & 668 & 665 \\
+1\% & \# target & 15 & 15 & 779 & 779 \\
+1\% & \# inc & 15 & 0 & 97 & 0 \\
+1\% & triples & 925 & 910 & 5.4k & 5.3k \\
+1\% & sem & 0.98 & 1.0 & 0.98 & 1.0 \\
+1\% & time & 1s & 1s & 20s & 23s \\
 \addlinespace
-5\%  & \# applied & 69 & 69 & 3328 & 3297 \\
-5\%  & \# target  & 71 & 71 & 3894 & 3894 \\
-5\%  & \# inc     & 2393 & 0 & 1099 & 0 \\
-5\%  & triples    & 27k & 25k & 35k & 34k \\
-5\% & sem       &0.91 &1.0 & 0.97&1.0\\
-5\%  & time      & 2s & 3s & 93s & 109s \\
+5\% & \# applied & 69 & 69 & 3328 & 3297 \\
+5\% & \# target & 71 & 71 & 3894 & 3894 \\
+5\% & \# inc & 2393 & 0 & 1099 & 0 \\
+5\% & triples & 27k & 25k & 35k & 34k \\
+5\% & sem & 0.91 & 1.0 & 0.97 & 1.0 \\
+5\% & time & 2s & 3s & 89s & 111s \\
 \addlinespace
 10\% & \# applied & 140 & 140 & 6272 & 6181 \\
-10\% & \# target  & 142 & 142 & 7787 & 7787 \\
-10\% & \# inc     & 8392 & 0 & 2688 & 0 \\
-10\% & triples    & 54k & 46k & 71k & 68k \\
-10\% & sem       &0.84 & 1.0&0.96 &1.0\\
-10\% & time      & 4s & 5s & 188s & 218s \\
+10\% & \# target & 142 & 142 & 7787 & 7787 \\
+10\% & \# inc & 8392 & 0 & 2688 & 0 \\
+10\% & triples & 54k & 46k & 71k & 68k \\
+10\% & sem & 0.84 & 1.0 & 0.96 & 1.0 \\
+10\% & time & 4s & 5s & 184s & 230s \\
 \bottomrule
 \end{tabular}
-\end{minipage}
+\end{minipage}%
 \end{table}
 
 \begin{table}[]
@@ -466,6 +469,7 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \renewcommand{\arraystretch}{1.12}
 \caption{Materialization metrics for AnyBURL (with and without non-monotonic rules), with dis-aggregated inconsistency counts.}
 \label{tab:mat_anyburl_10_30_notot_time}
+% ===== NELL995 — anyburl — BREAKDOWN =====
 \begin{minipage}[t]{0.49\linewidth}
 \centering
 \textbf{NELL995}\\
@@ -473,27 +477,25 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \toprule
 \% & Metric & CP & \shortstack{CP\\nmr} & Full & \shortstack{Full\\nmr} \\
 \midrule
-
-1\%  & \# triples & 1.8k & 1.4k & 4.7k & 4.5k \\
-1\%  & func      & 217 & 0 & 28 & 0 \\
-1\%  & dom       & 38 & 0 & 55 & 0 \\
-1\%  & ran       & 153 & 0 & 78 & 0 \\
+1\% & \# triples & 1.8k & 1.4k & 4.7k & 4.5k \\
+1\% & func & 217 & 0 & 28 & 0 \\
+1\% & dom & 38 & 0 & 55 & 0 \\
+1\% & ran & 153 & 0 & 78 & 0 \\
 \addlinespace
-
-5\%  & \# triples & 16k & 6k & 24k & 19k \\
-5\%  & func      & 8819 & 56 & 4835 & 73 \\
-5\%  & dom       & 768 & 0 & 830 & 0 \\
-5\%  & ran       & 263 & 0 & 409 & 0 \\
+5\% & \# triples & 16k & 6.5k & 24k & 19k \\
+5\% & func & 8819 & 114 & 4835 & 95 \\
+5\% & dom & 768 & 0 & 830 & 0 \\
+5\% & ran & 263 & 0 & 409 & 0 \\
 \addlinespace
-
 10\% & \# triples & 28k & 11k & 55k & 44k \\
-10\% & func      & 17550 & 259 & 10568 & 355 \\
-10\% & dom       & 951 & 0 & 1513 & 0 \\
-10\% & ran       & 269 & 0 & 610 & 0 \\
+10\% & func & 17550 & 307 & 10568 & 391 \\
+10\% & dom & 951 & 0 & 1513 & 0 \\
+10\% & ran & 269 & 0 & 610 & 0 \\
 \bottomrule
 \end{tabular}
 \end{minipage}%
 \hfill
+% ===== YAGO4.5-10 — anyburl — BREAKDOWN =====
 \begin{minipage}[t]{0.49\linewidth}
 \centering
 \textbf{YAGO4.5-10}\\
@@ -501,23 +503,20 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \toprule
 \% & Metric & CP & \shortstack{CP\\nmr} & Full & \shortstack{Full\\nmr} \\
 \midrule
-
-1\%  & \# triples & 29k & 29k & 53k & 30k \\
-1\%  & func      & 48 & 0 & 23180 & 0 \\
-1\%  & dom       & 0 & 0 & 1 & 0 \\
-1\%  & ran       & 0 & 0 & 0 & 0 \\
+1\% & \# triples & 29k & 29k & 53k & 30k \\
+1\% & func & 48 & 0 & 23180 & 0 \\
+1\% & dom & 0 & 0 & 1 & 0 \\
+1\% & ran & 0 & 0 & 0 & 0 \\
 \addlinespace
-
-5\%  & \# triples & 182k & 83k & 156k & 124k \\
-5\%  & func      & 97664 & 0 & 26128 & 0 \\
-5\%  & dom       & 2253 & 0 & 5986 & 0 \\
-5\%  & ran       & 0 & 0 & 0 & 0 \\
+5\% & \# triples & 182k & 83k & 156k & 124k \\
+5\% & func & 97664 & 0 & 26128 & 0 \\
+5\% & dom & 2253 & 0 & 5986 & 0 \\
+5\% & ran & 0 & 0 & 0 & 0 \\
 \addlinespace
-
 10\% & \# triples & 358k & 229k & 331k & 297k \\
-10\% & func      & 127176 & 0 & 28191 & 0 \\
-10\% & dom       & 2999 & 0 & 6004 & 0 \\
-10\% & ran       & 0 & 0 & 0 & 0 \\
+10\% & func & 127176 & 0 & 28191 & 0 \\
+10\% & dom & 2999 & 0 & 6004 & 0 \\
+10\% & ran & 0 & 0 & 0 & 0 \\
 \bottomrule
 \end{tabular}
 \end{minipage}\\[2ex]
@@ -547,27 +546,28 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \end{tabular}
 \end{minipage}%
 \hfill
+% ===== CSKG2 — anyburl — BREAKDOWN =====
 \begin{minipage}[t]{0.49\linewidth}
 \centering
-\textbf{CSKG-490K}\\
+\textbf{CSKG2}\\
 \begin{tabular}{c l | r r r r}
 \toprule
 \% & Metric & CP & \shortstack{CP\\nmr} & Full & \shortstack{Full\\nmr} \\
 \midrule
-1\%  & \# triples & 0.9k & 0.9k & 5.4k & 5.3k \\
-1\%  & func      & -- & -- & -- & -- \\
-1\%  & dom       & 0 & 0 & 0 & 0 \\
-1\%  & ran       & 15 & 0 & 97 & 0 \\
+1\% & \# triples & 925 & 910 & 5.4k & 5.3k \\
+1\% & func & 0 & 0 & 0 & 0 \\
+1\% & dom & 0 & 0 & 0 & 0 \\
+1\% & ran & 15 & 0 & 97 & 0 \\
 \addlinespace
-5\%  & \# triples & 27k & 25k & 35k & 34k \\
-5\%  & func      & -- & -- & -- & -- \\
-5\%  & dom       & 0 & 0 & 0 & 0 \\
-5\%  & ran       & 2393 & 0 & 1099 & 0 \\
+5\% & \# triples & 27k & 25k & 35k & 34k \\
+5\% & func & 0 & 0 & 0 & 0 \\
+5\% & dom & 0 & 0 & 0 & 0 \\
+5\% & ran & 2393 & 0 & 1099 & 0 \\
 \addlinespace
 10\% & \# triples & 54k & 46k & 71k & 68k \\
-10\% & func      & -- & -- & -- & -- \\
-10\% & dom       & 0 & 0 & 0 & 0 \\
-10\% & ran       & 8392 & 0 & 2688 & 0 \\
+10\% & func & 0 & 0 & 0 & 0 \\
+10\% & dom & 0 & 0 & 0 & 0 \\
+10\% & ran & 8392 & 0 & 2688 & 0 \\
 \bottomrule
 \end{tabular}
 \end{minipage}
@@ -656,6 +656,7 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \caption{Materialization results for AMIE.}
 \label{tab:mat_amie_10_30}
 
+% ===== NELL995 — amie — MAIN =====
 \begin{minipage}[t]{0.49\linewidth}
 \centering
 \textbf{NELL995}\\
@@ -663,30 +664,31 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \toprule
 \% & Metric & L3 & \shortstack{L3\\nmr} & L4 & \shortstack{L4\\nmr} \\
 \midrule
-1\%  & \# applied & 4 & 4 & 139 & 94 \\
-1\%  & \# target  & 5 & 5 & 147 & 147 \\
-1\%  & \# inc     & 20 & 0 & 3016 & 0 \\
-1\%  & triples    & 83 & 63 & 10k & 7.2k \\
-1\% & sem        & 0.76 & 1.0 & 0.71 & 1.0 \\
-1\%  & time      & 1s & 1s & 7s & 15s \\
+1\% & \# applied & 4 & 4 & 139 & 93 \\
+1\% & \# target & 5 & 5 & 147 & 147 \\
+1\% & \# inc & 20 & 0 & 2908 & 0 \\
+1\% & triples & 83 & 63 & 10k & 7.3k \\
+1\% & sem & 0.76 & 1.0 & 0.72 & 1.0 \\
+1\% & time & 1s & 1s & 8s & 12s \\
 \addlinespace
-5\%  & \# applied & 18 & 18 & 672 & 522 \\
-5\%  & \# target  & 23 & 23 & 731 & 731 \\
-5\%  & \# inc     & 61 & 0 & 9945 & 13 \\
-5\%  & triples    & 1.8k & 1.7k & 36k & 26k \\
-5\%  & sem    & 0.97 & 1.0 & 0.72 &  $\sim$1.0 \\
-5\%  & time      & 1s & 3s & 51s & 105s \\
+5\% & \# applied & 18 & 18 & 672 & 513 \\
+5\% & \# target & 23 & 23 & 731 & 731 \\
+5\% & \# inc & 60 & 0 & 9743 & 15 \\
+5\% & triples & 1.8k & 1.8k & 36k & 26k \\
+5\% & sem & 0.97 & 1.0 & 0.73 & $\sim$1.0 \\
+5\% & time & 1s & 2s & 39s & 57s \\
 \addlinespace
-10\% & \# applied & 40 & 39 & 1227 & 978 \\
-10\% & \# target  & 45 & 45 & 1462 & 1462 \\
-10\% & \# inc     & 259 & 40 & 68769 & 28 \\
-10\% & triples    & 2.4k & 2.2k & 109k & 40k \\
-10\% & sem      &  0.89 & 0.98& 0.37 & $\sim$1.0 \\
-10\% & time      & 2s & 6s & 101s & 208s \\
+10\% & \# applied & 40 & 39 & 1227 & 956 \\
+10\% & \# target & 45 & 45 & 1462 & 1462 \\
+10\% & \# inc & 258 & 40 & 68586 & 30 \\
+10\% & triples & 2.4k & 2.2k & 109k & 40k \\
+10\% & sem & 0.89 & 0.98 & 0.37 & $\sim$1.0 \\
+10\% & time & 2s & 3s & 77s & 111s \\
 \bottomrule
 \end{tabular}
 \end{minipage}%
 \hfill
+% ===== YAGO4.5-10 — amie — MAIN =====
 \begin{minipage}[t]{0.49\linewidth}
 \centering
 \textbf{YAGO4.5-10}\\
@@ -694,26 +696,26 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \toprule
 \% & Metric & L3 & \shortstack{L3\\nmr} & L4 & \shortstack{L4\\nmr} \\
 \midrule
-1\%  & \# applied & 5 & 4 & 53 & 45 \\
-1\%  & \# target  & 5 & 5 & 74 & 74 \\
-1\%  & \# inc     & 43 & 0 & 1183 & 0 \\
-1\%  & triples    & 22k & 22k & 29k & 28k \\
-1\% & sem      & 0.99 & 1.0 & 0.96 & 1.0 \\
-1\%  & time      & 4s & 3s & 53s & 53s \\
+1\% & \# applied & 5 & 4 & 53 & 45 \\
+1\% & \# target & 5 & 5 & 74 & 74 \\
+1\% & \# inc & 43 & 0 & 1164 & 0 \\
+1\% & triples & 22k & 22k & 29k & 28k \\
+1\% & sem & $\sim$1.0 & 1.0 & 0.96 & 1.0 \\
+1\% & time & 4s & 4s & 36s & 35s \\
 \addlinespace
-5\%  & \# applied & 22 & 16 & 282 & 221 \\
-5\%  & \# target  & 22 & 22 & 366 & 366 \\
-5\%  & \# inc     & 1141 & 0 & 17090 & 0 \\
-5\%  & triples    & 34k & 33k & 79k & 62k \\
-5\% & sem      & 0.97 & 1.0 & 0.78 & 1.0 \\
-5\%  & time      & 21s & 21s & 440s & 435s \\
+5\% & \# applied & 22 & 16 & 282 & 222 \\
+5\% & \# target & 22 & 22 & 366 & 366 \\
+5\% & \# inc & 1122 & 0 & 17070 & 0 \\
+5\% & triples & 34k & 33k & 79k & 62k \\
+5\% & sem & 0.97 & 1.0 & 0.79 & 1.0 \\
+5\% & time & 12s & 13s & 181s & 172s \\
 \addlinespace
-10\% & \# applied & 42 & 36 & 569 & 474 \\
-10\% & \# target  & 43 & 43 & 732 & 732 \\
-10\% & \# inc     & 1170 & 0 & 58810 & 0 \\
-10\% & triples    & 141k & 140k & 255k & 196k \\
-10\% & sem       & 0.99 & 1.0& 0.77 & 1.0 \\
-10\% & time      & 43s & 41s & 883s & 835s \\
+10\% & \# applied & 42 & 36 & 569 & 476 \\
+10\% & \# target & 43 & 43 & 732 & 732 \\
+10\% & \# inc & 1151 & 0 & 58793 & 0 \\
+10\% & triples & 141k & 140k & 255k & 196k \\
+10\% & sem & 0.99 & 1.0 & 0.77 & 1.0 \\
+10\% & time & 23s & 26s & 367s & 414s \\
 \bottomrule
 \end{tabular}
 \end{minipage}\\[2ex]
@@ -749,33 +751,34 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \end{tabular}
 \end{minipage}%
 \hfill
+% ===== CSKG2 — amie — MAIN =====
 \begin{minipage}[t]{0.49\linewidth}
 \centering
-\textbf{CSKG-490K}\\
+\textbf{CSKG2}\\
 \begin{tabular}{c l | r r r r}
 \toprule
 \% & Metric & L3 & \shortstack{L3\\nmr} & L4 & \shortstack{L4\\nmr} \\
 \midrule
-1\%  & \# applied & 573 & 571 & -- & -- \\
-1\%  & \# target  & 710 & 710 & -- & -- \\
-1\%  & \# inc     & 7 & 0 & -- & -- \\
-1\%  & triples    & 3.7k & 3.7k & -- & -- \\
-1\%  & sem    &$\sim$1.0 &1.0 & --& -- \\
-1\%  & time      & 64s & 64s & -- & -- \\
+1\% & \# applied & 573 & 571 & - & - \\
+1\% & \# target & 710 & 710 & - & - \\
+1\% & \# inc & 7 & 0 & - & - \\
+1\% & triples & 3.7k & 3.7k & - & - \\
+1\% & sem & $\sim$1.0 & 1.0 & - & - \\
+1\% & time & 64s & 62s & - & - \\
 \addlinespace
-5\%  & \# applied & 2795 & 2792 & -- & -- \\
-5\%  & \# target  & 3548 & 3548 & -- & -- \\
-5\%  & \# inc     & 18 & 0 & -- & -- \\
-5\%  & triples    & 24k & 24k & -- & -- \\
-5\%  & sem    &$\sim$1.0 &1.0 & --& -- \\
-5\%  & time      & 284s & 296s & -- & -- \\
+5\% & \# applied & 2795 & 2792 & - & - \\
+5\% & \# target & 3548 & 3548 & - & - \\
+5\% & \# inc & 40 & 0 & - & - \\
+5\% & triples & 24k & 24k & - & - \\
+5\% & sem & $\sim$1.0 & 1.0 & - & - \\
+5\% & time & 314s & 296s & - & - \\
 \addlinespace
-10\% & \# applied & 5589 & 5575 & -- & -- \\
-10\% & \# target  & 7096 & 7096 & -- & -- \\
-10\% & \# inc     & 260 & 0 & -- & -- \\
-10\% & triples    & 56k & 56k & -- & -- \\
-10\%  & sem    &$\sim$1.0 &1.0 & --& -- \\
-10\% & time      & 604s & 611s & -- & -- \\
+10\% & \# applied & 5590 & 5576 & - & - \\
+10\% & \# target & 7096 & 7096 & - & - \\
+10\% & \# inc & 260 & 0 & - & - \\
+10\% & triples & 56k & 56k & - & - \\
+10\% & sem & $\sim$1.0 & 1.0 & - & - \\
+10\% & time & 621s & 575s & - & - \\
 \bottomrule
 \end{tabular}
 \end{minipage}
@@ -788,6 +791,7 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \renewcommand{\arraystretch}{1.12}
 \caption{Materialization metrics for AMIE (with and without non-monotonic rules), with dis-aggregated inconsistency counts.}
 \label{tab:mat_amie_10_30_notot_time}
+% ===== NELL995 — amie — BREAKDOWN =====
 \begin{minipage}[t]{0.49\linewidth}
 \centering
 \textbf{NELL995}\\
@@ -795,20 +799,20 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \toprule
 \% & Metric & L3 & \shortstack{L3\\nmr} & L4 & \shortstack{L4\\nmr} \\
 \midrule
-1\%  & \# triples & 83 & 63 & 10k & 7.2k \\
-1\%  & func      & 0 & 0 & 1608 & 0 \\
-1\%  & dom       & 1 & 0 & 381 & 0 \\
-1\%  & ran       & 19 & 0 & 1359 & 0 \\
+1\% & \# triples & 83 & 63 & 10k & 7.3k \\
+1\% & func & 0 & 0 & 1608 & 0 \\
+1\% & dom & 1 & 0 & 381 & 0 \\
+1\% & ran & 19 & 0 & 1359 & 0 \\
 \addlinespace
-5\%  & \# triples & 1.8k & 1.7k & 36k & 26k \\
-5\%  & func      & 28 & 0 & 4949 & 13 \\
-5\%  & dom       & 1 & 0 & 1916 & 0 \\
-5\%  & ran       & 39 & 0 & 3587 & 0 \\
+5\% & \# triples & 1.8k & 1.8k & 36k & 26k \\
+5\% & func & 28 & 0 & 4949 & 15 \\
+5\% & dom & 1 & 0 & 1916 & 0 \\
+5\% & ran & 39 & 0 & 3587 & 0 \\
 \addlinespace
 10\% & \# triples & 2.4k & 2.2k & 109k & 40k \\
-10\% & func      & 226 & 40 & 58894 & 28 \\
-10\% & dom       & 1 & 0 & 4709 & 0 \\
-10\% & ran       & 39 & 0 & 44073 & 0 \\
+10\% & func & 226 & 40 & 58894 & 30 \\
+10\% & dom & 1 & 0 & 4709 & 0 \\
+10\% & ran & 39 & 0 & 44073 & 0 \\
 \bottomrule
 \end{tabular}
 \end{minipage}%
@@ -820,20 +824,20 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \toprule
 \% & Metric & L3 & \shortstack{L3\\nmr} & L4 & \shortstack{L4\\nmr} \\
 \midrule
-1\%  & \# triples & 22k & 22k & 29k & 28k \\
-1\%  & func      & 43 & 0 & 1138 & 0 \\
-1\%  & dom       & 0 & 0 & 30 & 0 \\
-1\%  & ran       & 0 & 0 & 0 & 0 \\
+1\% & \# triples & 22k & 22k & 29k & 28k \\
+1\% & func & 43 & 0 & 1138 & 0 \\
+1\% & dom & 0 & 0 & 30 & 0 \\
+1\% & ran & 0 & 0 & 0 & 0 \\
 \addlinespace
-5\%  & \# triples & 34k & 33k & 79k & 62k \\
-5\%  & func      & 1040 & 0 & 16693 & 0 \\
-5\%  & dom       & 112 & 0 & 447 & 0 \\
-5\%  & ran       & 0 & 0 & 4 & 0 \\
+5\% & \# triples & 34k & 33k & 79k & 62k \\
+5\% & func & 1040 & 0 & 16693 & 0 \\
+5\% & dom & 112 & 0 & 447 & 0 \\
+5\% & ran & 0 & 0 & 4 & 0 \\
 \addlinespace
 10\% & \# triples & 141k & 140k & 255k & 196k \\
-10\% & func      & 1040 & 0 & 57874 & 0 \\
-10\% & dom       & 141 & 0 & 1527 & 0 \\
-10\% & ran       & 0 & 0 & 14 & 0 \\
+10\% & func & 1040 & 0 & 57874 & 0 \\
+10\% & dom & 141 & 0 & 1527 & 0 \\
+10\% & ran & 0 & 0 & 14 & 0 \\
 \bottomrule
 \end{tabular}
 \end{minipage}\\[2ex]
@@ -863,30 +867,31 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \end{tabular}
 \end{minipage}%
 \hfill
+% ===== CSKG2 — amie — BREAKDOWN =====
 \begin{minipage}[t]{0.49\linewidth}
 \centering
-\textbf{CSKG-490K}\\
+\textbf{CSKG2}\\
 \begin{tabular}{c l | r r r r}
 \toprule
 \% & Metric & L3 & \shortstack{L3\\nmr} & L4 & \shortstack{L4\\nmr} \\
 \midrule
-1\%  & \# triples & 3.7k & 3.7k & -- & -- \\
-1\%  & func      & -- & -- & -- & -- \\
-1\%  & dom       & 0 & 0 & -- & -- \\
-1\%  & ran       & 7 & 0 & -- & -- \\
+1\% & \# triples & 3.7k & 3.7k & - & - \\
+1\% & func & 0 & 0 & - & - \\
+1\% & dom & 0 & 0 & - & - \\
+1\% & ran & 7 & 0 & - & - \\
 \addlinespace
-5\%  & \# triples & 24k & 24k & -- & -- \\
-5\%  & func      & -- & -- & -- & -- \\
-5\%  & dom       & 0 & 0 & -- & -- \\
-5\%  & ran       & 40 & 0 & -- & -- \\
+5\% & \# triples & 24k & 24k & - & - \\
+5\% & func & 0 & 0 & - & - \\
+5\% & dom & 0 & 0 & - & - \\
+5\% & ran & 40 & 0 & - & - \\
 \addlinespace
-10\% & \# triples & 56k & 56k & -- & -- \\
-10\% & func      & -- & -- & -- & -- \\
-10\% & dom       & 0 & 0 & -- & -- \\
-10\% & ran       & 260 & 0 & -- & -- \\
+10\% & \# triples & 56k & 56k & - & - \\
+10\% & func & 0 & 0 & - & - \\
+10\% & dom & 0 & 0 & - & - \\
+10\% & ran & 260 & 0 & - & - \\
 \bottomrule
 \end{tabular}
-\end{minipage}
+\end{minipage}%
 \end{table}
 
 
