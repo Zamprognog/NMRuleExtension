@@ -8,8 +8,9 @@ This project implements a framework for evaluating and enhancing Rule Mining (sp
 - **Grounding Engines**:
     - **Standard Engine**: Traditional rule grounding.
     - **Semantic Engine**: Incorporates semantic consistency checks during the grounding process.
-- **Evaluation**: Metrics including Hits@k (1, 5, 10), MRR (Mean Reciprocal Rank), and Semantic Consistency at 10 (Sem@10).
-- **Dataset Support**: Pre-configured support for datasets like NELL-995, Hetionet, CSKG2, and YAGO 4.5-10.
+- **Link prediction evaluation**: filtered Hits@k (1, 5, 10), MRR, and semantic consistency at 10 and 100 (Sem@10, Sem@100).
+- **Materialization evaluation**: applies the top-N% most confident rules graph-wide, writes the inferred triples as N-Triples, and counts functional / domain-disjointness / range-disjointness violations in the result via SPARQL.
+- **Dataset Support**: NELL-995, YAGO4.5-10, CSKG-490K (CSKG2), Hetionet, and OWL2Bench.
 - **Flexible Configuration**: Uses JSON-based configuration files for experiment setup.
 
 ## Prerequisites
@@ -33,24 +34,62 @@ This project implements a framework for evaluating and enhancing Rule Mining (sp
 3. Download the datasets and extract them into the `data/` directory, they can be found at the following link:
    - [data](https://zenodo.org/records/20067594?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6ImJlMThhYTc4LWU5ZTgtNDZhOS04MzY0LWI5YTVmNmFiMGIzMyIsImRhdGEiOnt9LCJyYW5kb20iOiI4NGQwYzdmODJkZmI1MzVmMDc3NDUxNDliZDdjN2JlMCJ9.-D2d2bDBK-thqNrgkqk-Rcwa587pfovN6RBAlAD4idjWdKyUSvZcf-SglIZt2TFv8-rhRispAaZsGK_Io0BoaA)
 
+   Manual fixes applied to the datasets *after* download are recorded in
+   [`data/DATA_PREPARATION.md`](data/DATA_PREPARATION.md); read it before reusing a dataset or rule
+   file, since those steps are not reproducible by re-downloading.
+
 ## Usage
 
-### Running Experiments
+### Running everything
 
-The main entry point for running experiments is `nmRuleExtension.RunExperiment`. It requires a path to a dataset configuration JSON and an optional execution mode.
+`scripts/run_experiments.sh` is the normal entry point. It builds the project, runs the requested
+stages for the requested datasets, tees each stage's stdout to `runs/<timestamp>/`, and finally
+calls `scripts/collect_results.sh` to extract the metric tables into `lp_results.csv`,
+`mat_results.csv` and `RESULTS.md`.
 
 ```bash
-mvn exec:java -Dexec.mainClass="nmRuleExtension.RunExperiment" -Dexec.args="path/to/config.json [mode]"
+./scripts/run_experiments.sh                          # all datasets, all stages
+./scripts/run_experiments.sh --datasets nell,owl2bench
+./scripts/run_experiments.sh --stages lp              # lp | mat | mateval
+./scripts/run_experiments.sh --percentages 1,5,10     # materialization rule thresholds
+./scripts/run_experiments.sh --dry-run
 ```
 
-**Modes:**
+Known dataset keys: `nell`, `yago`, `cskg`, `owl2bench`, `hetionet` (the first four are the
+default set).
+
+### Individual entry points
+
+All of them take a dataset configuration JSON as their first argument.
+
+```bash
+# Link prediction — runs both grounding engines over every configured rule set
+mvn exec:java -Dexec.mainClass="nmRuleExtension.RunExperiment" \
+  -Dexec.args="data/NELL995/NELL995.json [full|anyburl|amie]"
+
+# Materialization — arg 2: rule-confidence percentages, arg 3: triple-count percentages
+mvn exec:java -Dexec.mainClass="nmRuleExtension.RunMaterialization" \
+  -Dexec.args="data/NELL995/NELL995.json 1,5,10"
+
+# Violation counting over a materialization output directory (or a single .nt file)
+mvn exec:java -Dexec.mainClass="nmRuleExtension.evaluation.MaterializationEvaluationPipeline" \
+  -Dexec.args="data/NELL995/NELL995.json data/NELL995/predictions/materialization/<timestamp>/"
+```
+
+**`RunExperiment` modes:**
 - `full` (default): Runs all evaluations (AnyBURL and AMIE).
 - `anyburl`: Only runs AnyBURL rule evaluations.
 - `amie`: Only runs AMIE rule evaluations.
 
+Rule sets that are unset in the config or missing on disk are skipped with a notice.
+
+`nmRuleExtension.Main` (single-engine quick run) and `nmRuleExtension.ModelComparison` (NELL995
+paths hardcoded in the source) are older scratch entry points and are not part of the pipeline.
+
 ### Configuration JSON
 
-Each dataset requires a `.json` configuration file. Example structure:
+Each dataset requires a `.json` configuration file. It is read by a minimal hand-written parser, so
+it must stay **flat**, string-valued, and free of commas inside values. Example structure:
 
 ```json
 {
@@ -72,17 +111,24 @@ Each dataset requires a `.json` configuration file. Example structure:
 }
 ```
 
+`graph` is only needed by the materialization-evaluation stage. `test_debug` is accepted but unused;
+`aggregator_type` and `num_runs` still appear in a couple of configs but are not read at all.
+
 ## Project Structure
 
 - `src/main/java/nmRuleExtension`:
-    - `evaluation`: Evaluator and Metrics logic.
+    - `domain`: Triple and grounding value objects.
+    - `evaluation`: Evaluator, Metrics, and the materialization-evaluation pipeline.
     - `graphTools`: Logic for loading semantic constraints (Jena) and managing the triple graph.
-    - `groundingEngine`: Standard and Semantic implementation of the grounding logic.
+    - `groundingEngine`: Standard and Semantic implementation of the grounding logic, plus rule registry and ranking.
     - `materialization`: Triple materialization from inferred constraints.
     - `rules`: Rule models and parsers.
-    - `utils`: Data loading and configuration utilities.
-- `data/`: Contains datasets, rules, and prediction outputs.
-- `tools/`: Shell scripts for external tools (e.g., AMIE mining).
+    - `utils`: Data loading, configuration, and logging utilities.
+- `scripts/`: Experiment driver and result collection.
+- `data/`: Datasets, rules, and prediction outputs (gitignored — see the Zenodo link above).
+- `runs/`: Timestamped experiment logs and collected results (gitignored).
+- `tools/`: External miners (AMIE, AnyBURL), their per-dataset configurations, and dataset-building notebooks.
+- `paper/`: LaTeX sources, maintained as a git subtree of the Overleaf project.
 
 ## Evaluation Queries
 
