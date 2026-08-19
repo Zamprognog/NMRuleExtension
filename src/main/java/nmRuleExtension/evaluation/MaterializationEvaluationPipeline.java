@@ -109,11 +109,23 @@ public class MaterializationEvaluationPipeline {
             System.out.println("Base graph loaded. Starting evaluation...");
 
             if (specificFilePath != null) {
-                File specificFile = new File(specificFilePath);
-                if (specificFile.exists() && specificFile.isFile()) {
-                    evaluateSingleFile(dataset, specificFile, namedGraphURI);
+                File specificPath = new File(specificFilePath);
+                if (specificPath.isFile()) {
+                    evaluateSingleFile(dataset, specificPath, namedGraphURI);
+                } else if (specificPath.isDirectory()) {
+                    // A materialization run directory: evaluate every .nt file it contains.
+                    File[] files = specificPath.listFiles((d, name) -> name.endsWith(".nt"));
+                    if (files != null && files.length > 0) {
+                        java.util.Arrays.sort(files, java.util.Comparator.comparing(File::getName));
+                        System.out.println("Evaluating " + files.length + " materialized files in " + specificPath.getAbsolutePath());
+                        for (File file : files) {
+                            evaluateSingleFile(dataset, file, namedGraphURI);
+                        }
+                    } else {
+                        System.out.println("No materialized files found in " + specificPath.getAbsolutePath());
+                    }
                 } else {
-                    System.err.println("Error: Specific file not found: " + specificFilePath);
+                    System.err.println("Error: Path not found: " + specificFilePath);
                 }
             } else {
                 // 4. Iterate through your materialized triple files

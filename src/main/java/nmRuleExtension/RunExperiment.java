@@ -40,25 +40,25 @@ public class RunExperiment {
             boolean runAnyBurl = mode.equals("full") || mode.equals("anyburl");
             boolean runAmie = mode.equals("full") || mode.equals("amie");
 
-            if (runAnyBurl) {
+            if (runAnyBurl && ruleSetAvailable(config.anyburlRules, "AnyBURL ALL")) {
                 // Setup logger for AnyBURL ALL
                 DualLogger.setupLogger(config.predictionsDir, config.datasetName, "ALL");
                 runFullExperiment(config, N, "anyburl_all");
             }
 
-            if (runAnyBurl && config.anyburlRulesCP != null && !config.anyburlRulesCP.isEmpty()) {
+            if (runAnyBurl && ruleSetAvailable(config.anyburlRulesCP, "AnyBURL CP")) {
                 // Setup logger for AnyBURL CP
                 DualLogger.setupLogger(config.predictionsDir, config.datasetName, "CP");
                 runFullExperiment(config, N, "anyburl_cp");
             }
 
-            if (runAmie) {
+            if (runAmie && ruleSetAvailable(config.amieRules, "AMIE ALL")) {
                 // Setup logger for AMIE (standard name or another suffix if needed, here just default or AMIE)
                 DualLogger.setupLogger(config.predictionsDir, config.datasetName, "AMIE");
                 runFullExperiment(config, N, "amie");
             }
 
-            if (runAmie && config.amieRulesCP != null && !config.amieRulesCP.isEmpty()) {
+            if (runAmie && ruleSetAvailable(config.amieRulesCP, "AMIE CP")) {
                 // Setup logger for AnyBURL CP
                 DualLogger.setupLogger(config.predictionsDir, config.datasetName, "CP");
                 runFullExperiment(config, N, "amie_cp");
@@ -67,6 +67,26 @@ public class RunExperiment {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /** Skips (with a notice) rule sets that are unset in the config, missing on disk, or empty. */
+    private static boolean ruleSetAvailable(String rulesPath, String label) {
+        if (rulesPath == null || rulesPath.isEmpty()) {
+            System.out.println("Skipping " + label + ": not configured.");
+            return false;
+        }
+        java.io.File file = new java.io.File(rulesPath);
+        if (!file.isFile()) {
+            System.out.println("Skipping " + label + ": rule file not found at " + rulesPath);
+            return false;
+        }
+        // An empty placeholder (e.g. a rule set that could not be mined) would otherwise be
+        // evaluated as a zero-rule set and reported as a row of zeros.
+        if (file.length() == 0) {
+            System.out.println("Skipping " + label + ": rule file is empty at " + rulesPath);
+            return false;
+        }
+        return true;
     }
 
     private static void runFullExperiment(ExperimentConfig config, int N, String runType) throws Exception {
@@ -138,10 +158,10 @@ public class RunExperiment {
         System.out.println("\n==================================================");
         System.out.println("   RESULTS: " + (isAmie ? "AMIE" : "AnyBURL") + " Rules");
         System.out.println("==================================================");
-        // Assuming your Metrics class prints Hits@1, Hits@5, Hits@10, MRR, and Sem@10
-        System.out.printf("%-15s | %-10s | %-10s | %-10s | %-10s | %-10s%n",
-                "Engine", "Hits@1", "Hits@5", "Hits@10", "MRR", "Sem@10");
-        System.out.println("----------------------------------------------------------------------------");
+        // Must match Metrics.printRow(): Hits@1, Hits@5, Hits@10, MRR, Sem@10, Sem@100
+        System.out.printf("%-15s | %-10s | %-10s | %-10s | %-10s | %-10s | %-10s%n",
+                "Engine", "Hits@1", "Hits@5", "Hits@10", "MRR", "Sem@10", "Sem@100");
+        System.out.println("---------------------------------------------------------------------------------------------");
 
         // Use printRow from Metrics (adjust strings to fit your column widths if necessary)
         standardMetrics.printRow("Standard");

@@ -25,10 +25,10 @@ public class RunMaterialization {
 //        configPath = args.length > 0 ? args[0] : "data/CSKG2/CSKG2.json";
 //        configPath = args.length > 0 ? args[0] : "data/YAGO4.5/YAGO4.5.json";
 
-        // Define the target percentages for new facts (Scenario A: triple count)
-        double[] targetPercentages = {10.0, 30.0};
-        // Define the target percentages for rules (Scenario B: rule confidence)
-        double[] rulePercentages = {5.0, 10.0};
+        // Target percentages for rules (Scenario B: rule confidence). Arg 1, e.g. "1,5,10".
+        double[] rulePercentages = parsePercentages(args.length > 1 ? args[1] : null, new double[]{1.0, 5.0, 10.0});
+        // Target percentages for new facts (Scenario A: triple count). Arg 2; empty disables the scenario.
+        double[] targetPercentages = parsePercentages(args.length > 2 ? args[2] : null, new double[]{});
 
         try {
             // 1. Load Configuration
@@ -52,6 +52,8 @@ public class RunMaterialization {
             System.out.println("Starting Materialization for Dataset: " + config.datasetName);
             System.out.println("==================================================");
             System.out.println("Output Directory: " + materializationDir);
+            System.out.println("Rule percentages (Scenario B): " + java.util.Arrays.toString(rulePercentages));
+            System.out.println("Triple percentages (Scenario A): " + java.util.Arrays.toString(targetPercentages));
 
             // 2. Load Known Facts (to track duplicates and calculate percentages)
             Set<String> allKnownFacts = new HashSet<>();
@@ -79,11 +81,11 @@ public class RunMaterialization {
                 System.out.println("\n##################################################");
                 System.out.println("           MATERIALIZING WITH ANYBURL RULES       ");
                 System.out.println("##################################################");
-                if (config.anyburlRules != null) {
+                if (available(config.anyburlRules, "AnyBURL FULL")) {
                     System.out.println("--- Ruleset: AnyBURL FULL ---");
                     runMaterializationScenarios(config, materializationDir, config.anyburlRules, false, "anyburl_FULL", semanticGm, allKnownFacts, targetPercentages, rulePercentages, timestamp);
                 }
-                if (config.anyburlRulesCP != null) {
+                if (available(config.anyburlRulesCP, "AnyBURL CP")) {
                     System.out.println("\n--- Ruleset: AnyBURL CP ---");
                     runMaterializationScenarios(config, materializationDir, config.anyburlRulesCP, false, "anyburl_CP", semanticGm, allKnownFacts, targetPercentages, rulePercentages, timestamp);
                 }
@@ -93,11 +95,11 @@ public class RunMaterialization {
                 System.out.println("\n##################################################");
                 System.out.println("             MATERIALIZING WITH AMIE RULES        ");
                 System.out.println("##################################################");
-                if (config.amieRules != null) {
+                if (available(config.amieRules, "AMIE FULL")) {
                     System.out.println("--- Ruleset: AMIE FULL ---");
                     runMaterializationScenarios(config, materializationDir, config.amieRules, true, "amie_FULL", semanticGm, allKnownFacts, targetPercentages, rulePercentages, timestamp);
                 }
-                if (config.amieRulesCP != null) {
+                if (available(config.amieRulesCP, "AMIE CP")) {
                     System.out.println("\n--- Ruleset: AMIE CP ---");
                     runMaterializationScenarios(config, materializationDir, config.amieRulesCP, true, "amie_CP", semanticGm, allKnownFacts, targetPercentages, rulePercentages, timestamp);
                 }
@@ -106,6 +108,35 @@ public class RunMaterialization {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /** Skips (with a notice) rule sets that are unset in the config, missing on disk, or empty. */
+    private static boolean available(String rulesPath, String label) {
+        if (rulesPath == null || rulesPath.isEmpty()) {
+            System.out.println("Skipping " + label + ": not configured.");
+            return false;
+        }
+        File file = new File(rulesPath);
+        if (!file.isFile()) {
+            System.out.println("Skipping " + label + ": rule file not found at " + rulesPath);
+            return false;
+        }
+        if (file.length() == 0) {
+            System.out.println("Skipping " + label + ": rule file is empty at " + rulesPath);
+            return false;
+        }
+        return true;
+    }
+
+    /** Parses a comma-separated percentage list (e.g. "1,5,10"); falls back to the default when blank. */
+    private static double[] parsePercentages(String csv, double[] fallback) {
+        if (csv == null || csv.trim().isEmpty()) return fallback;
+        String[] parts = csv.split(",");
+        double[] values = new double[parts.length];
+        for (int i = 0; i < parts.length; i++) {
+            values[i] = Double.parseDouble(parts[i].trim());
+        }
+        return values;
     }
 
     private static void runMaterializationScenarios(ExperimentConfig config, String materializationDir, String rulesPath, boolean isAmie, String rulesetName,
@@ -122,8 +153,8 @@ public class RunMaterialization {
 
         String groundingToRun = config.groundingType != null ? config.groundingType.toLowerCase() : "both";
 
-        // --- Scenario 1: Materialize by Triple Count (10% and 30% of Graph) ---
-        if (false) {
+        // --- Scenario 1: Materialize by Triple Count (disabled unless percentages are passed) ---
+        if (percentages.length > 0) {
             System.out.println("\n>>> SCENARIO A: Materializing by Target Triple Count <<<");
             for (double pct : percentages) {
                 int pctInt = (int) pct;
