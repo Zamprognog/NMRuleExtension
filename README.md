@@ -9,7 +9,7 @@ This project implements a framework for evaluating and enhancing Rule Mining (sp
     - **Standard Engine**: Traditional rule grounding.
     - **Semantic Engine**: Incorporates semantic consistency checks during the grounding process.
 - **Link prediction evaluation**: filtered Hits@k (1, 5, 10), MRR, and semantic consistency at 10 and 100 (Sem@10, Sem@100).
-- **Materialization evaluation**: applies the top-N% most confident rules graph-wide, writes the inferred triples as N-Triples, and counts functional / domain-disjointness / range-disjointness violations in the result via SPARQL.
+- **Materialization evaluation**: applies the top-N% most confident rules graph-wide, writes the inferred triples as N-Triples, and counts functional, inverse-functional (OWL2Bench), domain-disjointness and range-disjointness violations in the result via SPARQL, reported as per-type counts plus a combined `inc` and `sem = 1 − inc/triples` (see [Evaluation Queries](#evaluation-queries)).
 - **Dataset Support**: NELL-995, YAGO4.5-10, CSKG-490K (CSKG2), Hetionet, and OWL2Bench.
 - **Flexible Configuration**: Uses JSON-based configuration files for experiment setup.
 
@@ -132,85 +132,128 @@ it must stay **flat**, string-valued, and free of commas inside values. Example 
 
 ## Evaluation Queries
 
-### Functional count 
-```sparql
-PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> 
-PREFIX owl: <http://www.w3.org/2002/07/owl#> 
-SELECT (COUNT(*) as ?total)
-	WHERE {
-    	SELECT DISTINCT ?s ?p ?o WHERE { 
-            GRAPH <http://newtriples/> { ?s ?p ?o . }
-                { 
-                SELECT ?s ?p
-                      WHERE { 
-                        ?p rdf:type owl:FunctionalProperty . 
-                        { ?s ?p ?o_inner . }                                  
-                        UNION 
-                        { GRAPH <http://newtriples/> { ?s ?p ?o_inner . } }
-                      }
-                      GROUP BY ?s ?p 
-                      HAVING (COUNT(DISTINCT ?o_inner) > 1)
-                } 
-	}
-}
-```
+Materialization output is scored by counting, among the newly inferred triples, how many violate a
+constraint of the ontology. The counting is done in GraphDB by the external
+`graphdb-workflow` runner (`~/graphdb-import/graphdb-workflow`): it clears the named graph
+`<http://newtriples/>` in the dataset's repository, loads one materialization `.nt` file into it,
+and runs a single **metrics query** per file. `MaterializationEvaluationPipeline` runs the exact
+same queries locally over an in-memory Jena dataset (base graph + schema + types as the default
+graph, the `.nt` file as `<http://newtriples/>`); it is the offline equivalent, not a second
+definition.
 
-### Domain count 
+Each file yields:
+
+| Metric | Meaning |
+|---|---|
+| `func` | new triples whose subject already has a *different* value for an `owl:FunctionalProperty` |
+| `invf` | new triples whose object is already reached from a *different* subject via an `owl:InverseFunctionalProperty` (**OWL2Bench only**) |
+| `dom` | new triples whose subject has a type disjoint with the property's `rdfs:domain` |
+| `ran` | new triples whose object has a type disjoint with the property's `rdfs:range` |
+| `inc` | the **DISTINCT union** of the checks above — a triple tripping several is counted once |
+| `sem` | `1 − inc / triples` |
+
+Because `inc` is DISTINCT over `(?s ?p ?o)`, `0 ≤ inc ≤ triples` and `sem ∈ [0,1]`; note
+`inc ≤ func + dom + ran (+ invf)` whenever a triple violates more than one constraint.
+
+Every block starts from the new triples, so the work is bounded by `|newtriples|`. The
+functional / inverse-functional checks are two OR-ed `FILTER EXISTS` (a conflicting value in the
+base graph **or** in `<http://newtriples/>`), which short-circuits on the first conflict instead of
+enumerating every value of a high-fan-out subject — same result as a `GROUP BY … HAVING COUNT > 1`
+join, without the blow-up.
+
+`{{NEWTRIPLES}}` below is replaced with `<http://newtriples/>` at run time.
+
+### Default metrics query (NELL-995, YAGO4.5-10, CSKG2, Hetionet)
+
 ```sparql
+PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX owl:  <http://www.w3.org/2002/07/owl#>
+SELECT ?func ?dom ?ran ?inc WHERE {
 
-SELECT (COUNT(*) AS ?domainCheckCount)
-WHERE {
-  {
-    SELECT DISTINCT ?s ?p ?o
-    WHERE {
-      GRAPH <http://newtriples/> {
-        ?s ?p ?o .
+  # ---- functional: (s,p) already has a DIFFERENT value (base or new) ----
+  { SELECT (COUNT(*) AS ?func) WHERE {
+      SELECT DISTINCT ?s ?p ?o WHERE {
+        GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+        ?p rdf:type owl:FunctionalProperty .
+        FILTER( EXISTS { ?s ?p ?ox . FILTER(?ox != ?o) }
+             || EXISTS { GRAPH {{NEWTRIPLES}} { ?s ?p ?oy . FILTER(?oy != ?o) } } )
       }
-      ?p rdfs:domain ?dom .
-      ?dom owl:disjointWith|^owl:disjointWith ?type1 .
-      {
-        { ?s a ?type1 . }
+  } }
+
+  # ---- domain: subject typed with a class disjoint from the property domain ----
+  { SELECT (COUNT(*) AS ?dom) WHERE {
+      SELECT DISTINCT ?s ?p ?o WHERE {
+        GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+        ?p rdfs:domain ?domClass .
+        ?domClass owl:disjointWith|^owl:disjointWith ?type1 .
+        { ?s rdf:type ?type1 . } UNION { GRAPH {{NEWTRIPLES}} { ?s rdf:type ?type1 . } }
+      }
+  } }
+
+  # ---- range: object typed with a class disjoint from the property range ----
+  { SELECT (COUNT(*) AS ?ran) WHERE {
+      SELECT DISTINCT ?s ?p ?o WHERE {
+        GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+        ?p rdfs:range ?ranClass .
+        ?ranClass owl:disjointWith|^owl:disjointWith ?type2 .
+        { ?o rdf:type ?type2 . } UNION { GRAPH {{NEWTRIPLES}} { ?o rdf:type ?type2 . } }
+      }
+  } }
+
+  # ---- combined total, DISTINCT across the three checks ----
+  { SELECT (COUNT(*) AS ?inc) WHERE {
+      SELECT DISTINCT ?s ?p ?o WHERE {
+        { GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+          ?p rdf:type owl:FunctionalProperty .
+          FILTER( EXISTS { ?s ?p ?ox . FILTER(?ox != ?o) }
+               || EXISTS { GRAPH {{NEWTRIPLES}} { ?s ?p ?oy . FILTER(?oy != ?o) } } ) }
         UNION
-        { GRAPH <http://newtriples/> { ?s a ?type1 . } }
+        { GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+          ?p rdfs:domain ?dc .
+          ?dc owl:disjointWith|^owl:disjointWith ?t1 .
+          { ?s rdf:type ?t1 . } UNION { GRAPH {{NEWTRIPLES}} { ?s rdf:type ?t1 . } } }
+        UNION
+        { GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+          ?p rdfs:range ?rc .
+          ?rc owl:disjointWith|^owl:disjointWith ?t2 .
+          { ?o rdf:type ?t2 . } UNION { GRAPH {{NEWTRIPLES}} { ?o rdf:type ?t2 . } } }
       }
-    }
-  }
+  } }
 }
 ```
 
-### Range count
+### OWL2Bench metrics query
+
+Identical to the default plus an inverse-functional block, which is mirrored into the combined
+`?inc` union as well:
+
 ```sparql
-PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-PREFIX owl: <http://www.w3.org/2002/07/owl#>
-
-SELECT (COUNT(*) AS ?rangeCheckCount)
-WHERE {
-  {
-    SELECT DISTINCT ?s ?p ?o
-    WHERE {
-      # Start with new predictions
-      GRAPH <http://newtriples/> { 
-        ?s ?p ?o . 
+  # ---- inverse-functional: (p,o) already reached from a DIFFERENT subject ----
+  { SELECT (COUNT(*) AS ?invf) WHERE {
+      SELECT DISTINCT ?s ?p ?o WHERE {
+        GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+        ?p rdf:type owl:InverseFunctionalProperty .
+        FILTER( EXISTS { ?sx ?p ?o . FILTER(?sx != ?s) }
+             || EXISTS { GRAPH {{NEWTRIPLES}} { ?sy ?p ?o . FILTER(?sy != ?s) } } )
       }
-      
-      # Look up range constraint
-      ?p rdfs:range ?ran .
-      
-      # Check symmetric disjointness
-      ?ran owl:disjointWith|^owl:disjointWith ?type2 .
-      
-      # Validate object against both graphs
-      {
-        { ?o a ?type2 . }
-        UNION
-        { GRAPH <http://newtriples/> { ?o a ?type2 . } }
-      }
-    }
-  }
-}
+  } }
 ```
+
+The projection becomes `SELECT ?func ?invf ?dom ?ran ?inc`.
+
+Only OWL2Bench declares inverse-functional properties in its schema, so the block is omitted
+elsewhere; `MaterializationEvaluationPipeline` switches on `dataset_name` for the same reason.
+
+### Standalone check queries
+
+`graphdb-workflow/queries/library/` holds each check as a single-count query that can be pasted into
+the GraphDB Workbench on its own: `functional.rq`, `inverse_functional.rq`, `domain.rq`, `range.rq`,
+`disjoint_classes.rq` (only meaningful when the materialized triples contain `rdf:type` assertions)
+and `all_combined.rq`. They use the `GROUP BY … HAVING` formulation for the (inverse-)functional
+checks, which is equivalent to the `FILTER EXISTS` form used above.
+
+
 ## License
 
 This work is licensed under a [Creative Commons Attribution 4.0 International License](https://creativecommons.org/licenses/by/4.0/).

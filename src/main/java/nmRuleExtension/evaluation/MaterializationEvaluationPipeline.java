@@ -9,8 +9,14 @@ import nmRuleExtension.utils.DualLogger;
 import nmRuleExtension.utils.ExperimentConfig;
 
 import java.io.File;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public class MaterializationEvaluationPipeline {
+
+    /** The named graph the materialized triples are loaded into, as in the GraphDB workflow. */
+    private static final String NEW_TRIPLES_GRAPH = "http://newtriples/";
 
     private static void loadTriples(Model model, String path) {
         if (path == null) return;
@@ -53,7 +59,7 @@ public class MaterializationEvaluationPipeline {
 //        String configPath = args.length > 0 ? args[0] : "data/CSKG2/CSKG2.json";
         String specificFilePath = args.length > 1 ? args[1] : null;
 
-        String namedGraphURI = "http://newtriples/";
+        String namedGraphURI = NEW_TRIPLES_GRAPH;
 
         try {
             // 1. Load Configurationz
@@ -111,7 +117,7 @@ public class MaterializationEvaluationPipeline {
             if (specificFilePath != null) {
                 File specificPath = new File(specificFilePath);
                 if (specificPath.isFile()) {
-                    evaluateSingleFile(dataset, specificPath, namedGraphURI);
+                    evaluateSingleFile(dataset, specificPath, namedGraphURI, datasetName);
                 } else if (specificPath.isDirectory()) {
                     // A materialization run directory: evaluate every .nt file it contains.
                     File[] files = specificPath.listFiles((d, name) -> name.endsWith(".nt"));
@@ -119,7 +125,7 @@ public class MaterializationEvaluationPipeline {
                         java.util.Arrays.sort(files, java.util.Comparator.comparing(File::getName));
                         System.out.println("Evaluating " + files.length + " materialized files in " + specificPath.getAbsolutePath());
                         for (File file : files) {
-                            evaluateSingleFile(dataset, file, namedGraphURI);
+                            evaluateSingleFile(dataset, file, namedGraphURI, datasetName);
                         }
                     } else {
                         System.out.println("No materialized files found in " + specificPath.getAbsolutePath());
@@ -148,7 +154,7 @@ public class MaterializationEvaluationPipeline {
 
                 if (files != null && files.length > 0) {
                     for (File file : files) {
-                        evaluateSingleFile(dataset, file, namedGraphURI);
+                        evaluateSingleFile(dataset, file, namedGraphURI, datasetName);
                     }
                 } else {
                     System.out.println("No materialized files found in " + dir.getAbsolutePath());
@@ -160,7 +166,7 @@ public class MaterializationEvaluationPipeline {
         }
     }
 
-    private static void evaluateSingleFile(Dataset dataset, File file, String namedGraphURI) {
+    private static void evaluateSingleFile(Dataset dataset, File file, String namedGraphURI, String datasetName) {
         System.out.println("\n--------------------------------------------------");
         System.out.println("Evaluating: " + file.getName());
 
@@ -173,7 +179,7 @@ public class MaterializationEvaluationPipeline {
         dataset.addNamedModel(namedGraphURI, newTriplesModel);
 
         // 7. Run Queries
-        runEvaluationQueries(dataset);
+        runEvaluationQueries(dataset, datasetName);
 
         // 8. Clear the named graph for the next iteration
         dataset.removeNamedModel(namedGraphURI);
@@ -181,134 +187,160 @@ public class MaterializationEvaluationPipeline {
 
 
 
-    private static void runEvaluationQueries(Dataset dataset) {
-        // Query 0: Count triples in the default graph
-//        String q0 = "SELECT (COUNT(*) AS ?tripleCount) WHERE { ?s ?p ?o . }";
-//        System.out.println("  - Total Base Triples (Default Graph): " + executeCountQuery(dataset, q0, "tripleCount"));
+    /**
+     * Per-file metrics, mirroring the GraphDB workflow's {@code queries/metrics_default.rq} and
+     * {@code queries/metrics_owl2bench.rq} (~/graphdb-import/graphdb-workflow), which is the
+     * authoritative evaluation. One query returns every count in a single row:
+     * {@code func}, {@code dom}, {@code ran} (plus {@code invf} for OWL2Bench), and {@code inc} —
+     * the DISTINCT union of the checks, so a triple tripping several is counted once. That keeps
+     * {@code 0 <= inc <= triples} and {@code sem = 1 - inc/triples} in [0,1].
+     *
+     * Every block starts from the new triples, so the work is bounded by |newtriples|. The
+     * functional / inverse-functional checks use two OR-ed FILTER EXISTS (a conflicting value in
+     * the base graph OR in newtriples) so they short-circuit on the first conflict instead of
+     * enumerating all values of a high-fan-out subject.
+     */
+    private static void runEvaluationQueries(Dataset dataset, String datasetName) {
+        boolean owl2bench = datasetName != null && datasetName.toLowerCase().contains("owl2bench");
 
-        // Query 1: Count triples in the named graph
-        String q1 = "SELECT (COUNT(*) AS ?tripleCount) " +
-                "WHERE { " +
-                "  GRAPH <http://newtriples/> { ?s ?p ?o . } " +
-                "}";
+        String qTriples = withGraph("""
+                SELECT (COUNT(*) AS ?tripleCount) WHERE {
+                  GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+                }""");
+        int triples = executeCountQuery(dataset, qTriples, "tripleCount");
+        System.out.println("  - Total Materialized Triples (Named Graph): " + triples);
 
-        System.out.println("  - Total Materialized Triples (Named Graph): " + executeCountQuery(dataset, q1, "tripleCount"));
+        Map<String, Integer> m = executeMetricsQuery(dataset, metricsQuery(owl2bench),
+                owl2bench ? List.of("func", "invf", "dom", "ran", "inc")
+                          : List.of("func", "dom", "ran", "inc"));
 
+        System.out.println("  - Functional Property Violations: " + m.get("func"));
+        if (owl2bench) {
+            System.out.println("  - Inverse-Functional Property Violations: " + m.get("invf"));
+        }
+        System.out.println("  - Domain Disjointness Violations: " + m.get("dom"));
+        System.out.println("  - Range Disjointness Violations: " + m.get("ran"));
 
-        String q2 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> " +
-                "PREFIX owl: <http://www.w3.org/2002/07/owl#> " +
-                "SELECT (COUNT(*) as ?total) " +
-                "WHERE { " +
-                "  SELECT DISTINCT ?s ?p ?o WHERE { " +
-                "    GRAPH <http://newtriples/> { ?s ?p ?o . } " +
-                "    { " +
-                "      SELECT ?s ?p " +
-                "      WHERE { " +
-                "        ?p rdf:type owl:FunctionalProperty . " +
-                "        { ?s ?p ?o_inner . } " +                                  // Look in base graph
-                "        UNION " +
-                "        { GRAPH <http://newtriples/> { ?s ?p ?o_inner . } } " +   // Look in new predictions
-                "      } " +
-                "      GROUP BY ?s ?p " +
-                "      HAVING (COUNT(DISTINCT ?o_inner) > 1) " +
-                "    } " +
-                "  } " +
-                "}";
-
-        System.out.println("  - Functional Property Violations: " + executeCountQuery(dataset, q2, "total"));
-
-        String qDomainCheck = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
-                "PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
-                "SELECT (COUNT(*) AS ?domainCheckCount) \n" +
-                "WHERE { \n" +
-                "    SELECT DISTINCT ?s ?p ?o WHERE { \n" +
-                "        # Start with new predictions\n" +
-                "        GRAPH <http://newtriples/> { ?s ?p ?o . } \n" +
-                "        # Look up domain constraint\n" +
-                "        ?p rdfs:domain ?dom . \n" +
-                "        # Check symmetric disjointness\n" +
-                "        ?dom owl:disjointWith|^owl:disjointWith ?type1 . \n" +
-                "        # Validate against both graphs\n" +
-                "        { \n" +
-                "            { ?s a ?type1 . } \n" +
-                "            UNION \n" +
-                "            { GRAPH <http://newtriples/> { ?s a ?type1 . } } \n" +
-                "        } \n" +
-                "    } \n" +
-                "}";
-
-// 2. Optimized Range Disjointness Check
-        String qRangeCheck = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
-                "PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
-                "SELECT (COUNT(*) AS ?rangeCheckCount) \n" +
-                "WHERE { \n" +
-                "    SELECT DISTINCT ?s ?p ?o WHERE { \n" +
-                "        # Start with new predictions\n" +
-                "        GRAPH <http://newtriples/> { ?s ?p ?o . } \n" +
-                "        # Look up range constraint\n" +
-                "        ?p rdfs:range ?ran . \n" +
-                "        # Check symmetric disjointness\n" +
-                "        ?ran owl:disjointWith|^owl:disjointWith ?type2 . \n" +
-                "        # Validate against both graphs\n" +
-                "        { \n" +
-                "            { ?o a ?type2 . } \n" +
-                "            UNION \n" +
-                "            { GRAPH <http://newtriples/> { ?o a ?type2 . } } \n" +
-                "        } \n" +
-                "    } \n" +
-                "}";
-
-//        debugDomainViolations(dataset);
-        int domainViolations = executeCountQuery(dataset, qDomainCheck, "domainCheckCount");
-        int rangeViolations = executeCountQuery(dataset, qRangeCheck, "rangeCheckCount");
-
-        System.out.println("  - Domain Disjointness Violations: " + domainViolations);
-        System.out.println("  - Range Disjointness Violations: " + rangeViolations);
-        System.out.println("  - Total Domain/Range Violations: " + (domainViolations + rangeViolations));
-//        String q4 = "PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>" +
-//                "PREFIX owl: <http://www.w3.org/2002/07/owl#>" +
-//                "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>" +
-//                "SELECT (COUNT(*) AS ?total)" +
-//                "WHERE {" +
-//                "  {" +
-//                "    # --- INNER QUERY: FIND THE TRIPLES ---" +
-//                "    SELECT DISTINCT ?s ?p ?o" +
-//                "    WHERE {" +
-//                "      {" +
-//                "        # 1. Functional Property" +
-//                "        GRAPH <http://newtriples/> { ?s ?p ?o . }" +
-//                "        {" +
-//                "           SELECT ?s ?p WHERE {" +
-//                "             ?p a owl:FunctionalProperty ." +
-//                "             ?s ?p ?val ." +
-//                "           }" +
-//                "           GROUP BY ?s ?p" +
-//                "           HAVING (COUNT(DISTINCT ?val) > 1)" +
-//                "        }" +
-//                "      }" +
-//                "      UNION" +
-//                "      {" +
-//                "        # 2. Domain Violation" +
-//                "        GRAPH <http://newtriples/> { ?s ?p ?o . }" +
-//                "        ?p rdfs:domain ?dom ." +
-//                "        ?s a ?type1 ." +
-//                "        ?type1 owl:disjointWith ?dom ." +
-//                "      }" +
-//                "      UNION" +
-//                "      {" +
-//                "        # 3. Range Violation" +
-//                "        GRAPH <http://newtriples/> { ?s ?p ?o . }" +
-//                "        ?p rdfs:range ?ran ." +
-//                "        ?o a ?type2 ." +
-//                "        ?type2 owl:disjointWith ?ran ." +
-//                "      }" +
-//                "    }" +
-//                "  }" +
-//                "}";
-//
-//        System.out.println("  - All distinct Violations: " + executeCountQuery(dataset, q4, "total"));
-
+        int inc = m.get("inc");
+        System.out.println("  - Total Inconsistent Triples (distinct): " + inc);
+        if (triples > 0) {
+            System.out.printf("  - Semantic Consistency (sem): %.4f%n", 1.0 - ((double) inc / triples));
+        } else {
+            System.out.println("  - Semantic Consistency (sem): NA (no triples)");
+        }
     }
+
+    /** Substitutes the named-graph placeholder the same way the workflow's runner does. */
+    private static String withGraph(String query) {
+        return query.replace("{{NEWTRIPLES}}", "<" + NEW_TRIPLES_GRAPH + ">");
+    }
+
+    private static String metricsQuery(boolean includeInverseFunctional) {
+        String invfBlock = !includeInverseFunctional ? "" : """
+
+                  # ---- inverse-functional: (p,o) already reached from a DIFFERENT subject ----
+                  { SELECT (COUNT(*) AS ?invf) WHERE {
+                      SELECT DISTINCT ?s ?p ?o WHERE {
+                        GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+                        ?p rdf:type owl:InverseFunctionalProperty .
+                        FILTER( EXISTS { ?sx ?p ?o . FILTER(?sx != ?s) }
+                             || EXISTS { GRAPH {{NEWTRIPLES}} { ?sy ?p ?o . FILTER(?sy != ?s) } } )
+                      }
+                  } }
+                """;
+
+        String invfUnion = !includeInverseFunctional ? "" : """
+
+                        UNION
+                        { GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+                          ?p rdf:type owl:InverseFunctionalProperty .
+                          FILTER( EXISTS { ?sx ?p ?o . FILTER(?sx != ?s) }
+                               || EXISTS { GRAPH {{NEWTRIPLES}} { ?sy ?p ?o . FILTER(?sy != ?s) } } ) }
+                """;
+
+        String projection = includeInverseFunctional ? "?func ?invf ?dom ?ran ?inc" : "?func ?dom ?ran ?inc";
+
+        String query = """
+                PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                PREFIX owl:  <http://www.w3.org/2002/07/owl#>
+                SELECT %s WHERE {
+
+                  # ---- functional: (s,p) already has a DIFFERENT value (base or new) ----
+                  { SELECT (COUNT(*) AS ?func) WHERE {
+                      SELECT DISTINCT ?s ?p ?o WHERE {
+                        GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+                        ?p rdf:type owl:FunctionalProperty .
+                        FILTER( EXISTS { ?s ?p ?ox . FILTER(?ox != ?o) }
+                             || EXISTS { GRAPH {{NEWTRIPLES}} { ?s ?p ?oy . FILTER(?oy != ?o) } } )
+                      }
+                  } }
+                %s
+                  # ---- domain: subject typed with a class disjoint from the property domain ----
+                  { SELECT (COUNT(*) AS ?dom) WHERE {
+                      SELECT DISTINCT ?s ?p ?o WHERE {
+                        GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+                        ?p rdfs:domain ?domClass .
+                        ?domClass owl:disjointWith|^owl:disjointWith ?type1 .
+                        { ?s rdf:type ?type1 . } UNION { GRAPH {{NEWTRIPLES}} { ?s rdf:type ?type1 . } }
+                      }
+                  } }
+
+                  # ---- range: object typed with a class disjoint from the property range ----
+                  { SELECT (COUNT(*) AS ?ran) WHERE {
+                      SELECT DISTINCT ?s ?p ?o WHERE {
+                        GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+                        ?p rdfs:range ?ranClass .
+                        ?ranClass owl:disjointWith|^owl:disjointWith ?type2 .
+                        { ?o rdf:type ?type2 . } UNION { GRAPH {{NEWTRIPLES}} { ?o rdf:type ?type2 . } }
+                      }
+                  } }
+
+                  # ---- combined total, DISTINCT across the checks ----
+                  { SELECT (COUNT(*) AS ?inc) WHERE {
+                      SELECT DISTINCT ?s ?p ?o WHERE {
+                        { GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+                          ?p rdf:type owl:FunctionalProperty .
+                          FILTER( EXISTS { ?s ?p ?ox . FILTER(?ox != ?o) }
+                               || EXISTS { GRAPH {{NEWTRIPLES}} { ?s ?p ?oy . FILTER(?oy != ?o) } } ) }
+                %s
+                        UNION
+                        { GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+                          ?p rdfs:domain ?dc .
+                          ?dc owl:disjointWith|^owl:disjointWith ?t1 .
+                          { ?s rdf:type ?t1 . } UNION { GRAPH {{NEWTRIPLES}} { ?s rdf:type ?t1 . } } }
+                        UNION
+                        { GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+                          ?p rdfs:range ?rc .
+                          ?rc owl:disjointWith|^owl:disjointWith ?t2 .
+                          { ?o rdf:type ?t2 . } UNION { GRAPH {{NEWTRIPLES}} { ?o rdf:type ?t2 . } } }
+                      }
+                  } }
+                }""".formatted(projection, invfBlock, invfUnion);
+
+        return withGraph(query);
+    }
+
+    /** Runs a one-row metrics query and pulls out the requested count variables. */
+    private static Map<String, Integer> executeMetricsQuery(Dataset dataset, String queryString, List<String> vars) {
+        Map<String, Integer> counts = new LinkedHashMap<>();
+        for (String var : vars) counts.put(var, 0);
+
+        Query query = QueryFactory.create(queryString);
+        try (QueryExecution qexec = QueryExecutionFactory.create(query, dataset)) {
+            ResultSet results = qexec.execSelect();
+            if (results.hasNext()) {
+                QuerySolution soln = results.nextSolution();
+                for (String var : vars) {
+                    if (soln.contains(var)) counts.put(var, soln.getLiteral(var).getInt());
+                }
+            }
+        } catch (Exception e) {
+            System.err.println("Error executing metrics query: " + e.getMessage());
+        }
+        return counts;
+    }
+
 
     private static int executeCountQuery(Dataset dataset, String queryString, String returnVar) {
         Query query = QueryFactory.create(queryString);
@@ -328,18 +360,16 @@ public class MaterializationEvaluationPipeline {
     }
 
     private static void debugDomainViolations(Dataset dataset) {
-        String debugQuery = "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n" +
-                "PREFIX owl: <http://www.w3.org/2002/07/owl#> \n" +
-                "SELECT DISTINCT ?s ?p ?dom ?type1 WHERE { \n" +
-                "    GRAPH <http://newtriples/> { ?s ?p ?o . } \n" +
-                "    ?p rdfs:domain ?dom . \n" +
-                "    ?dom owl:disjointWith|^owl:disjointWith ?type1 . \n" +
-                "    { \n" +
-                "        { ?s a ?type1 . } \n" +
-                "        UNION \n" +
-                "        { GRAPH <http://newtriples/> { ?s a ?type1 . } } \n" +
-                "    } \n" +
-                "} LIMIT 20";
+        String debugQuery = withGraph("""
+                PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+                PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+                PREFIX owl:  <http://www.w3.org/2002/07/owl#>
+                SELECT DISTINCT ?s ?p ?domClass ?type1 WHERE {
+                  GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+                  ?p rdfs:domain ?domClass .
+                  ?domClass owl:disjointWith|^owl:disjointWith ?type1 .
+                  { ?s rdf:type ?type1 . } UNION { GRAPH {{NEWTRIPLES}} { ?s rdf:type ?type1 . } }
+                } LIMIT 20""");
 
         System.out.println("\n--- DEBUG: First 20 Domain Violations ---");
         Query query = QueryFactory.create(debugQuery);
@@ -359,7 +389,7 @@ public class MaterializationEvaluationPipeline {
                 // Using .get() allows it to handle both Resources and Literals safely
                 System.out.println("  Subject (?s)          : " + soln.get("s"));
                 System.out.println("  Property (?p)         : " + soln.get("p"));
-                System.out.println("  Expected Domain (?dom): " + soln.get("dom"));
+                System.out.println("  Expected Domain (?dom): " + soln.get("domClass"));
                 System.out.println("  Conflicting Type      : " + soln.get("type1"));
                 System.out.println("-----------------------------------------");
             }
