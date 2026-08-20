@@ -105,17 +105,25 @@ Additionally, we notice that rank-based metrics tend to be influenced by the exc
 
 \section{Related Work}
 
+\subsection{Link Prediction approaches}
 Link Prediction is a widely studied task and has been tackled with multiple approaches, most notably KG embeddings (KGEs), Graph Neural Networks (GNNs) and Rule Mining. 
 
 KGEs involve mapping the entities and relations of the KG into a lower-dimensional vector representations. Methods such as~\cite{bordes_translating_2013,sun_rotate_2018,trouillon_complex_2016} usually learn the vectors' weight by minimizing a loss over a scoring function that is intended to preserve certain properties of the inner geometric structure of the KG. Similarly, GNNs (e.g., \cite{kipf_semi-supervised_2016,zeb_complex_2022}) are subsymbolic approaches that learn a vectorized representation of the graph, but they are usually deeper and also embed information about node features and neighborhood via message passing. In general, models in both these classes tend to be black-box like, thus lacking interpretability. For an in-depth analysis of the state-of-the-art methods (with a few examples for alternatives to tackle the mentioned downsides), we refer to \cite{arrar_comprehensive_2024}.
 
+\subsection{Rule Mining}
 Rule Mining \cite{zeng_logical_2023} involves the discovery of symbolical rules (typically Horn-like) from the data, which holds the promise of being more interpretable and is the focus of this work. In Section \ref{sec:exp} we generated rule sets using AnyBURL \cite{meilicke_anytime_2024} and AMIE3 \cite{harth_fast_2020}, which respectively employ path sampling (bottom-up) and systematic generation and testing (top-down) with pruning heuristics.
-Other rule miners have been proposed: \cite{pirro_relatedness_2020} uses a T-box based approach to suggest rule candidates, and SAFRAN \cite{ott_safran_2021} is an extension of AnyBURL using noisy-or, where the confidence of a predicted triple is an aggregation of the confidence of all relevant rules, once redundant rules are removed. We currently do not use noisy-or, as it would require exploring the interplay between rule redundancy and exceptions, but we intend to apply this in the future. 
+Other rule miners have been proposed: \cite{pirro_relatedness_2020} uses a T-box based approach to suggest rule candidates, and SAFRAN \cite{ott_safran_2021} is an extension of AnyBURL using noisy-or, where the confidence of a predicted triple is an aggregation of the confidence of all relevant rules, once redundant rules are removed. 
+%We currently do not use noisy-or, as it would require exploring the interplay between rule redundancy and exceptions, but we intend to apply this in the future. 
+We refer to \cite{wu_rule_2023} for a extended analysis of rule learning methods which we do not include in this work: specifically, beyond our analyzed methods, it includes a survey of deep-learning-based methods for RM . For the scope of this paper, we focused on the most directly interpretable and tunable models, but we consider the set of mined rules as an input for our analysis, so any of the reviewd methods should in principle be applicable.
 
+\subsection{Non-monotonic approaches to Link Prediction}
 Non-monotonic extensions of rule-sets have previously been proposed. A series of studies \cite{gad-elrab_exception-enriched_2016,lisi_combining_2017,tran_towards_2017} explores learning exceptions via an inductive logic programming \cite{muggleton_inductive_1991} approach, while we aim at exploiting ontological information. 
 
+\subsection{Schema integration in Link Prediction}
 Finally, using T-box or ontological knowledge to improve Link Prediction has been the subject of study of various neuro-symbolic approaches: \cite{jain_improving_2021} and 
-\cite{hubert_treat_2024} use schema-based inconsistencies to generate negative samples for KGEs or to directly operate in the training loss, \cite{wu_learning_2022} include type information in the rule learning process, \cite{wang_schema-aware_nodate,wiharja_schema_2020} focus on \textit{schema correct} triples to iteratively learn LP methods alternating rule mining and KGEs learning.
+\cite{hubert_treat_2024} use schema-based inconsistencies to generate negative samples for KGEs or to directly operate in the training loss, \cite{wu_learning_2022} include type information in the rule learning process, \cite{wang_schema-aware_nodate,wiharja_schema_2020} focus on \textit{schema correct} triples to iteratively learn LP methods alternating rule mining and KGEs learning and \cite{hao_universal_2019} enhances embedding by including the entity-concept associations in the learning
+
+\subsection{Repairs}
 
 \section{Problem Definition}
 In this section, we first describe the basic terminology, and then introduce the research problem we aim to tackle.
