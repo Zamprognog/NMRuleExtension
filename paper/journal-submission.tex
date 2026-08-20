@@ -116,8 +116,14 @@ Other rule miners have been proposed: \cite{pirro_relatedness_2020} uses a T-box
 %We currently do not use noisy-or, as it would require exploring the interplay between rule redundancy and exceptions, but we intend to apply this in the future. 
 We refer to \cite{wu_rule_2023} for a extended analysis of rule learning methods which we do not include in this work: specifically, beyond our analyzed methods, it includes a survey of deep-learning-based methods for RM . For the scope of this paper, we focused on the most directly interpretable and tunable models, but we consider the set of mined rules as an input for our analysis, so any of the reviewd methods should in principle be applicable.
 
-\subsection{Non-monotonic approaches to Link Prediction}
-Non-monotonic extensions of rule-sets have previously been proposed. A series of studies \cite{gad-elrab_exception-enriched_2016,lisi_combining_2017,tran_towards_2017} explores learning exceptions via an inductive logic programming \cite{muggleton_inductive_1991} approach, while we aim at exploiting ontological information. 
+\subsection{Non-monotonic approaches to Knowledge Graphs and Link Prediction}
+
+Non-monotonicity has been applied in knowledge representation as a way to handle defeasible knowledge, and a substantial body of work exists on the topic of defeasible description logics \cite{britz_principles_2020} or integrating rules with ontologies under non-monotonic semantics \cite{eiter_combining_2008}. Our work takes a more operationalized stance, as we do not focus on formal entailment and semantics, but we use semantic consistency as a means to prune rules during KG completion and materialization.
+
+Similar to our setting, there exists a line of work that learns exceptions from the data. \textit{Exception-enriched rule learning}~\cite{gad-elrab_exception-enriched_2016} also starts from an input rule-set, and revises them into rules of the form $body \wedge not\ E(X) \rightarrow head$, where the candidate exception predicates are drawn from \textit{exception witness sets} -- predicates whose presence correlates with the rule failing on the KG. This was further extended in expressivity~\cite{tran_towards_2017}, and framed more generally as an inductive logic programming~\cite{muggleton_inductive_1991} problem over KGs~\cite{lisi_combining_2017}.                                         
+
+While inspired from this, our approach differs in two ways. First, we rather than inferring them from the distribution of the data, we derive them from the ontological restrictions, so exceptions are guaranteed to represent inconsistencies in the materialized graph. Second, we apply exceptions at rule materialization, not rule learning, allowing our method to be agnostic (fixed the rule's linguistic bias) to the rule miner.
+% Non-monotonic extensions of rule-sets have previously been proposed. A series of studies \cite{gad-elrab_exception-enriched_2016,lisi_combining_2017,tran_towards_2017} explores learning exceptions via an inductive logic programming \cite{muggleton_inductive_1991} approach, while we aim at exploiting ontological information. 
 
 \subsection{Schema integration in Link Prediction}
 Finally, using T-box or ontological knowledge to improve Link Prediction has been the subject of study of various neuro-symbolic approaches: \cite{jain_improving_2021} and 
