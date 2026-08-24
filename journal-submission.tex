@@ -126,8 +126,15 @@ While inspired from this, our approach differs in two ways. First, we rather tha
 % Non-monotonic extensions of rule-sets have previously been proposed. A series of studies \cite{gad-elrab_exception-enriched_2016,lisi_combining_2017,tran_towards_2017} explores learning exceptions via an inductive logic programming \cite{muggleton_inductive_1991} approach, while we aim at exploiting ontological information. 
 
 \subsection{Schema integration in Link Prediction}
-Finally, using T-box or ontological knowledge to improve Link Prediction has been the subject of study of various neuro-symbolic approaches: \cite{jain_improving_2021} and 
-\cite{hubert_treat_2024} use schema-based inconsistencies to generate negative samples for KGEs or to directly operate in the training loss, \cite{wu_learning_2022} include type information in the rule learning process, \cite{wang_schema-aware_nodate,wiharja_schema_2020} focus on \textit{schema correct} triples to iteratively learn LP methods alternating rule mining and KGEs learning and \cite{hao_universal_2019} enhances embedding by including the entity-concept associations in the learning
+Finally, using T-box or ontological knowledge to improve Link Prediction has been the subject of study of various neuro-symbolic approaches.
+Schemas have been used to improve the training signal: type restrictions can constrain the generation of negative samples~\cite{krompas_type-constrained_2015,jain_improving_2021}, or be included in the loss function to penalize domain/range violations \cite{hubert_treat_2024}. Other methods operate at the representation level, and embed the schema together with the triples, either by jointly modeling entity-concept associations~\cite{hao_universal_2019}, or by constructing geometric models of the the description logic axioms~\cite{kulmanov_embeddings_2019}. In the symbolic setting, schema information has been used at rule learning time, either to type the mined rules~\cite{wu_learning_2022} or to drive the generation of rule candidates~\cite{pirro_relatedness_2020}. Finally, a fourth group places the schema in an iterative loop, alternating rule mining and embedding learning and retaining only schema correct triples between iterations~\cite{wiharja_schema_2020,zhang_iteratively_2019}.
+
+
+
+
+
+% \cite{jain_improving_2021} and 
+% \cite{hubert_treat_2024} use schema-based inconsistencies to generate negative samples for KGEs or to directly operate in the training loss, \cite{wu_learning_2022} include type information in the rule learning process, \cite{wang_schema-aware_nodate,wiharja_schema_2020} focus on \textit{schema correct} triples to iteratively learn LP methods alternating rule mining and KGEs learning and \cite{hao_universal_2019} enhances embedding by including the entity-concept associations in the learning
 
 \subsection{Repairs}
 
