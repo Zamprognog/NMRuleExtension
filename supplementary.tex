@@ -19,6 +19,7 @@
 \newcommand{\suppurl}[2]{\noindent\textbf{#1:} \url{#2}\\}
 
 \begin{document}
+\sloppy
 
 \title{Supplementary Material: Extending Mined Rules for Link Prediction with Schema-based Exceptions}
 \author{}
@@ -48,28 +49,35 @@ In previous rounds of reviewing, the following main topics were discussed:
 \end{itemize}
 
 \section{Code Repository}
-% Replace the placeholder URLs below.
-\suppurl{Main repository}{https://anonymous.4open.science/r/NMRextension-6928/}
+\suppurl{Main repository}{https://github.com/Zamprognog/NMRuleExtension.git}
 \suppurl{Artifact/Zenodo snapshot}{https://zenodo.org/records/20067594?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6ImJlMThhYTc4LWU5ZTgtNDZhOS04MzY0LWI5YTVmNmFiMGIzMyIsImRhdGEiOnt9LCJyYW5kb20iOiI4NGQwYzdmODJkZmI1MzVmMDc3NDUxNDliZDdjN2JlMCJ9.-D2d2bDBK-thqNrgkqk-Rcwa587pfovN6RBAlAD4idjWdKyUSvZcf-SglIZt2TFv8-rhRispAaZsGK_Io0BoaA}
 
 \subsection{Repository structure}
 \begin{itemize}
-    \item \texttt{src/}: implementation
-    \item \texttt{scripts/}: experiment and evaluation scripts
-    \item \texttt{configs/}: configuration files for datasets/rule miners
-    \item \texttt{results/}: generated outputs (or instructions to download)
-    \item \texttt{tools/}: various scripts and tools for preprocessing and rule mining
+    \item \texttt{src/main/java/\allowbreak nmRuleExtension/}: implementation (grounding engines, rule parsers, materialization, evaluation)
+    \item \texttt{scripts/}: experiment driver (\texttt{run\_experiments.sh}) and result collection (\texttt{collect\_results.sh})
+    \item \texttt{data/[dataset]/}: per-dataset configuration JSON, splits, schema, mined rules and prediction outputs (downloaded from the Zenodo snapshot above)
+    \item \texttt{runs/\allowbreak [timestamp]/}: generated logs, \texttt{lp\_results.csv}, \texttt{mat\_results.csv} and \texttt{RESULTS.md}
+    \item \texttt{tools/}: rule miners (AMIE, AnyBURL), their per-dataset configurations, and preprocessing notebooks
 \end{itemize}
 
 \subsection{Environment and installation}\label{sec:env}
 \begin{itemize}
     \item OS tested: macOS 14.6.1 , Rocky Linux 8.10
-    \item Language/runtime: Java 21
-    \item Dependencies: See repository 
+    \item Language/runtime: Java 21, Maven 3.6+
+    \item Dependencies: resolved by Maven (\texttt{mvn clean install}); see \texttt{pom.xml}
+    \item Triple store used for the materialization evaluation: GraphDB (batch) and Apache Jena (in-run)
     \item Installation instructions: see \texttt{README.md} in the repository.
 \end{itemize}
 
 \section{Datasets}\label{sec:datasets}
+
+The five KGs used in the experiments are listed below. Each one is driven by a flat configuration
+JSON at \texttt{data/[dataset]/[dataset].json}, pointing at the splits, the schema file, the entity
+types file and the four mined rule sets. The prepared versions of all five are contained in the
+Zenodo snapshot; the pointers below identify the original sources and the preprocessing applied to
+them. Manual preparation steps carried out \emph{after} download (i.e. steps that are not
+reproducible by re-downloading) are logged in \texttt{data/DATA\_PREPARATION.md}.
 
 \subsection*{Nell995}
 \begin{itemize}
@@ -101,27 +109,88 @@ In previous rounds of reviewing, the following main topics were discussed:
     \end{itemize}
 \end{itemize}
 
+\subsection*{OWL2Bench}
+\begin{itemize}
+    \item Synthetic dataset generated with the OWL2Bench benchmark (Singh et al., ISWC 2020), reachable \href{https://github.com/kracr/owl2bench}{here}
+    \item TBox: the OWL 2 RL profile ontology \texttt{UNIV-BENCH-OWL2RL.owl}; ABox generated with the bundled generator (\texttt{tools/setup/\allowbreak OWL2Bench/\allowbreak OWL2Bench.jar}) at a scale of 10 universities, giving $\sim$750k triples
+    \item Preprocessing:
+    \begin{itemize}
+        \item \texttt{tools/setup/OWL2Bench/graph\_to\_dataset.ipynb} converts the generated ABox into the train/valid/test TSVs and the entity types file
+        \item Assertions of \texttt{hasResearchInterest} were dropped from the ABox: it is an \texttt{owl:DatatypeProperty} whose single literal object had been rewritten into a pseudo-entity by the TSV conversion, making $\sim$3\% of test triples single-candidate and producing malformed IRIs at materialization time. Its TBox declarations are kept, so the published benchmark ontology is unmodified
+        \item The 9 \texttt{owl:AllDisjointClasses} axioms were expanded into their 265 pairwise \texttt{owl:disjointWith} statements (\texttt{UNIV-BENCH-\allowbreak OWL2RL-\allowbreak disjoint-expanded.owl}, used as \texttt{schema} in the configuration), since neither Jena's OWL micro rule reasoner nor an RDFS ruleset reads the RDF collection form
+    \end{itemize}
+\end{itemize}
+
 
 \section{Rule miners and configurations}
 \begin{itemize}
-    \item \textbf{AnyBURL}: 23-1-x, configuration can be found in \texttt{tools/setup/[dataset]}.
-    \item \textbf{AMIE3}: 3.5.1, command lines used can be found in \texttt{tools/amie\_calls.txt}.
+    \item \textbf{AnyBURL}: 23-1 (\texttt{tools/AnyBURL\_og.jar}). Per-dataset property files are in
+    \texttt{tools/setup/[dataset]/}, with \texttt{[dataset]} one of \texttt{NELL}, \texttt{YAGO4.5},
+    \texttt{CSKG}, \texttt{hetionet}, \texttt{OWL2Bench}. Two rule sets are mined per dataset with a
+    100s snapshot, confidence threshold 0.1 and at least 2 correct predictions:
+    \texttt{config-learn.properties} for the full set (cyclic, acyclic and grounded rules, all of
+    maximum length 3) and \texttt{config-\allowbreak learn-\allowbreak onlyCP.properties} for the closed-path-only set
+    (\texttt{MAX\_\allowbreak LENGTH\_\allowbreak ACYCLIC} and \texttt{MAX\_\allowbreak LENGTH\_\allowbreak GROUNDED\_\allowbreak CYCLIC} set to 0).
+    \item \textbf{AMIE3}: 3.5.1 (\texttt{tools/amie3.5.1.jar}), command lines used can be found in
+    \texttt{tools/amie\_calls.txt} and \texttt{tools/amiemine.sh}. Rules are mined twice per dataset,
+    with \texttt{-maxad 3} and \texttt{-maxad 4}, in both cases with
+    \texttt{-mins 10 -minpca 0.1 -minc 0.1 -full}. As discussed above, the \texttt{-const} variant
+    (pattern rules with constants) is not used in the experiments.
 \end{itemize}
 
 \section{Reproducing the experiments}
 \begin{enumerate}
-    \item Download datasets (Section~\ref{sec:datasets}).
-    \item Install dependencies (Section~\ref{sec:env}).
-    \item Run the pipeline (see readme.md):
+    \item Install dependencies and build (Section~\ref{sec:env}): \texttt{mvn clean install}.
+    \item Download the datasets (Section~\ref{sec:datasets}) and extract them into \texttt{data/}.
+    \item Run the pipeline. The driver script builds the project, runs the requested stages over the
+    requested datasets, tees each stage's output to \texttt{runs/\allowbreak [timestamp]/} and collects the
+    metric tables into \texttt{lp\_results.csv}, \texttt{mat\_results.csv} and \texttt{RESULTS.md}.
 \end{enumerate}
 
-% Provide copy-pasteable commands when ready.
+{\small
 \begin{verbatim}
-# Example 
-# mvn exec:java -Dexec.mainClass="ruleMiningSemanticExtension.RunExperiment" \
-     -Dexec.args="path/to/config.json [mode]"
+# all stages (lp = link prediction, mat = materialization,
+# mateval = violation counting) over the 4 default datasets
+# (nell, yago, cskg, owl2bench; hetionet is opt-in)
+./scripts/run_experiments.sh
 
+# a subset; dataset keys: nell, yago, cskg, owl2bench, hetionet
+./scripts/run_experiments.sh --datasets hetionet --stages lp
+
+# JVM heap for the stages (default 12g; YAGO4.5-10 needs the most)
+./scripts/run_experiments.sh --heap 16g
+
+# materialization rule-confidence thresholds (defaults to 1,5,10)
+./scripts/run_experiments.sh --stages mat,mateval \
+    --percentages 1,5,10
+
+# print the plan without running anything
+./scripts/run_experiments.sh --dry-run
 \end{verbatim}
+}
+
+The individual entry points can also be called directly; each takes a dataset configuration JSON as
+its first argument.
+
+{\small
+\begin{verbatim}
+# Link prediction: both engines, every configured rule set
+mvn exec:java -Dexec.mainClass="nmRuleExtension.RunExperiment" \
+  -Dexec.args="data/NELL995/NELL995.json [full|anyburl|amie]"
+
+# Materialization: arg 2 = rule-confidence percentages
+mvn exec:java -Dexec.mainClass="nmRuleExtension.RunMaterialization" \
+  -Dexec.args="data/NELL995/NELL995.json 1,5,10"
+
+# Violation counting over a materialization output directory
+MAIN=nmRuleExtension.evaluation.MaterializationEvaluationPipeline
+mvn exec:java -Dexec.mainClass="$MAIN" \
+  -Dexec.args="data/NELL995/NELL995.json <output dir>"
+\end{verbatim}
+}
+
+The SPARQL queries used to count the constraint violations reported in the paper are listed in the
+repository \texttt{README.md}.
 
 \section{License}
 This work is licensed under a \suppurl{Creative Commons Attribution 4.0 International License}{https://creativecommons.org/licenses/by/4.0/}.
