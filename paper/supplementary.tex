@@ -40,7 +40,7 @@ In previous rounds of reviewing, the following main topics were discussed:
 
     \item Treating out-rule violations: when handling out-rule violation, the memory requirements would immediately rise as one needs to track provenance of predictions. Additionally, out-rule violations further involve including considerations about confidence and confidence aggregation: a possible heuristic could consider resolving inconsistencies by including a preference based on higher-confidence rules and blocking lower confidence predictions, but this could only be applied with max-aggregation. It is definitely an open question that warrants further analysis, but we kept it outside of the scope to the paper, as their remaining influence is limited.
 
-    \item Schema Availability: the main bottleneck of evaluating more schema restrictions depends on the limited availability of openly available, large-scale KGs that include curated schemas. While industrial applications increasingly focus on the ontological layer, academic benchmarks remain limited. We tried to overcome this by including a synthetic dataset (OWL2Bench) generated from a more expressive ontology, but we were unable to obtain inconsistencies linked to, i.e. inverse functionality. We posit that the three restrictions that we manage to tackle are nonetheless the most widespread and thus beneficial.
+    \item Schema Availability: the main bottleneck of evaluating more schema restrictions depends on the limited availability of openly available, large-scale KGs that include curated schemas. While industrial applications increasingly focus on the ontological layer, academic benchmarks remain limited. In particular, none of the available KGs allowed us to observe inconsistencies linked to, i.e. inverse functionality. We posit that the three restrictions that we manage to tackle are nonetheless the most widespread and thus beneficial.
 
     \item Consistency vs. Ranking Performance Trade-Off: we acknowledge that introducing exceptions can slightly decrease standard LP metrics (cf. also the discussion section). However, we argue that this trade-off is in practice unavoidable, as from a downstream application point of view, materializing the standard rule-set will clearly introduce inconsistencies in the KG, which will require a repairing step that with our method can be avoided or heavily limited. This is further supported by the fact that other related work argued for the need of semantic-aware metrics complementary to standard, rank-based ones.
     
@@ -72,9 +72,9 @@ In previous rounds of reviewing, the following main topics were discussed:
 
 \section{Datasets}\label{sec:datasets}
 
-The five KGs used in the experiments are listed below. Each one is driven by a flat configuration
+The four KGs used in the experiments are listed below. Each one is driven by a flat configuration
 JSON at \texttt{data/[dataset]/[dataset].json}, pointing at the splits, the schema file, the entity
-types file and the four mined rule sets. The prepared versions of all five are contained in the
+types file and the four mined rule sets. The prepared versions of all four are contained in the
 Zenodo snapshot; the pointers below identify the original sources and the preprocessing applied to
 them. Manual preparation steps carried out \emph{after} download (i.e. steps that are not
 reproducible by re-downloading) are logged in \texttt{data/DATA\_PREPARATION.md}.
@@ -109,24 +109,11 @@ reproducible by re-downloading) are logged in \texttt{data/DATA\_PREPARATION.md}
     \end{itemize}
 \end{itemize}
 
-\subsection*{OWL2Bench}
-\begin{itemize}
-    \item Synthetic dataset generated with the OWL2Bench benchmark (Singh et al., ISWC 2020), reachable \href{https://github.com/kracr/owl2bench}{here}
-    \item TBox: the OWL 2 RL profile ontology \texttt{UNIV-BENCH-OWL2RL.owl}; ABox generated with the bundled generator (\texttt{tools/setup/\allowbreak OWL2Bench/\allowbreak OWL2Bench.jar}) at a scale of 10 universities, giving $\sim$750k triples
-    \item Preprocessing:
-    \begin{itemize}
-        \item \texttt{tools/setup/OWL2Bench/graph\_to\_dataset.ipynb} converts the generated ABox into the train/valid/test TSVs and the entity types file
-        \item Assertions of \texttt{hasResearchInterest} were dropped from the ABox: it is an \texttt{owl:DatatypeProperty} whose single literal object had been rewritten into a pseudo-entity by the TSV conversion, making $\sim$3\% of test triples single-candidate and producing malformed IRIs at materialization time. Its TBox declarations are kept, so the published benchmark ontology is unmodified
-        \item The 9 \texttt{owl:AllDisjointClasses} axioms were expanded into their 265 pairwise \texttt{owl:disjointWith} statements (\texttt{UNIV-BENCH-\allowbreak OWL2RL-\allowbreak disjoint-expanded.owl}, used as \texttt{schema} in the configuration), since neither Jena's OWL micro rule reasoner nor an RDFS ruleset reads the RDF collection form
-    \end{itemize}
-\end{itemize}
-
-
 \section{Rule miners and configurations}
 \begin{itemize}
     \item \textbf{AnyBURL}: 23-1 (\texttt{tools/AnyBURL\_og.jar}). Per-dataset property files are in
     \texttt{tools/setup/[dataset]/}, with \texttt{[dataset]} one of \texttt{NELL}, \texttt{YAGO4.5},
-    \texttt{CSKG}, \texttt{hetionet}, \texttt{OWL2Bench}. Two rule sets are mined per dataset with a
+    \texttt{CSKG}, \texttt{hetionet}. Two rule sets are mined per dataset with a
     100s snapshot, confidence threshold 0.1 and at least 2 correct predictions:
     \texttt{config-learn.properties} for the full set (cyclic, acyclic and grounded rules, all of
     maximum length 3) and \texttt{config-\allowbreak learn-\allowbreak onlyCP.properties} for the closed-path-only set
@@ -150,11 +137,11 @@ reproducible by re-downloading) are logged in \texttt{data/DATA\_PREPARATION.md}
 {\small
 \begin{verbatim}
 # all stages (lp = link prediction, mat = materialization,
-# mateval = violation counting) over the 4 default datasets
-# (nell, yago, cskg, owl2bench; hetionet is opt-in)
+# mateval = violation counting) over the 3 default datasets
+# (nell, yago, cskg; hetionet is opt-in)
 ./scripts/run_experiments.sh
 
-# a subset; dataset keys: nell, yago, cskg, owl2bench, hetionet
+# a subset; dataset keys: nell, yago, cskg, hetionet
 ./scripts/run_experiments.sh --datasets hetionet --stages lp
 
 # JVM heap for the stages (default 12g; YAGO4.5-10 needs the most)
