@@ -72,7 +72,8 @@ In previous rounds of reviewing, the following main topics were discussed:
 
 \section{Datasets}\label{sec:datasets}
 
-The four KGs used in the experiments are listed below. Each one is driven by a flat configuration
+The four KGs used in the experiments are listed below, followed by the derived variant built for the
+inverse-functionality analysis. Each one is driven by a flat configuration
 JSON at \texttt{data/[dataset]/[dataset].json}, pointing at the splits, the schema file, the entity
 types file and the four mined rule sets. The prepared versions of all four are contained in the
 Zenodo snapshot; the pointers below identify the original sources and the preprocessing applied to
@@ -108,6 +109,38 @@ reproducible by re-downloading) are logged in \texttt{data/DATA\_PREPARATION.md}
         \item Run \texttt{filter\_ntfile.ipynb} to obtain \texttt{yago4.5-10}
     \end{itemize}
 \end{itemize}
+
+\subsection*{YAGO4.5-10-flip}
+Derived variant of YAGO4.5-10 used only for the inverse-functionality analysis of
+Section~5.1.1. Built by \texttt{yago\_flip\_experiment/flip\_yago.py} from the prepared
+YAGO4.5-10 files, which are left untouched.
+\begin{itemize}
+    \item Flipped properties: \texttt{schema:birthPlace} (140,221 triples) and
+    \texttt{schema:deathPlace} (55,941). The other two functional properties of YAGO4.5-10 are
+    left as they are: \texttt{schema:gender} has 9 distinct objects, and \texttt{schema:publisher}
+    has 16 triples and blank-node domain and range, which \texttt{SemanticConstraintLoader} skips
+    \item Data: every $(s,P,o)$ is rewritten as $(o,P^{-1},s)$ in the train/valid/test TSVs and in
+    the full \texttt{.nt} graph. Split sizes are unchanged (3,222,052 / 16,273 / 16,273) and the
+    entity types file is copied verbatim
+    \item T-Box: the axioms of the original property are dropped; the inverse
+    (\texttt{yago:birthPlaceOf}, \texttt{yago:deathPlaceOf}, minted in the YAGO namespace since
+    schema.org does not define these terms) is declared \texttt{rdf:Property} and
+    \texttt{owl:InverseFunctionalProperty} with \emph{domain and range swapped} with respect to the
+    original. No \texttt{owl:inverseOf} is emitted, so that no twin relation remains for a rule to
+    invert at no cost
+    \item Verification: \texttt{yago\_flip\_experiment/verify\_flip.py} checks that the triple
+    counts are conserved per split, that both flipped properties are empirically inverse functional,
+    that no occurrence of the originals is left, that the flipped triples raise no domain or range
+    violation against \texttt{entity\_types.nt} through the \texttt{subClassOf} closure, and that no
+    new near-inverse relation pair is introduced. It exits non-zero on failure
+    \item Rules: two AnyBURL runs, \texttt{config-learn-flip.properties} (unrestricted, 19,490
+    rules) and \texttt{config-learn-flip-IFP.properties} (\texttt{SINGLE\_RELATIONS} restricted to
+    the two inverse-functional heads, \texttt{THRESHOLD\_CONFIDENCE} 0.01, 20,562 rules), the latter
+    being the one used for the analysis. Configurations
+    \texttt{YAGO4.5-10-flip.json} and \texttt{YAGO4.5-10-flipIFP.json} point at the two rule sets;
+    \texttt{run\_experiments\_flip.sh} runs the same three stages as the main driver over them
+\end{itemize}
+
 
 \section{Rule miners and configurations}
 \begin{itemize}

@@ -1069,10 +1069,16 @@ We now proceed to illustrate and analyze our empirical experiment setup.
 
 \noindent When computing standard LP metrics, we use the max-aggregation approach for matching rules. In other words, we sort the predictions in lexicographic order according to the confidence of the rules inferring such predictions, with ties broken by the further highest confidence rules. While we are aware of its practical limitations~\cite{ott_rule-based_2023,ott_safran_2021}, it allows to focus on the single rules, which better fits our objective of seeing the effect of extending them with schema-based exceptions.
 
-\subsubsection{Inverse functionality analysis}
+\subsubsection{Inverse functionality experiment}
 While our method can process and detect inverse functionality violations, we could not find datasets that natively included such constraint in their ontology. To verify the behavior of our method, we performed an additional analysis on an adapted version of YAGO4.5-10 where some functional properties are inverted.
 
-We thus generated YAGO4.5-10flip
+We thus generated YAGO4.5-10-flip, a variant of YAGO4.5-10 in which the usable functional properties are replaced by their inverse. The schema of YAGO4.5-10 declares four functional properties, all of which are perfectly functional in the data, but only two of them are usable for this purpose: \texttt{schema:gender} has nine distinct objects and, once inverted, would return a candidate set of the size of the whole \texttt{Person} population for every query, while \texttt{schema:publisher} occurs in 16 triples and declares blank-node domain and range, which carry no enforceable constraint. We therefore flip \texttt{schema:birthPlace} and \texttt{schema:deathPlace}, which together account for 196,162 triples of the dataset (140,221 and 55,941 respectively).
+
+The construction is a purely directional rewriting: every triple $(s,P,o)$ becomes $(o,P^{-1},s)$ in the training, validation and test splits as well as in the full graph used for materialization, so that the number of triples, the entities and the splits are left unchanged. 
+%The inverse properties are minted in the YAGO namespace (\texttt{yago:birthPlaceOf}, \texttt{yago:deathPlaceOf}), as schema.org does not define these terms, and the entity type assertions are copied unchanged, since flipping alters the direction of a statement and not the entities involved. 
+In the T-Box, the axioms of the original property are dropped and the inverse is declared an \texttt{owl:InverseFunctionalProperty} with domain and range \emph{swapped} with respect to the original.
+
+
 %%%%%%%%
 \subsection{Results}
 
@@ -1089,8 +1095,8 @@ Increasing rule expressivity (Anyburl CP to Full) usually, but not consistently,
 
 \paragraph{Rank-based metrics.} As shown in Table \ref{tab:metrics_part1}, the influence of the non-monotonic extension on hits@k and MRR tends to be negative, but very limited. We attribute this to the quality and precision of high-confidence rules, which likely dominate the results at lower $k$ values: since individual rules can generate multiple predictions for \texttt{(s,p,?)} or \texttt{(?,p,o)} queries, they have the most influence with the top ranks. Given that the sem@10 scores are still not perfect, this shows that while the majority of top-10 predictions are semantically correct, some inconsistent triples are still present. Our extension appears to remove them, but worsens the other LP scores: this suggest that, with standard LP metrics, the inconsistency generating rules could be considered of higher quality despite the certain presence of inconsistencies among the predictions, as the metrics only focus on the relative rank, without addressing the quality of the relevant predictions.\\
 \indent Finally, a note on Hetionet and its low-scored performance: compared to other work as e.g.~\cite{betz_supervised_2022}, we do not specifically target a single property, and instead tackle the general task of KG completion, which thus explains the discrepancy on the results. Our interest lies on the semantic consistency of rules with respect to the entire KG schema, and limiting the rules to only predict a specific relation when only domain and range constraints are available would have limited the conclusion we could gain from the results.
-
-\FloatBarrier
+\paragraph{Inverse functionality}
+%\FloatBarrier
 \section{Conclusions}
 % \subsubsection{Contributions}
 In this paper, we analyzed the effect of schema-based exceptions in rule sets for Link Prediction, with the aim of reducing the number of inconsistencies caused by materialization of standard Horn-based rules. Our method focused on exceptions avoiding in-graph and in-rule violations of domain, range and functionality restrictions, implementing them at rule-grounding level, by stopping the DFS search for a given problematic (rule, candidate entity) pair. Our empirical experiments showed that these extensions are sufficient to reduce the number of inconsistent triples, especially when considering domain and range. The cost of such improvement is a possible increase in computational time, as the schema must be parsed and further checks are added to the algorithm, but we note that in some cases the computational time was actually improved, likely by stopping high-support inconsistency-generating rules that are instead skipped. 
