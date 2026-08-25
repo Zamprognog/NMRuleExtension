@@ -41,13 +41,17 @@
 
 %\titlerunning{Dummy short title} %TODO optional, please use if title is longer than one line
 
-\author{Giacomo {Zamprogno}}{Vrije Universiteit Amsterdam, Netherlands \and }{g.zamprogno@vu.nl}{https://orcid.org/0009-0009-6474-1987}{This  work  is  supported  by  the  Hybrid  Intelligence  programme (https: //www.hybrid-intelligence-centre.nl/), funded  by  a  10-year  Zwaartekracht  grant  from  the  Dutch Ministry of Education, Culture and Science (NWO).}%TODO mandatory, please use full name; only 1 author per \author macro; first two parameters are mandatory, other parameters can be empty. Please provide at least the name of the affiliation and the country. The full address is optional. Use additional curly braces to indicate the correct name splitting when the last name consists of multiple name parts.
+\author{Giacomo {Zamprogno}\footnote{Corresponding author}}{Vrije Universiteit Amsterdam, The Netherlands \and Hybrid Intelligence Consortium, The Netherlands}{g.zamprogno@vu.nl}{https://orcid.org/0009-0009-6474-1987}{This  work  is  supported  by  the  Hybrid  Intelligence  programme (https: //www.hybrid-intelligence-centre.nl/), funded  by  a  10-year  Zwaartekracht  grant  from  the  Dutch Ministry of Education, Culture and Science (NWO).}%TODO mandatory, please use full name; only 1 author per \author macro; first two parameters are mandatory, other parameters can be empty. Please provide at least the name of the affiliation and the country. The full address is optional. Use additional curly braces to indicate the correct name splitting when the last name consists of multiple name parts.
 
-\author{Joan R. Public\footnote{Optional footnote, e.g. to mark corresponding author}}{Department of Informatics, Dummy College, [optional: Address], Country}{joanrpublic@dummycollege.org}{[orcid]}{}
+\author{Ilaria Tiddi}{Vrije Universiteit Amsterdam, The Netherlands \and Hybrid Intelligence Consortium, The Netherlands}{i.tiddi@vu.nl}{https://orcid.org/0000-0001-7116-9338}{}
 
-\authorrunning{G. Zamprogno and J.\,R. Public} %TODO mandatory. First: Use abbreviated first/middle names. Second (only in severe cases): Use first author plus 'et al.'
+\author{Bart Verheij}{University of Groningen, The Netherlands \and Hybrid Intelligence Consortium, The Netherlands}{Bart.Verheij@rug.nl}{https://orcid.org/0000-0001-8927-8751}{}
 
-\Copyright{Jane Open Access and Joan R. Public} %TODO mandatory, please use full first names. TGDK license is "CC-BY";  http://creativecommons.org/licenses/by/4.0/
+\author{Stefan Schlobach}{Vrije Universiteit Amsterdam, The Netherlands \and Hybrid Intelligence Consortium, The Netherlands}{k.s.schlobach@vu.nl@vu.nl}{https://orcid.org/0000-0002-3282-1597}{}
+
+\authorrunning{G. Zamprogno, I. Tiddi, B. Verheij and S. Schlobach} %TODO mandatory. First: Use abbreviated first/middle names. Second (only in severe cases): Use first author plus 'et al.'
+
+\Copyright{Giacomo Zamprogno, Ilaria Tiddi, Bart Verheij and Stefan Schlobach} %TODO mandatory, please use full first names. TGDK license is "CC-BY";  http://creativecommons.org/licenses/by/4.0/
 
 \ccsdesc[100]{\textcolor{red}{Computing methodologies~Artificial intelligence~Knowledge representation and reasoning}} %TODO mandatory: Please choose ACM 2012 classifications from https://dl.acm.org/ccs/ccs_flat.cfm 
 
@@ -132,7 +136,7 @@ Schemas have been used to improve the training signal: type restrictions can con
 % \cite{jain_improving_2021} and 
 % \cite{hubert_treat_2024} use schema-based inconsistencies to generate negative samples for KGEs or to directly operate in the training loss, \cite{wu_learning_2022} include type information in the rule learning process, \cite{wang_schema-aware_nodate,wiharja_schema_2020} focus on \textit{schema correct} triples to iteratively learn LP methods alternating rule mining and KGEs learning and \cite{hao_universal_2019} enhances embedding by including the entity-concept associations in the learning
 
-\subsection{Repairs}
+%\subsection{Repairs}
 
 \section{Problem Definition}
 In this section, we first describe the basic terminology, and then introduce the research problem we aim to tackle.
@@ -172,20 +176,20 @@ In the following section, we refer to body groundings (resp. Head Grounding) as 
 
 In general, a KG is consistent if $\mathcal{G} \cup \mathcal{O} \not\models \bot$. 
 
-Assuming a consistent KG as an input, given a set of inference rules $IR$, it might still be the case that $\mathcal{G}^{IR} \cup \mathcal{O} \not\models \bot$. We define three ways in which rules can lead to inconsistencies:
+Assuming a consistent KG as an input, given a set of inference rules $IR$, it might still be the case that $\mathcal{G}^{IR} \cup \mathcal{O} \models \bot$. We define three ways in which rules can lead to inconsistencies:
 
 \begin{itemize}
     \item \textit{in-graph violation}: in-graph violations are inconsistencies derived by data already present in the graph when a rule conclusion is materialized.
-    \item \textit{in-rule violation}: we define in-rule violations as inconsistencies caused by one or more conclusions materialized from a given rule two inconsistent conclusions predicted using different instances of the same rule. 
+    \item \textit{in-rule violation}: we define in-rule violations as inconsistencies caused by one or more conclusions materialized from a given rule. 
     \item \textit{out-rule violation}: comparatively, out-rule violations are inconsistent conclusions predicted using different rules.
 \end{itemize}
 
 Examples with the functional property restriction:
 \begin{itemize}
-    \item \textit{in-graph violation} : a given \texttt{(s,p,o)} conclusion would violate information already in the graph:  $\texttt{(X,parent,Y)}, \texttt{(X,bornIn,C)} \rightarrow \texttt{(Y,bornIn,C)} $ might derive that a person \texttt{persony} is born in the same city \texttt{cityp} of their parents, even if the graph already contains a \\ $\texttt{(persony, bornIn, city2)}$ triple, where \texttt{cityp} and \texttt{city2} are distinct.
-    \item \textit{in-rule violation}: the same rule for a given \texttt{(s,p,?)} query might get two or more different conclusions: $\texttt{(X,parent,Y)}, \texttt{(X,bornIn,C)} \rightarrow \texttt{(Y,bornIn,C)} $, in the case of parents being born in different cities, two head triples will be derived, which will generate an inconsistency.
+    \item \textit{in-graph violation} : a given \texttt{(s,p,o)} conclusion would violate information already in the graph:  $\texttt{(X,childOf,Y)}, \texttt{(Y,bornIn,C)} \rightarrow \texttt{(X,bornIn,C)} $ might derive that a person \texttt{personx} is born in the same city \texttt{cityp} of their parents, even if the graph already contains a \\ $\texttt{(personx, bornIn, city2)}$ triple, where \texttt{cityp} and \texttt{city2} are distinct.
+    \item \textit{in-rule violation}: the same rule for a given \texttt{(s,p,?)} query might get two or more different conclusions: $\texttt{(X,childOf,Y)}, \texttt{(Y,bornIn,C)} \rightarrow \texttt{(X,bornIn,C)} $, in the case of parents being born in different cities, two head triples will be derived, which will generate an inconsistency.
     \item \textit{out-rule violation}: two different rules can trigger for a given query\\ \texttt{(s,p,?)}: 
-    $\texttt{(X,parent,Y)}, \texttt{(X,bornIn,C)} \rightarrow \texttt{(Y,bornIn,C)} $ and\\ $\texttt{(Y,livesIn,C)} \rightarrow \texttt{(Y,bornIn,C)}$. Both rule bodies can apply, possibly resulting in the prediction of inconsistent conclusions.
+    $\texttt{(X,childOf,Y)}, \texttt{(Y,bornIn,C)} \rightarrow \texttt{(X,bornIn,C)} $ and\\ $\texttt{(X,livesIn,C)} \rightarrow \texttt{(X,bornIn,C)}$. Both rule bodies can apply, possibly resulting in the prediction of inconsistent conclusions.
 \end{itemize} 
 
 \subsubsection{Research Question.}
@@ -297,7 +301,7 @@ Initialize $\GIRnm \leftarrow \G$\;
     \label{tab:ijp}
 \end{table}
 
-\paragraph{Example.}  Let us recall our running example. Given the following triples in the KG: \texttt{(virginiaWoolf, childOf, leslieStephen)}, \texttt{(virginiaWoolf, childOf, ju-} \texttt{liaStephen)}, \texttt{(leslieStephen, bornIn, London)}, \texttt{(juliaStephen, bornIn, Calcutta)}, \texttt{(virginiaWoolf, almaMater, kingsCollege)}, standard rule mining materialization would activate rule $\texttt{(X,childOf,Y)}, \texttt{(Y,bornIn,C)} \rightarrow \\ \texttt{(X,bornIn,C)}$ and predict both \texttt{(virginiaWoolf, bornIn, London)} and\\ \texttt{(virginiaWoolf, bornIn, Calcutta)}, which are mutually inconsistent. When the schema-based exception for functionality is included, it will trigger once the second grounding is found, stopping any further search. Candidate predictions will be rejected, as the rule is `unsafe', but a lower confidence rule might then apply, e.g. $\texttt{(X,almaMater,U)}, $ $\texttt{(U,locatedIn,C)} \rightarrow \texttt{(X,bornIn,C)}$, which would materialize only the correct triple \texttt{(virginiaWoolf,bornIn,London)}. 
+\paragraph{Example.}  Let us recall our running example. Given the following triples in the KG: \texttt{(virginiaWoolf, childOf, leslieStephen)}, \texttt{(virginiaWoolf, childOf, juliaStephen)}, \texttt{(leslieStephen, bornIn, London)}, \texttt{(juliaStephen, bornIn, Calcutta)}, \texttt{(virginiaWoolf, almaMater, kingsCollege)}, standard rule mining materialization would activate rule $\texttt{(X,childOf,Y)}, \texttt{(Y,bornIn,C)} \rightarrow \\ \texttt{(X,bornIn,C)}$ and predict both \texttt{(virginiaWoolf, bornIn, London)} and\\ \texttt{(virginiaWoolf, bornIn, Calcutta)}, which are mutually inconsistent. When the schema-based exception for functionality is included, it will trigger once the second grounding is found, stopping any further search. Candidate predictions will be rejected, as the rule is `unsafe', but a lower confidence rule might then apply, e.g. $\texttt{(X,almaMater,U)}, $ $\texttt{(U,locatedIn,C)} \rightarrow \texttt{(X,bornIn,C)}$, which would materialize only the correct triple \texttt{(virginiaWoolf,bornIn,London)}. 
 \subsection{Evaluation}
 % As our method can currently only work for ungrounded rules, we cannot leverage the full capabilities of the methods, and thus do not aim at strictly improving benchmark metrics, nor intend to perform a direct comparison between models. Our focus is instead on changes in the semantic quality of predicted triples between the monotonic and non-monotonic version of rule sets, the cost in computational time and the residual effect of out-rule violations. Nonetheless, for completeness, we also include results from standard rank-based LP metrics, which should be intended as `validation' against loss of performance between the rule-sets versions, and not as an objective benchmarking result.
 
@@ -1099,7 +1103,7 @@ Increasing rule expressivity (Anyburl CP to Full) usually, but not consistently,
 
 The standard condition violates inverse functionality on a large share of what it infers: 1992 of 2777 triples at the 1\% threshold (71.7\%), 21461 of 40492 at 5\% (53.0\%) and 45407 of 72518 at 10\% (62.6\%), keeping semantic consistency between 0.28 and 0.46. The degradation in quality follows directly from concentrating the rule set on two constrained relations: rules predicting a person for a given place are numerous and mutually inconsistent, whereas in the unrestricted setting, the same rules are diluted among many unconstrained properties.
 
-The non-monotonic extension removes the large majority of these violations, but not all of them. At the 1\% threshold it prunes exactly 1992 triples (from 2777 to 785), precisely the number of inverse-functional violations of the standard output, and only 8 violations survive; at 5\% and 10\% it removes respectively 96.7\% and 92.6\% of them, raising semantic consistency from 0.46 to 0.96 and from 0.37 to 0.89. The surviving violations grow with the density of the inferred triples, from 1.0\% of the materialized triples at 1\% to 3.6\% at 5\% and 11.1\% at 10\%.
+The non-monotonic extension removes the large majority of these violations, but not all of them. At the 1\% threshold only 8 violations survive; at 5\% and 10\% it removes respectively 96.7\% and 92.6\% of them, raising semantic consistency from 0.46 to 0.96 and from 0.37 to 0.89. The surviving violations grow with the density of the inferred triples, from 1.0\% of the materialized triples at 1\% to 3.6\% at 5\% and 11.1\% at 10\%.
 
 These residual violations are due to out-rule exceptions. Among the 3340 surviving triples at the 10\% threshold, all originate from 1629 objects receiving two or more distinct subjects from different rules, and none conflicts with a triple already present in the graph. It is the same effect already noted on NELL995, where its influence was minimal; here, as the rule set is deliberately concentrated on inverse-functional heads and the inferred triples are dense over a small set of objects, it becomes the dominant residual source of inconsistency.
 
@@ -1144,7 +1148,7 @@ Beyond verifying the effect of our method on inverse-functionality constraints, 
 %\FloatBarrier
 \section{Conclusions}
 % \subsubsection{Contributions}
-In this paper, we analyzed the effect of schema-based exceptions in rule sets for Link Prediction, with the aim of reducing the number of inconsistencies caused by materialization of standard Horn-based rules. Our method focused on exceptions avoiding in-graph and in-rule violations of domain, range and functionality restrictions, implementing them at rule-grounding level, by stopping the DFS search for a given problematic (rule, candidate entity) pair. Our empirical experiments showed that these extensions are sufficient to reduce the number of inconsistent triples, especially when considering domain and range. The cost of such improvement is a possible increase in computational time, as the schema must be parsed and further checks are added to the algorithm, but we note that in some cases the computational time was actually improved, likely by stopping high-support inconsistency-generating rules that are instead skipped. 
+In this paper, we analyzed the effect of schema-based exceptions in rule sets for Link Prediction, with the aim of reducing the number of inconsistencies caused by materialization of standard Horn-based rules. Our method focused on exceptions avoiding in-graph and in-rule violations of domain, range, functionality and inverse-functionality restrictions, implementing them at rule-grounding level, by stopping the DFS search for a given problematic (rule, candidate entity) pair. Our empirical experiments showed that these extensions are sufficient to reduce the number of inconsistent triples, especially when considering domain and range. Functional and inverse-functional inconsistencies are also mostly removed, with some residuals from out-rule exceptions, which increase if only such types of rules are mined. The cost of such improvement is a possible increase in computational time, as the schema must be parsed and further checks are added to the algorithm, but we note that in some cases the computational time was actually improved, likely by stopping high-support inconsistency-generating rules that are instead skipped. 
 % We further reported how the quality of the original rule set is actually influenced by the granularity of the schema and the level of curation of the same, with KGs respecting highly curated and granular producing more consistent rules. 
 
 We also show how rank-based metrics are influenced in a limited (but often negative) way by the extension, suggesting that they cannot measure the semantic quality of the predicted triples, as they accept triples even if uniquely predicted by inconsistency-prone rules.
