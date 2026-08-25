@@ -338,7 +338,7 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 %%%%%%%%%%%
 \begin{table}[]
     \centering
-    \caption{Analyzed datasets.}
+    \caption{Analyzed datasets. \textcolor{red}{Restrictions are abbreviated as f (functionality), if (inverse functionality), d (domain) and r (range). YAGO4.5-10-flip is the derived variant described in Section \ref{sec:flip}, used only for the inverse-functionality analysis.}}
     \begin{tabular}{l|c|c|c|c}
          name & graph size (triples) & available restrictions & train size & test size \\
          \hline
@@ -346,6 +346,7 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
          YAGO4.5-10 & 3.997M & f,d,r & 3.22M & 16.2k\\
          Hetionet & 2,275M & d,r & 2.21M & 22.5k \\
          CSKG-490K & 633k & d,r & 335k & 98.5k \\
+         \textcolor{red}{YAGO4.5-10-flip} & \textcolor{red}{3.997M} & \textcolor{red}{f,if,d,r} & \textcolor{red}{3.22M} & \textcolor{red}{16.2k} \\
     \end{tabular}
     \label{tab:datasets}
 \end{table}
@@ -1073,7 +1074,7 @@ We now proceed to illustrate and analyze our empirical experiment setup.
 
 \noindent When computing standard LP metrics, we use the max-aggregation approach for matching rules. In other words, we sort the predictions in lexicographic order according to the confidence of the rules inferring such predictions, with ties broken by the further highest confidence rules. While we are aware of its practical limitations~\cite{ott_rule-based_2023,ott_safran_2021}, it allows to focus on the single rules, which better fits our objective of seeing the effect of extending them with schema-based exceptions.
 
-\subsubsection{Inverse functionality experiment}
+\subsubsection{Inverse functionality experiment}\label{sec:flip}
 While our method can process and detect inverse functionality violations, we could not find datasets that natively included such constraint in their ontology. To verify the behavior of our method, we performed an additional analysis on an adapted version of YAGO4.5-10 where some functional properties are inverted.
 
 We thus generated YAGO4.5-10-flip, a variant of YAGO4.5-10 in which the usable functional properties are replaced by their inverse. The schema of YAGO4.5-10 declares four functional properties, all of which are perfectly functional in the data, but only two of them are usable for this purpose: \texttt{schema:gender} has nine distinct objects and, once inverted, would return a candidate set of the size of the whole \texttt{Person} population for every query, while \texttt{schema:publisher} occurs in 16 triples and declares blank-node domain and range, which carry no enforceable constraint. We therefore flip \texttt{schema:birthPlace} and \texttt{schema:deathPlace}, which together account for 196,162 triples of the dataset (140,221 and 55,941 respectively).
@@ -1081,6 +1082,8 @@ We thus generated YAGO4.5-10-flip, a variant of YAGO4.5-10 in which the usable f
 The construction is a purely directional rewriting: every triple $(s,P,o)$ becomes $(o,P^{-1},s)$ in the training, validation and test splits as well as in the full graph used for materialization, so that the number of triples, the entities and the splits are left unchanged. 
 %The inverse properties are minted in the YAGO namespace (\texttt{yago:birthPlaceOf}, \texttt{yago:deathPlaceOf}), as schema.org does not define these terms, and the entity type assertions are copied unchanged, since flipping alters the direction of a statement and not the entities involved. 
 In the T-Box, the axioms of the original property are dropped and the inverse is declared an \texttt{owl:InverseFunctionalProperty} with domain and range \emph{swapped} with respect to the original.
+
+\textcolor{red}{Rules are mined on YAGO4.5-10-flip with AnyBURL in the `Full' setting, but with two deviations from the configuration used for the main experiments. First, the mining is restricted to the two inverse-functional heads (\texttt{birthPlaceOf}, \texttt{deathPlaceOf}), so that every mined rule --- and therefore every materialized triple --- is subject to the constraint under study. Second, the confidence threshold is lowered from 0.1 to 0.01 and the snapshot extended from 100s to 300s, yielding 20,562 rules. The lower threshold is necessary because rules with these two heads are individually low-confidence: in an unrestricted run over the same graph they are almost entirely absent from the top-1/5/10\% of the sorted rule set, which would leave the constraint untested. As a consequence of both deviations, the absolute figures of this experiment are not directly comparable with those of Tables \ref{tab:mat_anyburl_10_30} and \ref{tab:mat_amie_10_30}; the comparison of interest is between the standard and the non-monotonic condition within the experiment, which share the same rule set.}
 
 
 %%%%%%%%
@@ -1105,6 +1108,8 @@ The standard condition violates inverse functionality on a large share of what i
 
 The non-monotonic extension removes the large majority of these violations, but not all of them. At the 1\% threshold only 8 violations survive; at 5\% and 10\% it removes respectively 96.7\% and 92.6\% of them, raising semantic consistency from 0.46 to 0.96 and from 0.37 to 0.89. The surviving violations grow with the density of the inferred triples, from 1.0\% of the materialized triples at 1\% to 3.6\% at 5\% and 11.1\% at 10\%.
 
+\textcolor{red}{The rule counts make the pruning visible: of the 2057 rules in the top 10\%, 1530 produce triples in the standard condition and 1035 under the extension, so roughly a third of the productive rules are stopped entirely as they only predict exceptions. The added cost is modest at this scale, from 368s to 385s at the 10\% threshold.}
+
 These residual violations are due to out-rule exceptions. Among the 3340 surviving triples at the 10\% threshold, all originate from 1629 objects receiving two or more distinct subjects from different rules, and none conflicts with a triple already present in the graph. It is the same effect already noted on NELL995, where its influence was minimal; here, as the rule set is deliberately concentrated on inverse-functional heads and the inferred triples are dense over a small set of objects, it becomes the dominant residual source of inconsistency.
 
 Beyond verifying the effect of our method on inverse-functionality constraints, this experiment further highlights a scenario where the out-rule consistency trade-off can be more prominent: in case in which RM is focused only on properties including functional or inverse-functional properties, the number of inconsistencies left by our method might increase, warranting further repair options.
@@ -1114,15 +1119,15 @@ Beyond verifying the effect of our method on inverse-functionality constraints, 
 \scriptsize
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{1.12}
-\caption{Materialization of YAGO4.5-10-flip with AnyBURL rules restricted to inverse-functional heads, \textbf{standard} condition. `invf', `func', `dom' and `ran' are the inconsistent triples according to, respectively, inverse functionality, functionality, domain and range; `\# inc' is the number of distinct inconsistent triples and `sem' the ratio of consistent triples over the materialized ones.}
+\caption{Materialization of YAGO4.5-10-flip with AnyBURL rules restricted to inverse-functional heads, \textbf{standard} condition. `invf', `func', `dom' and `ran' are the inconsistent triples according to, respectively, inverse functionality, functionality, domain and range; `\# inc' is the number of distinct inconsistent triples and `sem' the ratio of consistent triples over the materialized ones. \textcolor{red}{`\# applied', `\# target' and `time' are as in Table \ref{tab:mat_anyburl_10_30}.}}
 \label{tab:mat_flip_standard}
-\begin{tabular}{l | r r r r r r r}
+\begin{tabular}{l | r r r r r r r r r r}
 \toprule
-\% & \# triples & invf & func & dom & ran & \# inc & sem \\
+\% & \textcolor{red}{\# applied} & \textcolor{red}{\# target} & \# triples & invf & func & dom & ran & \# inc & sem & \textcolor{red}{time} \\
 \midrule
-1\%  & 2777  & 1992  & 0 & 0 & 8   & 2000  & 0.28 \\
-5\%  & 40492 & 21461 & 0 & 0 & 321 & 21778 & 0.46 \\
-10\% & 72518 & 45407 & 0 & 0 & 355 & 45756 & 0.37 \\
+1\%  & \textcolor{red}{155}  & \textcolor{red}{206}  & 2777  & 1992  & 0 & 0 & 8   & 2000  & 0.28 & \textcolor{red}{28s} \\
+5\%  & \textcolor{red}{756}  & \textcolor{red}{1029} & 40492 & 21461 & 0 & 0 & 321 & 21778 & 0.46 & \textcolor{red}{189s} \\
+10\% & \textcolor{red}{1530} & \textcolor{red}{2057} & 72518 & 45407 & 0 & 0 & 355 & 45756 & 0.37 & \textcolor{red}{368s} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1134,13 +1139,13 @@ Beyond verifying the effect of our method on inverse-functionality constraints, 
 \renewcommand{\arraystretch}{1.12}
 \caption{Materialization of YAGO4.5-10-flip with AnyBURL rules restricted to inverse-functional heads, \textbf{non-monotonic} condition (nmr). Columns as in Table \ref{tab:mat_flip_standard}. The residual `invf' counts are entirely due to out-rule exceptions, i.e. distinct rules predicting different subjects for the same object.}
 \label{tab:mat_flip_nmr}
-\begin{tabular}{l | r r r r r r r}
+\begin{tabular}{l | r r r r r r r r r r}
 \toprule
-\% & \# triples & invf & func & dom & ran & \# inc & sem \\
+\% & \textcolor{red}{\# applied} & \textcolor{red}{\# target} & \# triples & invf & func & dom & ran & \# inc & sem & \textcolor{red}{time} \\
 \midrule
-1\%  & 785   & 8    & 0 & 0 & 0 & 8    & 0.99 \\
-5\%  & 19417 & 703  & 0 & 0 & 0 & 703  & 0.96 \\
-10\% & 30122 & 3340 & 0 & 0 & 0 & 3340 & 0.89 \\
+1\%  & \textcolor{red}{104}  & \textcolor{red}{206}  & 785   & 8    & 0 & 0 & 0 & 8    & 0.99 & \textcolor{red}{40s} \\
+5\%  & \textcolor{red}{519}  & \textcolor{red}{1029} & 19417 & 703  & 0 & 0 & 0 & 703  & 0.96 & \textcolor{red}{202s} \\
+10\% & \textcolor{red}{1035} & \textcolor{red}{2057} & 30122 & 3340 & 0 & 0 & 0 & 3340 & 0.89 & \textcolor{red}{385s} \\
 \bottomrule
 \end{tabular}
 \end{table}
