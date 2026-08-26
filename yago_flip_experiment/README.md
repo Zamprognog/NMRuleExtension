@@ -193,11 +193,10 @@ python3 flip_yago.py       # needs prepared ../data/YAGO4.5/data/ as input
 python3 verify_flip.py     # five checks; non-zero exit on any failure
 ```
 
-The generated data is ~1.2 GB and is deliberately **not** archived: it is a deterministic
-rewrite of YAGO4.5-10, so rebuilding it is the intended route. `verify_flip.py` confirms the
-rebuild satisfies every property the experiment depends on — counts conserved, both
-properties empirically inverse functional, originals gone, domain/range clean, no new
-leakage — though it does not compare byte-for-byte against the original build.
+The generated data (~1.2 GB) ships in the Zenodo snapshot, so rebuilding it is optional —
+use the archived copy unless you are changing the construction. `verify_flip.py` confirms a
+rebuild satisfies every property the experiment depends on: counts conserved, both properties
+empirically inverse functional, originals gone, domain/range clean, no new leakage.
 
 The mined rules are the opposite case: AnyBURL is time-budgeted (`SNAPSHOTS_AT`) and
 multi-threaded (`WORKER_THREADS = 4`), so re-mining yields a *different* rule set and

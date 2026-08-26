@@ -31,11 +31,25 @@ NMRuleExtension-data-v1.0/
   YAGO4.5/    data/ rules/ yago4.5.json
   CSKG2/      data/ rules/ CSKG2.json
   hetionet/   data/ rules/ hetionet.json
-  YAGO4.5-10-flip/  rules/ predictions_ifp/ configs/
+  YAGO4.5-10-flip/  data/ rules/ predictions_ifp/ configs/
 ```
 
-Unpack the four dataset folders directly into the repository's `data/` directory; the
-configs use paths relative to the repository root, so nothing needs editing.
+Unpacking, from the repository root:
+
+```sh
+# the four main datasets
+cp -r NELL995 YAGO4.5 CSKG2 hetionet  data/
+cp    DATA_PREPARATION.md              data/
+
+# the flip variant, which the code expects beside its scripts, not under data/
+cp -r YAGO4.5-10-flip/data YAGO4.5-10-flip/rules YAGO4.5-10-flip/predictions_ifp \
+      yago_flip_experiment/
+```
+
+Every config uses paths relative to the repository root, so nothing needs editing
+afterwards. Note the flip variant is the one exception to the `data/` rule: its config
+(`yago_flip_experiment/YAGO4.5-10-flipIFP.json`) points at
+`yago_flip_experiment/data/`, alongside the scripts that build it.
 
 ### Per dataset
 
@@ -54,16 +68,25 @@ L4 / L3 for AMIE.
 | YAGO4.5-10 | 3,997,045 | 3,222,052 | 16,273 | 16,273 |
 | hetionet | 2,275,313 | 2,205,193 | see note | 22,502 |
 | CSKG-490K (CSKG2) | 632,931 | 335,016 | 59,121 | 98,535 |
+| YAGO4.5-10-flip | 3,997,045 | 3,222,052 | 16,273 | 16,273 |
 
-Graph sizes count all lines in the `.nt`, type assertions included. The paper's
+YAGO4.5-10-flip matches its base exactly, by construction: the flip rewrites triples without
+creating or losing any. Graph sizes count all lines in the `.nt`, type assertions included. The paper's
 `CSKG-490K` name refers instead to its 497,292 *relational* triples.
 
 ### YAGO4.5-10-flip
 
-The derived variant used for the inverse-functionality analysis. Its ~1.2 GB of data is
-deliberately **not** archived: it is a deterministic rewrite of YAGO4.5-10, rebuilt by
-`flip_yago.py` in the code repository and checked by `verify_flip.py`. What *is* archived is
-its mined rules and the materialization output they produced, for the same reason as above.
+The derived variant used for the inverse-functionality analysis, archived in full: the same
+six files as the other datasets, plus its mined rules and the materialization output they
+produced. It is a deterministic rewrite of YAGO4.5-10 in which `schema:birthPlace` and
+`schema:deathPlace` are replaced by inverse-functional inverses; `flip_yago.py` and
+`verify_flip.py` in the code repository rebuild and re-check it, but you do not need to run
+them to use this record.
+
+Two things to know about the files. `_entity_types.nt` is byte-identical to YAGO4.5-10's —
+flipping changes a statement's direction, not the entities in it — so it is duplicated here
+purely so the folder stands alone. `_tbox.nt` is *not* identical: it is where the inverse
+properties are declared, with domain and range swapped.
 
 Note this rule set was mined with a lower confidence threshold (0.01 rather than 0.1) and a
 longer snapshot (300s rather than 100s), restricted to the two inverse-functional heads.
