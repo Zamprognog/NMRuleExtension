@@ -103,11 +103,16 @@ interest is standard vs. non-monotonic within that experiment.
 
 ## Known issues
 
-`hetionet_validation.tsv` is not a disjoint split: of its 225,019 triples, 220,456 (98%)
-also appear in train and 2,310 also appear in test. Train and test themselves do not
-overlap, so the reported test-set results are unaffected, and the paper does not report
-validation sizes. The other three datasets and the flip variant have no overlap between any
-pair of splits.
+`hetionet_validation.tsv` was rebuilt on 2026-08-26. The file previously shipped was a 10%
+random sample of the whole edge set (225,019 triples, 98% of them also in train) rather than
+hetionet's held-out validation fold. It is now the exact complement of train and test —
+22,502 triples, disjoint from both — so train + validation + test = 2,250,197, the edge count
+of Hetionet v1.0. All four datasets and the flip variant now have pairwise-disjoint splits.
+
+`hetionet_full_graph.nt` has not been rebuilt to match. It was assembled from train + test +
+the old validation file, so it contains 2,253 of the corrected validation triples and is
+missing the other 20,249. The materialization results reported in the paper were computed
+over the graph as it stands here.
 
 ## Verifying your copy
 
