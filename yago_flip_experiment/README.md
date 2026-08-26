@@ -4,7 +4,8 @@ A YAGO4.5-10 variant in which the usable functional properties are **replaced by
 their inverse**, turning them into inverse-functional properties with no
 inverse-twin in the data to leak from.
 
-Originals in `data/YAGO4.5/` are never modified. Everything here is untracked.
+Originals in `data/YAGO4.5/` are never modified. Scripts, configs and logs are tracked;
+`data/`, `rules/`, `predictions/` and `predictions_ifp/` are gitignored (see below).
 
 ## Why
 
@@ -99,14 +100,18 @@ ignore, but noted.
 | `verify_flip.py` | the five checks above; non-zero exit on failure |
 | `data/` | the flipped dataset |
 | `YAGO4.5-10-flip.json` | dataset config (paths relative to repo root) |
-| `config-learn-flip.properties` | AnyBURL learn config |
+| `config-learn-flip.properties` | AnyBURL learn config, unrestricted (provenance only) |
+| `config-learn-flip-CP.properties` | as above, closed-path rules only (provenance only) |
+| `config-learn-flip-IFP.properties` | **the config the paper uses** — see below |
+| `CHECKSUMS.md` | sha256 of the six generated files |
 | `rules/`, `predictions/`, `logs/`, `output/` | outputs |
 
 ## Caveats
 
 - Two constrained relations, not 131. Per-relation statistics are solid (140k and
-  56k triples) but relation *diversity* is limited: this is a controlled probe,
-  complementing the full-NELL dataset rather than replacing it.
+  56k triples) but relation *diversity* is limited: this is a controlled probe.
+  (An earlier NELL-based route was explored and dropped; see the paper's Section
+  5.1.1 for why a derived dataset was needed at all.)
 - Flipping swaps head- and tail-prediction, so the candidate spaces differ
   (20,393 places vs 140,221 people). Compare flipped-vs-original on the same
   facts, not raw MRR across directions.
@@ -154,3 +159,55 @@ so `-100` and `-300` are near-duplicates (19,483 vs 19,490 rules) and the run
 still took 24 minutes. To actually shorten it, reduce `MAX_LENGTH_CYCLIC` (3 -> 2)
 or `BATCH_TIME`. AnyBURL also exits with status 1 after writing rules; the output
 is complete regardless.
+
+## The rule set the paper reports on
+
+The unrestricted run above is **not** what Tables 8 and 9 use. Its rules with
+`birthPlaceOf` / `deathPlaceOf` heads are individually low-confidence and are almost
+entirely absent from the top-1/5/10% of the sorted rule set — across 18 files and 5.9M
+inferred triples the flipped relations appeared 258 times, all in the FULL-10% files — so
+the constraint would have gone essentially untested.
+
+`config-learn-flip-IFP.properties` fixes that by restricting mining to the two
+inverse-functional heads, so every mined rule, and therefore every materialized triple,
+is subject to the constraint under study:
+
+```
+SINGLE_RELATIONS = <...>/birthPlaceOf,<...>/deathPlaceOf
+THRESHOLD_CONFIDENCE = 0.01      # main datasets use 0.1
+SNAPSHOTS_AT = 300               # main datasets use 100
+```
+
+20,562 rules. Both deviations are deliberate and are stated in the paper. They mean the
+absolute figures here are **not** comparable with the main tables — the comparison of
+interest is standard vs. nmr *within* this experiment, which shares one rule set.
+
+Two `SINGLE_RELATIONS` traps, both load-bearing: the value is split on `,` with no
+trimming (`IOHelper.getProperty`), so no spaces around the comma; and `SAFE_PREFIX_MODE`
+must stay `false`, or AnyBURL prefixes relations with `r` internally and these plain URIs
+match nothing.
+
+## Rebuild and verify
+
+```sh
+python3 flip_yago.py       # needs prepared ../data/YAGO4.5/data/ as input
+python3 verify_flip.py     # six checks; non-zero exit on any failure
+```
+
+The generated data is ~1.2 GB and is deliberately **not** archived — check 6 compares the
+six files against the sha256 manifest in `CHECKSUMS.md`, which is what tells you a rebuild
+is byte-identical to the one the paper reports on. Regenerate the manifest with
+`--write-manifest` only after a deliberate rebuild.
+
+The mined rules are the opposite case: AnyBURL is time-budgeted (`SNAPSHOTS_AT`) and
+multi-threaded (`WORKER_THREADS = 4`), so re-mining yields a *different* rule set and
+different numbers. `rules/` is gitignored and ships in the Zenodo snapshot instead.
+
+## Where the published numbers come from
+
+| paper | source |
+|---|---|
+| Table 8/9 violation counts | `logs/mateval_ifp.log`, `logs/mateval_ifp_std5.log` |
+| applied / target rule counts, timings | breakdown blocks in `logs/mat_ifp.log` |
+
+Those logs are tracked, so the numbers can be checked without rerunning anything.
