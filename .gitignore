@@ -37,9 +37,9 @@ build/
 .DS_Store
 
 ### Local only — JARs and datasets should not be committed ###
-data/*
-# ...but the dataset-preparation log is documentation, not data.
-!data/DATA_PREPARATION.md
+# Includes DATA_PREPARATION.md: the dataset-surgery log is kept alongside the
+# data it describes, on disk only. Both are distributed via the Zenodo snapshot.
+data/
 CLAUDE.md
 CLAUDE.local.md
 
