@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #
 # Reruns the paper experiments (link prediction + materialization + materialization
-# evaluation) for NELL995, YAGO4.5-10, CSKG2, OWL2Bench and (opt-in) Hetionet.
+# evaluation) for NELL995, YAGO4.5-10, CSKG2 and (opt-in) Hetionet.
 #
-#   ./scripts/run_experiments.sh                          # all stages, the 4 default datasets
+#   ./scripts/run_experiments.sh                          # all stages, the 3 default datasets
 #   ./scripts/run_experiments.sh --datasets nell,yago     # subset of datasets
 #   ./scripts/run_experiments.sh --stages mat,mateval     # subset of stages
 #   ./scripts/run_experiments.sh --dry-run                # print the plan, run nothing
@@ -17,7 +17,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 # ---------------------------------------------------------------- defaults ----
-DATASETS_ALL="nell,yago,cskg,owl2bench"
+DATASETS_ALL="nell,yago,cskg"
 STAGES_ALL="lp,mat,mateval"
 
 DATASETS="$DATASETS_ALL"
@@ -34,7 +34,7 @@ usage() {
     cat <<EOF
 
 Options:
-  --datasets LIST      nell,yago,cskg,owl2bench,hetionet (default: all but hetionet)
+  --datasets LIST      nell,yago,cskg,hetionet (default: all but hetionet)
   --stages LIST        Comma-separated: lp,mat,mateval (default: all)
   --mode MODE          Rule miners for the LP stage: full|anyburl|amie (default: full)
   --percentages LIST   Top-N% rule thresholds for materialization (default: 1,5,10)
@@ -67,7 +67,6 @@ config_for() {
         nell)      echo "data/NELL995/NELL995.json" ;;
         yago)      echo "data/YAGO4.5/yago4.5.json" ;;
         cskg)      echo "data/CSKG2/CSKG2.json" ;;
-        owl2bench) echo "data/OWL2Bench/OWL2Bench.json" ;;
         hetionet)  echo "data/hetionet/hetionet.json" ;;
         *)         echo "" ;;
     esac

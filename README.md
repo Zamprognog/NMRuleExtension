@@ -9,8 +9,9 @@ This project implements a framework for evaluating and enhancing Rule Mining (sp
     - **Standard Engine**: Traditional rule grounding.
     - **Semantic Engine**: Incorporates semantic consistency checks during the grounding process.
 - **Link prediction evaluation**: filtered Hits@k (1, 5, 10), MRR, and semantic consistency at 10 and 100 (Sem@10, Sem@100).
-- **Materialization evaluation**: applies the top-N% most confident rules graph-wide, writes the inferred triples as N-Triples, and counts functional, inverse-functional (OWL2Bench), domain-disjointness and range-disjointness violations in the result via SPARQL, reported as per-type counts plus a combined `inc` and `sem = 1 − inc/triples` (see [Evaluation Queries](#evaluation-queries)).
-- **Dataset Support**: NELL-995, YAGO4.5-10, CSKG-490K (CSKG2), Hetionet, and OWL2Bench.
+- **Materialization evaluation**: applies the top-N% most confident rules graph-wide, writes the inferred triples as N-Triples, and counts functional, inverse-functional, domain-disjointness and range-disjointness violations in the result via SPARQL, reported as per-type counts plus a combined `inc` and `sem = 1 − inc/triples` (see [Evaluation Queries](#evaluation-queries)).
+- **Dataset Support**: NELL-995, YAGO4.5-10, CSKG-490K (CSKG2) and Hetionet, plus the derived
+  YAGO4.5-10-flip variant used for the inverse-functionality analysis (see `yago_flip_experiment/`).
 - **Flexible Configuration**: Uses JSON-based configuration files for experiment setup.
 
 ## Prerequisites
@@ -49,14 +50,14 @@ calls `scripts/collect_results.sh` to extract the metric tables into `lp_results
 
 ```bash
 ./scripts/run_experiments.sh                          # all datasets, all stages
-./scripts/run_experiments.sh --datasets nell,owl2bench
+./scripts/run_experiments.sh --datasets nell,yago
 ./scripts/run_experiments.sh --stages lp              # lp | mat | mateval
 ./scripts/run_experiments.sh --percentages 1,5,10     # materialization rule thresholds
 ./scripts/run_experiments.sh --dry-run
 ```
 
-Known dataset keys: `nell`, `yago`, `cskg`, `owl2bench`, `hetionet` (the first four are the
-default set).
+Known dataset keys: `nell`, `yago`, `cskg`, `hetionet` (the first three are the default set;
+hetionet is opt-in).
 
 ### Individual entry points
 
@@ -146,7 +147,7 @@ Each file yields:
 | Metric | Meaning |
 |---|---|
 | `func` | new triples whose subject already has a *different* value for an `owl:FunctionalProperty` |
-| `invf` | new triples whose object is already reached from a *different* subject via an `owl:InverseFunctionalProperty` (**OWL2Bench only**) |
+| `invf` | new triples whose object is already reached from a *different* subject via an `owl:InverseFunctionalProperty` (only counted when the schema declares one) |
 | `dom` | new triples whose subject has a type disjoint with the property's `rdfs:domain` |
 | `ran` | new triples whose object has a type disjoint with the property's `rdfs:range` |
 | `inc` | the **DISTINCT union** of the checks above — a triple tripping several is counted once |
@@ -223,7 +224,7 @@ SELECT ?func ?dom ?ran ?inc WHERE {
 }
 ```
 
-### OWL2Bench metrics query
+### Inverse-functional metrics query
 
 Identical to the default plus an inverse-functional block, which is mirrored into the combined
 `?inc` union as well:
@@ -242,8 +243,14 @@ Identical to the default plus an inverse-functional block, which is mirrored int
 
 The projection becomes `SELECT ?func ?invf ?dom ?ran ?inc`.
 
-Only OWL2Bench declares inverse-functional properties in its schema, so the block is omitted
-elsewhere; `MaterializationEvaluationPipeline` switches on `dataset_name` for the same reason.
+The block is included only when the loaded schema actually declares an
+`owl:InverseFunctionalProperty`, which `MaterializationEvaluationPipeline` probes for with an ASK
+before building the query. Of the datasets here that is YAGO4.5-10-flip, whose two flipped
+properties are declared inverse functional by construction.
+
+Note the probe reasons over the base model with RDFS only, so it sees *asserted* IFP axioms. One
+that is merely OWL-entailed — as in NELL995, where `acquiredby` is functional and `acquired` is its
+declared inverse — is not counted here.
 
 ### Standalone check queries
 
