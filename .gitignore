@@ -54,3 +54,8 @@ yago_flip_experiment/data/
 yago_flip_experiment/rules/
 yago_flip_experiment/predictions/
 yago_flip_experiment/predictions_ifp/
+
+### Local scratch — OWL2Bench inverse-functionality side study ###
+# Not used by the paper. Kept on disk only; never committed. It also carries its
+# own `.gitignore` (`*`), so this is belt-and-braces in case that one is removed.
+inverse_functionality_experiment/
