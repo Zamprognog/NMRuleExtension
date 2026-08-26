@@ -1,0 +1,103 @@
+reading params from file config-learn-flip-CP.properties
+>>> parsed 1000000 lines
+>>> parsed 2000000 lines
+>>> parsed 3000000 lines
+* read 3222052 triples
+* indexed 10000 triples
+* indexed 20000 triples
+* indexed 40000 triples
+* indexed 80000 triples
+* indexed 160000 triples
+* indexed 320000 triples
+* indexed 640000 triples
+* indexed 1280000 triples
+* indexed 2560000 triples
+* set up index for 62 relations, 358530 head entities, and 294315 tail entities
+* set up list structure for randomized access searches uring rule learning ...  done
+* precomputing random starting points for each relation/direction for the beam search ... done.
+* creating worker thread #0
+* creating worker thread #1
+* creating worker thread #2
+* creating worker thread #3
+* creating worker thread #4
+* creating worker thread #5
+* creating worker thread #6
+* creating worker thread #7
+THREAD-5 starts to work with L=3 C=Cyclic 
+THREAD-0 starts to work with L=2 C=Cyclic 
+THREAD-2 starts to work with L=1 C=Cyclic 
+THREAD-6 starts to work with L=3 C=Cyclic 
+THREAD-4 starts to work with L=1 C=Cyclic 
+THREAD-1 starts to work with L=1 C=Cyclic 
+THREAD-3 starts to work with L=3 C=Cyclic 
+THREAD-7 starts to work with L=2 C=Cyclic 
+ 000000 | 003282 005856 002350
+ 000000 | 000018 001761 000982
+ 000000 | 000000 000354 000568
+ 000000 | 000000 000135 000900
+ 000000 | 000001 000161 000838
+ 000000 | 000005 000009 000364
+ 000000 | 000000 000009 000399
+ 000000 | 000000 000009 000164
+ 000000 | 000000 000080 000279
+ 000000 | 000000 000096 000226
+ 000000 | 000000 000196 000161
+ 000000 | 000000 000048 000197
+ 000000 | 000015 000033 000269
+ 000000 | 000038 000042 000108
+ 000000 | 000038 000016 000118
+ 000000 | 000038 000000 000068
+ 000000 | 000000 000000 000092
+ 000000 | 000000 000008 000083
+ 000000 | 000000 000008 000132
+
+>>> CREATING SNAPSHOT 0 after 101 seconds
+
+>>> storing rules in file ./rules/YAGO4.5-10-flip_rules_anyburl_CP-100
+>>> stored 888 rules in 13ms
+ 000000 | 000000 000009 000231
+ 000000 | 000000 000053 000020
+ 000000 | 000000 000027 000086
+ 000000 | 000000 000011 000090
+ 000000 | 000000 000016 000036
+ 000000 | 000000 000000 000097
+ 000000 | 000000 000000 000082
+ 000000 | 000000 000000 000060
+ 000000 | 000000 000000 000077
+ 000000 | 000000 000000 000046
+ 000000 | 000000 000000 000048
+ 000000 | 000000 000000 000033
+ 000000 | 000000 000000 000045
+ 000000 | 000000 000000 000042
+ 000000 | 000000 000000 000033
+ 000000 | 000000 000000 000115
+ 000000 | 000000 000008 000020
+ 000000 | 000000 000027 000040
+ 000000 | 000000 000016 000015
+ 000000 | 000000 000013 000055
+ 000000 | 000000 000004 000093
+ 000000 | 000000 000004 000011
+ 000000 | 000000 000000 000003
+ 000000 | 000000 000005 000033
+ 000000 | 000000 000042 000049
+ 000000 | 000000 000016 000030
+ 000000 | 000000 000009 000038
+ 000000 | 000000 000020 000041
+ 000000 | 000000 000026 000008
+ 000000 | 000000 000014 000017
+ 000000 | 000000 000005 000040
+ 000000 | 000001 000000 000027
+ 000000 | 000000 000000 000031
+ 000000 | 000000 000000 000015
+ 000000 | 000000 000000 000029
+ 000000 | 000000 000000 000048
+ 000000 | 000000 000000 000038
+ 000000 | 000000 000000 000020
+ 000000 | 000000 000000 000065
+
+>>> CREATING SNAPSHOT 1 after 301 seconds
+
+>>> Bye, bye.
+>>> storing rules in file ./rules/YAGO4.5-10-flip_rules_anyburl_CP-300
+>>> stored 1333 rules in 10ms
+>>> waiting for rule writer thread to finish

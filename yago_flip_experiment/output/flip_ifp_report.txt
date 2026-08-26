@@ -1,0 +1,20 @@
+ontology: data/YAGO4.5-10-flip_tbox.nt
+training: data/YAGO4.5-10-flip_train.tsv
+
+=== ASSERTED owl:InverseFunctionalProperty (2) ===
+  http://yago-knowledge.org/resource/birthPlaceOf   [139324 triples]
+  http://yago-knowledge.org/resource/deathPlaceOf   [55301 triples]
+
+=== INFERRED by OWL_MEM_MICRO_RULE_INF (what the engine sees) (2) ===
+  http://yago-knowledge.org/resource/birthPlaceOf   [139324 triples]
+  http://yago-knowledge.org/resource/deathPlaceOf   [55301 triples]
+
+=== DERIVED (inverse-of-functional + subProperty/equivalent closure) (2) ===
+  http://yago-knowledge.org/resource/birthPlaceOf   [139324 triples]
+  http://yago-knowledge.org/resource/deathPlaceOf   [55301 triples]
+
+=== MINEABLE (union, object properties, occurring in training data) ===
+  http://yago-knowledge.org/resource/birthPlaceOf   [139324 triples]
+  http://yago-knowledge.org/resource/deathPlaceOf   [55301 triples]
+
+SINGLE_RELATIONS = http://yago-knowledge.org/resource/birthPlaceOf,http://yago-knowledge.org/resource/deathPlaceOf

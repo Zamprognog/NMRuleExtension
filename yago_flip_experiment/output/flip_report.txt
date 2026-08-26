@@ -1,0 +1,13 @@
+flipped properties:
+  http://schema.org/birthPlace
+    -> http://yago-knowledge.org/resource/birthPlaceOf  [owl:InverseFunctionalProperty]
+       domain <http://schema.org/Place>   (was range)
+       range  <http://schema.org/Person>   (was domain)
+  http://schema.org/deathPlace
+    -> http://yago-knowledge.org/resource/deathPlaceOf  [owl:InverseFunctionalProperty]
+       domain <http://schema.org/Place>   (was range)
+       range  <http://schema.org/Person>   (was domain)
+
+triples flipped:
+  http://schema.org/birthPlace                     140,221
+  http://schema.org/deathPlace                      55,941

@@ -1,0 +1,74 @@
+Log file created at: yago_flip_experiment/predictions_ifp//YAGO4.5-10-flipIFP_log_materialization_20260825_111747.log
+==================================================
+Evaluating Materialization for Dataset: YAGO4.5-10-flipIFP
+==================================================
+1. Loading base graph and applying RDFS reasoning...
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+Loading full graph from: yago_flip_experiment/data/YAGO4.5-10-flip_full_graph.nt
+  - Base graph triples loaded: 3997045
+Loading schema (TBox) from: yago_flip_experiment/data/YAGO4.5-10-flip_tbox.nt
+  - Schema triples loaded: 204 (Total: 3997249)
+Loading entity types from: yago_flip_experiment/data/YAGO4.5-10-flip_entity_types.nt
+  - Entity types triples loaded: 0 (Total: 3997249)
+Summary of loaded base model:
+  - Total Triples: 3997249
+  - Distinct Subjects: 497825
+  - Distinct Predicates: 70
+Base graph loaded. Starting evaluation...
+Evaluating 6 materialized files in /Users/thezamp/Desktop/VU/codeProjects/NMRuleExtension/yago_flip_experiment/predictions_ifp/materialization/20260825_105139
+
+--------------------------------------------------
+Evaluating: YAGO4.5-10-flipIFP_anyburl_FULL_semantic_10_rules_20260825_105139.nt
+  - Total Materialized Triples (Named Graph): 30122
+  - Functional Property Violations: 0
+  - Inverse-Functional Property Violations: 3340
+  - Domain Disjointness Violations: 0
+  - Range Disjointness Violations: 0
+  - Total Inconsistent Triples (distinct): 3340
+  - Semantic Consistency (sem): 0.8891
+
+--------------------------------------------------
+Evaluating: YAGO4.5-10-flipIFP_anyburl_FULL_semantic_1_rules_20260825_105139.nt
+  - Total Materialized Triples (Named Graph): 785
+  - Functional Property Violations: 0
+  - Inverse-Functional Property Violations: 8
+  - Domain Disjointness Violations: 0
+  - Range Disjointness Violations: 0
+  - Total Inconsistent Triples (distinct): 8
+  - Semantic Consistency (sem): 0.9898
+
+--------------------------------------------------
+Evaluating: YAGO4.5-10-flipIFP_anyburl_FULL_semantic_5_rules_20260825_105139.nt
+  - Total Materialized Triples (Named Graph): 19417
+  - Functional Property Violations: 0
+  - Inverse-Functional Property Violations: 703
+  - Domain Disjointness Violations: 0
+  - Range Disjointness Violations: 0
+  - Total Inconsistent Triples (distinct): 703
+  - Semantic Consistency (sem): 0.9638
+
+--------------------------------------------------
+Evaluating: YAGO4.5-10-flipIFP_anyburl_FULL_standard_10_rules_20260825_105139.nt
+  - Total Materialized Triples (Named Graph): 72518
+  - Functional Property Violations: 0
+  - Inverse-Functional Property Violations: 45407
+  - Domain Disjointness Violations: 0
+  - Range Disjointness Violations: 355
+  - Total Inconsistent Triples (distinct): 45756
+  - Semantic Consistency (sem): 0.3690
+
+--------------------------------------------------
+Evaluating: YAGO4.5-10-flipIFP_anyburl_FULL_standard_1_rules_20260825_105139.nt
+  - Total Materialized Triples (Named Graph): 2777
+  - Functional Property Violations: 0
+  - Inverse-Functional Property Violations: 1992
+  - Domain Disjointness Violations: 0
+  - Range Disjointness Violations: 8
+  - Total Inconsistent Triples (distinct): 2000
+  - Semantic Consistency (sem): 0.2798
+
+--------------------------------------------------
+Evaluating: YAGO4.5-10-flipIFP_anyburl_FULL_standard_5_rules_20260825_105139.nt
+  - Total Materialized Triples (Named Graph): 40492

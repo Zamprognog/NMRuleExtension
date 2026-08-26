@@ -1,0 +1,18 @@
+{
+  "dataset_name": "YAGO4.5-10-flip",
+  "graph": "yago_flip_experiment/data/YAGO4.5-10-flip_full_graph.nt",
+  "train": "yago_flip_experiment/data/YAGO4.5-10-flip_train.tsv",
+  "valid": "yago_flip_experiment/data/YAGO4.5-10-flip_valid.tsv",
+  "test": "yago_flip_experiment/data/YAGO4.5-10-flip_test.tsv",
+  "test_debug": "yago_flip_experiment/data/placeholder.txt",
+  "schema": "yago_flip_experiment/data/YAGO4.5-10-flip_tbox.nt",
+  "types_file": "yago_flip_experiment/data/YAGO4.5-10-flip_entity_types.nt",
+  "anyburl_rules": "yago_flip_experiment/rules/YAGO4.5-10-flip_rules_anyburl_ALL-300",
+  "anyburl_rules_CP": "yago_flip_experiment/rules/YAGO4.5-10-flip_rules_anyburl_CP-300",
+  "amie_rules": "",
+  "amie_rules_CP": "yago_flip_experiment/rules/YAGO4.5-10-flip_rules_amie_3CP.tsv",
+  "predictions_dir": "yago_flip_experiment/predictions/",
+  "def_uri": "",
+  "grounding_type": "both",
+  "materialize_rules": "both"
+}

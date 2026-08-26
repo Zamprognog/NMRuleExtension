@@ -1,0 +1,48 @@
+reading params from file config-learn-flip.properties
+>>> parsed 1000000 lines
+>>> parsed 2000000 lines
+>>> parsed 3000000 lines
+* read 3222052 triples
+* indexed 10000 triples
+* indexed 20000 triples
+* indexed 40000 triples
+* indexed 80000 triples
+* indexed 160000 triples
+* indexed 320000 triples
+* indexed 640000 triples
+* indexed 1280000 triples
+* indexed 2560000 triples
+* set up index for 62 relations, 358530 head entities, and 294315 tail entities
+* set up list structure for randomized access searches uring rule learning ...  done
+* precomputing random starting points for each relation/direction for the beam search ... done.
+* creating worker thread #0
+* creating worker thread #1
+* creating worker thread #2
+* creating worker thread #3
+* creating worker thread #4
+* creating worker thread #5
+* creating worker thread #6
+* creating worker thread #7
+THREAD-5 starts to work with L=1 C=Acyclic 
+THREAD-4 starts to work with L=3 C=Cyclic 
+THREAD-1 starts to work with L=3 C=Acyclic 
+THREAD-0 starts to work with L=1 C=Cyclic 
+THREAD-6 starts to work with L=3 C=Acyclic 
+THREAD-3 starts to work with L=3 C=Cyclic 
+THREAD-2 starts to work with L=3 C=Acyclic 
+THREAD-7 starts to work with L=3 C=Cyclic 
+ 000000 | 027862  > 99k 013052 | 031762  > 99k 000210
+ 000000 | 025371 027671 013052 | 031762 012922 000210
+ 000000 | 025371 012214 014740 | 036516 005370 000000
+
+>>> CREATING SNAPSHOT 0 after 1469 seconds
+
+>>> storing rules in file ./rules/YAGO4.5-10-flip_rules_anyburl_ALL-100
+
+>>> CREATING SNAPSHOT 1 after 1469 seconds
+
+>>> Bye, bye.
+>>> storing rules in file ./rules/YAGO4.5-10-flip_rules_anyburl_ALL-300
+>>> stored 19483 rules in 101ms
+>>> stored 19490 rules in 50ms
+>>> waiting for rule writer thread to finish

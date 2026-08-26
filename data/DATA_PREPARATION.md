@@ -257,6 +257,74 @@ benchmark — but it is not the reason the disjointness numbers are zero.
 
 ---
 
+## YAGO4.5-10-flip — inverse-functionality variant (2026-08-25)
+
+Derived dataset built for the inverse-functionality analysis (paper Section 5.1.1). Unlike the
+other entries in this log it *is* reproducible from a script, but it is recorded here because the
+generated files are ~1.2 GB and are therefore **not** archived on Zenodo: a reader rebuilds them.
+
+### Why
+
+YAGO4.5-10 declares four functional properties and no inverse-functional ones, so the
+inverse-functionality branch of `SemanticGroundingEngine` had no dataset to exercise. Of the four,
+only two are usable: `schema:gender` has nine distinct objects and once inverted would return the
+whole `Person` population for every query, and `schema:publisher` occurs in 16 triples with
+blank-node domain and range. The remaining two, `schema:birthPlace` (140,221 triples) and
+`schema:deathPlace` (55,941), are flipped.
+
+### What is generated
+
+`yago_flip_experiment/flip_yago.py` rewrites every `(s,P,o)` as `(o,P^-1,s)` in the train/valid/test
+TSVs and in the full `.nt`, so triple counts, entities and split boundaries are unchanged
+(3,222,052 / 16,273 / 16,273; full graph 3,997,045 lines including `rdf:type`). The entity types
+file is copied verbatim — flipping changes a statement's direction, not the entities in it. In the
+T-Box the original property's axioms are dropped and the inverse (`yago:birthPlaceOf`,
+`yago:deathPlaceOf`, minted in the YAGO namespace since schema.org does not define these terms) is
+declared `owl:InverseFunctionalProperty` with domain and range **swapped**. No `owl:inverseOf` is
+emitted, so no twin relation is left for a rule to invert at no cost.
+
+Six files land in `yago_flip_experiment/data/`, all gitignored.
+
+### How to rebuild and check
+
+```sh
+cd yago_flip_experiment
+python3 flip_yago.py      # needs prepared data/YAGO4.5/data/ as input
+python3 verify_flip.py    # exits non-zero on any failure
+```
+
+`verify_flip.py` checks that counts are conserved per split, that both flipped properties are
+empirically inverse functional, that no occurrence of the originals is left, that the flipped
+triples raise no domain or range violation through the `subClassOf` closure, that the flip
+introduces no new reciprocal-relation leakage, and that the six files match the sha256 manifest in
+`yago_flip_experiment/CHECKSUMS.md`. Regenerate the manifest with `--write-manifest` only after a
+deliberate rebuild.
+
+### Rules (not reproducible — archive these)
+
+The mined rule sets are **not** regenerable: AnyBURL is time-budgeted (`SNAPSHOTS_AT`) and
+multi-threaded (`WORKER_THREADS = 4`), so re-mining yields a different rule set and different
+numbers. `yago_flip_experiment/rules/` is gitignored and ships in the Zenodo snapshot instead.
+
+The paper uses `config-learn-flip-IFP.properties`: AnyBURL in the `Full` setting with
+`SINGLE_RELATIONS` restricted to the two inverse-functional heads, `THRESHOLD_CONFIDENCE` 0.01 and
+a 300s snapshot, yielding 20,562 rules. Both deviations from the main configuration (which uses
+0.1 and 100s) are deliberate and are documented in the paper: rules with these two heads are
+individually low-confidence and are almost absent from the top-1/5/10% of an unrestricted run,
+which would leave the constraint untested. Absolute figures are therefore not comparable with the
+main tables — only standard vs. nmr within the experiment is.
+
+`config-learn-flip.properties` and `config-learn-flip-CP.properties` are the unrestricted runs that
+motivated the restriction; they are kept for provenance but the paper does not use them.
+
+### Where the published numbers come from
+
+Tables 8 and 9 are counted from `yago_flip_experiment/logs/mateval_ifp.log` and
+`mateval_ifp_std5.log`; the applied/target rule counts and timings come from the breakdown blocks
+in `logs/mat_ifp.log`. Those logs are tracked in git.
+
+---
+
 ## Other datasets
 
 Audited for the same defect on 2026-08-19 — all clean (zero bracketed terms in any TSV

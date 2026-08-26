@@ -1,0 +1,29 @@
+Log file created at: yago_flip_experiment/predictions_ifp//YAGO4.5-10-flipIFP_log_materialization_20260825_125006.log
+==================================================
+Evaluating Materialization for Dataset: YAGO4.5-10-flipIFP
+==================================================
+1. Loading base graph and applying RDFS reasoning...
+SLF4J: Failed to load class "org.slf4j.impl.StaticLoggerBinder".
+SLF4J: Defaulting to no-operation (NOP) logger implementation
+SLF4J: See http://www.slf4j.org/codes.html#StaticLoggerBinder for further details.
+Loading full graph from: yago_flip_experiment/data/YAGO4.5-10-flip_full_graph.nt
+  - Base graph triples loaded: 3997045
+Loading schema (TBox) from: yago_flip_experiment/data/YAGO4.5-10-flip_tbox.nt
+  - Schema triples loaded: 204 (Total: 3997249)
+Loading entity types from: yago_flip_experiment/data/YAGO4.5-10-flip_entity_types.nt
+  - Entity types triples loaded: 0 (Total: 3997249)
+Summary of loaded base model:
+  - Total Triples: 3997249
+  - Distinct Subjects: 497825
+  - Distinct Predicates: 70
+Base graph loaded. Starting evaluation...
+
+--------------------------------------------------
+Evaluating: YAGO4.5-10-flipIFP_anyburl_FULL_standard_5_rules_20260825_105139.nt
+  - Total Materialized Triples (Named Graph): 40492
+  - Functional Property Violations: 0
+  - Inverse-Functional Property Violations: 21461
+  - Domain Disjointness Violations: 0
+  - Range Disjointness Violations: 321
+  - Total Inconsistent Triples (distinct): 21778
+  - Semantic Consistency (sem): 0.4622
