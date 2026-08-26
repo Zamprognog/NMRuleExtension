@@ -1,13 +1,158 @@
 
-@article{kulmanov_embeddings_2019,
+@inproceedings{betz_pyclause-simple_2024,
+	title = {{PyClause}-{Simple} and {Efficient} {Rule} {Handling} for {Knowledge} {Graphs}},
+	booktitle = {{IJCAI}, demo track},
+	publisher = {Ijcai.org},
+	author = {Betz, Patrick and Galarraga, Luis and Ott, Simon and Meilicke, Christian and Suchanek, Fabian M and Stuckenschmidt, Heiner},
+	year = {2024},
+}
+
+@techreport{motik_owl_2012,
+	type = {{W3C} {Recommendation}},
+	title = {{OWL} 2 {Web} {Ontology} {Language}: {Structural} {Specification} and {Functional}-{Style} {Syntax} ({Second} {Edition})},
+	url = {https://www.w3.org/TR/owl2-syntax/},
+	institution = {W3C},
+	author = {Motik, Boris and Patel-Schneider, Peter F. and Parsia, Bijan and Bock, Conrad and Fokoue, Achille and Haase, Peter and Hoekstra, Rinke and Horrocks, Ian and Ruttenberg, Alan and Sattler, Ulrike and Smith, Michael K.},
+	month = dec,
+	year = {2012},
+}
+
+@article{hofer_construction_2024,
+	title = {Construction of {Knowledge} {Graphs}: {Current} {State} and {Challenges}},
+	volume = {15},
+	copyright = {http://creativecommons.org/licenses/by/3.0/},
+	issn = {2078-2489},
+	shorttitle = {Construction of {Knowledge} {Graphs}},
+	url = {https://www.mdpi.com/2078-2489/15/8/509},
+	doi = {10.3390/info15080509},
+	abstract = {With Knowledge Graphs (KGs) at the center of numerous applications such as recommender systems and question-answering, the need for generalized pipelines to construct and continuously update such KGs is increasing. While the individual steps that are necessary to create KGs from unstructured sources (e.g., text) and structured data sources (e.g., databases) are mostly well researched for their one-shot execution, their adoption for incremental KG updates and the interplay of the individual steps have hardly been investigated in a systematic manner so far. In this work, we first discuss the main graph models for KGs and introduce the major requirements for future KG construction pipelines. Next, we provide an overview of the necessary steps to build high-quality KGs, including cross-cutting topics such as metadata management, ontology development, and quality assurance. We then evaluate the state of the art of KG construction with respect to the introduced requirements for specific popular KGs, as well as some recent tools and strategies for KG construction. Finally, we identify areas in need of further research and improvement.},
+	language = {en},
+	number = {8},
+	urldate = {2026-08-26},
+	journal = {Information},
+	publisher = {Multidisciplinary Digital Publishing Institute},
+	author = {Hofer, Marvin and Obraczka, Daniel and Saeedi, Alieh and Köpcke, Hanna and Rahm, Erhard},
+	month = aug,
+	year = {2024},
+	keywords = {Knowledge Graphs, data integration, data science},
+	pages = {509},
+}
+
+@inproceedings{paulheim_make_2018,
+	address = {Aachen, Germany},
+	title = {Make embeddings semantic again!},
+	volume = {2180},
+	issn = {1613-0073},
+	url = {http://ceur-ws.org/Vol-2180/ISWC_2018_Outrageous_Ideas_paper_4.pdf},
+	urldate = {2026-08-26},
+	booktitle = {{CEUR} {Workshop} {Proceedings}},
+	publisher = {RWTH Aachen},
+	author = {Paulheim, Heiko},
+	editor = {Erp, Marieke van},
+	year = {2018},
+	pages = {4},
+}
+
+@inproceedings{tiwari_revisiting_2021,
+	address = {New York, NY, USA},
+	series = {{WWW} '21},
+	title = {Revisiting the {Evaluation} {Protocol} of {Knowledge} {Graph} {Completion} {Methods} for {Link} {Prediction}},
+	isbn = {978-1-4503-8312-7},
+	url = {https://dl.acm.org/doi/10.1145/3442381.3449856},
+	doi = {10.1145/3442381.3449856},
+	abstract = {Completion methods learn models to infer missing (subject, predicate, object) triples in knowledge graphs, a task known as link prediction. The training phase is based on samples of positive triples and their negative counterparts. The test phase consists of ranking each positive triple with respect to its negative counterparts based on the scores obtained by a learned model. The best model ranks all positive triples first. Metrics like mean rank, mean reciprocal rank and hits at k are used to assess accuracy. Under this generic evaluation protocol, we observe several shortcomings:\&nbsp;1)\&nbsp;Current metrics assume that each measurement is upper bounded by the same constant value and, therefore, are oblivious to the fact that, in link prediction, each positive triple may have a different number of negative counterparts, which alters the difficulty of ranking positive triples.\&nbsp;2)\&nbsp;Benchmarking datasets contain anomalies (unrealistic redundancy) that allegedly simplifies link prediction; however, current instantiations of the generic evaluation protocol do not integrate anomalies, which are just discarded based on a user-defined threshold.\&nbsp;3)\&nbsp;Benchmarking datasets have been randomly split, which typically alters the graph topology and results in the training split not resembling the original dataset.\&nbsp;4)\&nbsp;A single model is typically kept based on its accuracy over the validation split using a given metric; however, since metrics aggregate ranks into a single value, there may be no significant differences among the ranks produced by several models, which must be all evaluated in the test phase. In this paper, we contribute to the evaluation of link prediction as follows:\&nbsp;1)\&nbsp;We propose a variation of the mean rank that considers the number of negative counterparts.\&nbsp;2)\&nbsp;We define the anomaly coefficient of a predicate and integrate such coefficient in the protocol.\&nbsp;3)\&nbsp;We propose a downscaling algorithm to generate training splits that reflect the original graph topology based on a nonparametric, unpaired statistical test.\&nbsp;4)\&nbsp;During validation, we discard a learned model only if its output ranks are significantly different than other ranks based on a nonparametric, paired statistical test. Our experiments over seven well-known datasets show that translation-based methods (TransD, TransE and TransH) significantly outperform recent methods, which entails that our understanding of the accuracy of completion methods for link prediction is far from perfect.},
+	urldate = {2026-08-26},
+	booktitle = {Proceedings of the {Web} {Conference} 2021},
+	publisher = {Association for Computing Machinery},
+	author = {Tiwari, Sudhanshu and Bansal, Iti and Rivero, Carlos R.},
+	month = jun,
+	year = {2021},
+	pages = {809--820},
+}
+
+@article{hubert_semk_2023,
+	title = {Sem@{K}: {Is} my knowledge graph embedding model semantic-aware?},
+	volume = {14},
+	issn = {1570-0844},
+	shorttitle = {Sem@{K}},
+	url = {https://journals.sagepub.com/action/showAbstract},
+	doi = {10.3233/SW-233508},
+	abstract = {Using knowledge graph embedding models (KGEMs) is a popular approach for predicting links in knowledge graphs (KGs). Traditionally, the performance of KGEMs for link prediction is assessed using rank-based metrics, which evaluate their ability to give high scores to ground-truth entities. However, the literature claims that the KGEM evaluation procedure would benefit from adding supplementary dimensions to assess. That is why, in this paper, we extend our previously introduced metric Sem@K that measures the capability of models to predict valid entities w.r.t. domain and range constraints. In particular, we consider a broad range of KGs and take their respective characteristics into account to propose different versions of Sem@K. We also perform an extensive study to qualify the abilities of KGEMs as measured by our metric. Our experiments show that Sem@K provides a new perspective on KGEM quality. Its joint analysis with rank-based metrics offers different conclusions on the predictive power of models. Regarding Sem@K, some KGEMs are inherently better than others, but this semantic superiority is not indicative of their performance w.r.t. rank-based metrics. In this work, we generalize conclusions about the relative performance of KGEMs w.r.t. rank-based and semantic-oriented metrics at the level of families of models. The joint analysis of the aforementioned metrics gives more insight into the peculiarities of each model. This work paves the way for a more comprehensive evaluation of KGEM adequacy for specific downstream tasks.},
+	language = {EN},
+	number = {6},
+	urldate = {2026-08-26},
+	journal = {Semantic Web},
+	publisher = {SAGE Publications},
+	author = {Hubert, Nicolas and Monnin, Pierre and Brun, Armelle and Monticolo, Davy},
+	month = dec,
+	year = {2023},
+	pages = {1273--1309},
+}
+
+@misc{sun_rotate_2019,
+	title = {{RotatE}: {Knowledge} {Graph} {Embedding} by {Relational} {Rotation} in {Complex} {Space}},
+	shorttitle = {{RotatE}},
+	url = {http://arxiv.org/abs/1902.10197},
+	doi = {10.48550/arXiv.1902.10197},
+	abstract = {We study the problem of learning representations of entities and relations in knowledge graphs for predicting missing links. The success of such a task heavily relies on the ability of modeling and inferring the patterns of (or between) the relations. In this paper, we present a new approach for knowledge graph embedding called RotatE, which is able to model and infer various relation patterns including: symmetry/antisymmetry, inversion, and composition. Specifically, the RotatE model defines each relation as a rotation from the source entity to the target entity in the complex vector space. In addition, we propose a novel self-adversarial negative sampling technique for efficiently and effectively training the RotatE model. Experimental results on multiple benchmark knowledge graphs show that the proposed RotatE model is not only scalable, but also able to infer and model various relation patterns and significantly outperform existing state-of-the-art models for link prediction.},
+	urldate = {2026-08-26},
+	publisher = {arXiv},
+	author = {Sun, Zhiqing and Deng, Zhi-Hong and Nie, Jian-Yun and Tang, Jian},
+	month = feb,
+	year = {2019},
+	note = {arXiv:1902.10197 [cs.LG]},
+	keywords = {Computer Science - Computation and Language, Computer Science - Machine Learning, Statistics - Machine Learning},
+}
+
+@inproceedings{kulmanov_embeddings_2019,
 	title = {{EL} {Embeddings}: {Geometric} {Construction} of {Models} for the {Description} {Logic} {EL}++},
-	shorttitle = {{EL} {Embeddings}},
-	url = {https://www.ijcai.org/proceedings/2019/845},
-	abstract = {Electronic proceedings of IJCAI 2019},
-	urldate = {2026-08-20},
+	url = {https://doi.org/10.24963/ijcai.2019/845},
+	doi = {10.24963/ijcai.2019/845},
+	booktitle = {Proceedings of the {Twenty}-{Eighth} {International} {Joint} {Conference} on {Artificial} {Intelligence}, {IJCAI}-19},
+	publisher = {International Joint Conferences on Artificial Intelligence Organization},
 	author = {Kulmanov, Maxat and Liu-Wei, Wang and Yan, Yuan and Hoehndorf, Robert},
+	month = jul,
 	year = {2019},
 	pages = {6103--6109},
+}
+
+@misc{apache_software_foundation_apache_2024,
+	title = {Apache {Jena}},
+	url = {https://jena.apache.org/},
+	author = {{Apache Software Foundation}},
+	year = {2024},
+}
+
+@inproceedings{lisi_combining_2017,
+	title = {Combining {Rule} {Learning} and {Nonmonotonic} {Reasoning} for {Link} {Prediction} in {Knowledge} {Graphs}},
+	url = {http://ceur-ws.org/Vol-1875/paper20.pdf},
+	language = {eng},
+	urldate = {2025-11-19},
+	booktitle = {Proceedings of the {Doctoral} {Consortium}, {Challenge}, {Industry} {Track}, {Tutorials} and {Posters} @ {RuleML}+{RR} 2017 hosted by {International} {Joint} {Conference} on {Rules} and {Reasoning} 2017 ({RuleML}+{RR} 2017)},
+	publisher = {CEUR-WS.org},
+	author = {Lisi, Francesca Alessandra and Stepanova, Daria},
+	year = {2017},
+}
+
+@misc{ontotext_graphdb_2024,
+	title = {{GraphDB}},
+	url = {https://graphdb.ontotext.com/},
+	author = {{Ontotext}},
+	year = {2024},
+}
+
+@article{himmelstein_systematic_2017,
+	title = {Systematic integration of biomedical knowledge prioritizes drugs for repurposing},
+	volume = {6},
+	issn = {2050-084X},
+	url = {https://pmc.ncbi.nlm.nih.gov/articles/PMC5640425/},
+	doi = {10.7554/eLife.26726},
+	abstract = {The ability to computationally predict whether a compound treats a disease would improve the economy and success rate of drug approval. This study describes Project Rephetio to systematically model drug efficacy based on 755 existing treatments. First, we constructed Hetionet (neo4j.het.io), an integrative network encoding knowledge from millions of biomedical studies. Hetionet v1.0 consists of 47,031 nodes of 11 types and 2,250,197 relationships of 24 types. Data were integrated from 29 public resources to connect compounds, diseases, genes, anatomies, pathways, biological processes, molecular functions, cellular components, pharmacologic classes, side effects, and symptoms. Next, we identified network patterns that distinguish treatments from non-treatments. Then, we predicted the probability of treatment for 209,168 compound–disease pairs (het.io/repurpose). Our predictions validated on two external sets of treatment and provided pharmacological insights on epilepsy, suggesting they will help prioritize drug repurposing candidates. This study was entirely open and received realtime feedback from 40 community members., Of all the data in the world today, 90\% was created in the last two years. However, taking advantage of this data in order to advance our knowledge is restricted by how quickly we can access it and analyze it in a proper context., In biomedical research, data is largely fragmented and stored in databases that typically do not “talk” to each other, thus hampering progress. One particular problem in medicine today is that the process of making a new therapeutic drug from scratch is incredibly expensive and inefficient, making it a risky business. Given the low success rate in drug discovery, there is an economic incentive in trying to repurpose an existing drug that has already been shown to be safe and effective towards a new disease or condition., Himmelstein et al. used a computational approach to analyze 50,000 data points – including drugs, diseases, genes and symptoms – from 19 different public databases. This approach made it possible to create more than two million relationships among the data points, which could be used to develop models that predict which drugs currently in use by doctors might be best suited to treat any of 136 common diseases. For example, Himmelstein et al. identified specific drugs currently used to treat depression and alcoholism that could be repurposed to treat smoking addition and epilepsy., These findings provide a new and powerful way to study drug repurposing. While this work was exclusively performed with public data, an expanded and potentially stronger set of predictions could be obtained if data owned by pharmaceutical companies were incorporated. Additional studies will be needed to test the predictions made by the models.},
+	urldate = {2025-11-18},
+	journal = {eLife},
+	author = {Himmelstein, Daniel Scott and Lizee, Antoine and Hessler, Christine and Brueggeman, Leo and Chen, Sabrina L and Hadley, Dexter and Green, Ari and Khankhanian, Pouya and Baranzini, Sergio E},
+	year = {2017},
+	pages = {e26726},
 }
 
 @inproceedings{minervini_regularizing_2017,
@@ -141,6 +286,23 @@
 	year = {2017},
 }
 
+@inproceedings{singh_owl2bench_2020,
+	address = {Berlin, Heidelberg},
+	title = {{OWL2Bench}: {A} {Benchmark} for {OWL} 2 {Reasoners}},
+	isbn = {978-3-030-62465-1},
+	shorttitle = {{OWL2Bench}},
+	url = {https://doi.org/10.1007/978-3-030-62466-8_6},
+	doi = {10.1007/978-3-030-62466-8_6},
+	abstract = {There are several existing ontology reasoners that span a wide spectrum in terms of their performance and the expressivity that they support. In order to benchmark these reasoners to find and improve the performance bottlenecks, we ideally need several real-world ontologies that span the wide spectrum in terms of their size and expressivity. This is often not the case. One of the potential reasons for the ontology developers to not build ontologies that vary in terms of size and expressivity, is the performance bottleneck of the reasoners. To solve this chicken and egg problem, we need high quality ontology benchmarks that have good coverage of the OWL 2 language constructs, and can test the scalability of the reasoners by generating arbitrarily large ontologies. We propose and describe one such benchmark named OWL2Bench. It is an extension of the well-known University Ontology Benchmark (UOBM). OWL2Bench consists of the following – TBox axioms for each of the four OWL 2 profiles (EL, QL, RL, and DL), a synthetic ABox axiom generator that can generate axioms of arbitrary size, and a set of SPARQL queries that involve reasoning over the OWL 2 language constructs. We evaluate the performance of six ontology reasoners and two SPARQL query engines that support OWL 2 reasoning using our benchmark. We discuss some of the performance bottlenecks, bugs found, and other observations from our evaluation.},
+	urldate = {2026-08-19},
+	booktitle = {The {Semantic} {Web} – {ISWC} 2020: 19th {International} {Semantic} {Web} {Conference}, {Athens}, {Greece}, {November} 2–6, 2020, {Proceedings}, {Part} {II}},
+	publisher = {Springer-Verlag},
+	author = {Singh, Gunjan and Bhatia, Sumit and Mutharaju, Raghava},
+	month = nov,
+	year = {2020},
+	pages = {81--96},
+}
+
 @inproceedings{betz_supervised_2022,
 	address = {Cham},
 	title = {Supervised {Knowledge} {Aggregation} for {Knowledge} {Graph} {Completion}},
@@ -154,20 +316,6 @@
 	editor = {Groth, Paul and Vidal, Maria-Esther and Suchanek, Fabian and Szekley, Pedro and Kapanipathi, Pavan and Pesquita, Catia and Skaf-Molli, Hala and Tamper, Minna},
 	year = {2022},
 	pages = {74--92},
-}
-
-@book{ontotext_graphdb_2024,
-	title = {{GraphDB}},
-	url = {https://graphdb.ontotext.com/},
-	author = {{Ontotext}},
-	year = {2024},
-}
-
-@book{apache_software_foundation_apache_2024,
-	title = {Apache {Jena}},
-	url = {https://jena.apache.org/},
-	author = {{Apache Software Foundation}},
-	year = {2024},
 }
 
 @misc{kipf_semi-supervised_2016,
@@ -309,18 +457,6 @@
 	pages = {3853--3866},
 }
 
-@inproceedings{sun_rotate_2018,
-	title = {{RotatE}: {Knowledge} {Graph} {Embedding} by {Relational} {Rotation} in {Complex} {Space}},
-	shorttitle = {{RotatE}},
-	url = {https://openreview.net/forum?id=HkgEQnRqYQ},
-	abstract = {We study the problem of learning representations of entities and relations in knowledge graphs for predicting missing links. The success of such a task heavily relies on the ability of modeling and inferring the patterns of (or between) the relations. In this paper, we present a new approach for knowledge graph embedding called RotatE, which is able to model and infer various relation patterns including: symmetry/antisymmetry, inversion, and composition. Specifically, the RotatE model defines each relation as a rotation from the source entity to the target entity in the complex vector space. In addition, we propose a novel self-adversarial negative sampling technique for efficiently and effectively training the RotatE model. Experimental results on multiple benchmark knowledge graphs show that the proposed RotatE model is not only scalable, but also able to infer and model various relation patterns and significantly outperform existing state-of-the-art models for link prediction.},
-	language = {en},
-	urldate = {2025-12-02},
-	author = {Sun, Zhiqing and Deng, Zhi-Hong and Nie, Jian-Yun and Tang, Jian},
-	month = sep,
-	year = {2018},
-}
-
 @inproceedings{trouillon_complex_2016,
 	title = {Complex {Embeddings} for {Simple} {Link} {Prediction}},
 	issn = {1938-7228},
@@ -371,16 +507,6 @@
 	month = apr,
 	year = {2018},
 	keywords = {convolution},
-}
-
-@inproceedings{lisi_combining_2017,
-	title = {Combining {Rule} {Learning} and {Nonmonotonic} {Reasoning} for {Link} {Prediction} in {Knowledge} {Graphs}},
-	url = {http://ceur-ws.org/Vol-1875/paper20.pdf},
-	language = {eng},
-	urldate = {2025-11-19},
-	publisher = {CEUR-WS.org},
-	author = {Lisi, Francesca Alessandra and Stepanova, Daria},
-	year = {2017},
 }
 
 @article{deng_research_2022,
@@ -513,19 +639,6 @@
 	month = sep,
 	year = {2019},
 	pages = {243--246},
-}
-
-@article{himmelstein_systematic_nodate,
-	title = {Systematic integration of biomedical knowledge prioritizes drugs for repurposing},
-	volume = {6},
-	issn = {2050-084X},
-	url = {https://pmc.ncbi.nlm.nih.gov/articles/PMC5640425/},
-	doi = {10.7554/eLife.26726},
-	abstract = {The ability to computationally predict whether a compound treats a disease would improve the economy and success rate of drug approval. This study describes Project Rephetio to systematically model drug efficacy based on 755 existing treatments. First, we constructed Hetionet (neo4j.het.io), an integrative network encoding knowledge from millions of biomedical studies. Hetionet v1.0 consists of 47,031 nodes of 11 types and 2,250,197 relationships of 24 types. Data were integrated from 29 public resources to connect compounds, diseases, genes, anatomies, pathways, biological processes, molecular functions, cellular components, pharmacologic classes, side effects, and symptoms. Next, we identified network patterns that distinguish treatments from non-treatments. Then, we predicted the probability of treatment for 209,168 compound–disease pairs (het.io/repurpose). Our predictions validated on two external sets of treatment and provided pharmacological insights on epilepsy, suggesting they will help prioritize drug repurposing candidates. This study was entirely open and received realtime feedback from 40 community members., Of all the data in the world today, 90\% was created in the last two years. However, taking advantage of this data in order to advance our knowledge is restricted by how quickly we can access it and analyze it in a proper context., In biomedical research, data is largely fragmented and stored in databases that typically do not “talk” to each other, thus hampering progress. One particular problem in medicine today is that the process of making a new therapeutic drug from scratch is incredibly expensive and inefficient, making it a risky business. Given the low success rate in drug discovery, there is an economic incentive in trying to repurpose an existing drug that has already been shown to be safe and effective towards a new disease or condition., Himmelstein et al. used a computational approach to analyze 50,000 data points – including drugs, diseases, genes and symptoms – from 19 different public databases. This approach made it possible to create more than two million relationships among the data points, which could be used to develop models that predict which drugs currently in use by doctors might be best suited to treat any of 136 common diseases. For example, Himmelstein et al. identified specific drugs currently used to treat depression and alcoholism that could be repurposed to treat smoking addition and epilepsy., These findings provide a new and powerful way to study drug repurposing. While this work was exclusively performed with public data, an expanded and potentially stronger set of predictions could be obtained if data owned by pharmaceutical companies were incorporated. Additional studies will be needed to test the predictions made by the models.},
-	urldate = {2025-11-18},
-	journal = {eLife},
-	author = {Himmelstein, Daniel Scott and Lizee, Antoine and Hessler, Christine and Brueggeman, Leo and Chen, Sabrina L and Hadley, Dexter and Green, Ari and Khankhanian, Pouya and Baranzini, Sergio E},
-	pages = {e26726},
 }
 
 @inproceedings{hubert_knowledge_2022,
