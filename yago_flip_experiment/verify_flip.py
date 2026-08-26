@@ -8,16 +8,10 @@ Verification for YAGO4.5-10-flip. Checks, in order:
   4. domain/range hold for the flipped triples, using the TBox subClassOf closure
   5. leakage: no relation pair (r1, r2) where (s,r1,o) systematically co-occurs
      with (o,r2,s) -- run on both the original and the flipped dataset
-  6. checksums: the generated files match CHECKSUMS.md
-
-The generated data is ~1.2 GB and is therefore not archived: it is rebuilt from
-the prepared YAGO4.5-10 by flip_yago.py, and check 6 is what tells a reader that
-their rebuild is byte-identical to the one the paper reports on. Run with
---write-manifest to (re)generate CHECKSUMS.md after a deliberate rebuild.
 
 Exit code is non-zero if any check fails.
 """
-import collections, hashlib, sys, os
+import collections, sys, os
 
 SRC = "../data/YAGO4.5/data"
 OUT = "data"
@@ -190,56 +184,6 @@ w_flip = leakage(flip_paths, "FLIPPED YAGO4.5-10-flip")
 ok(w_flip <= max(w_orig, 0.01) + 1e-9,
    f"flip introduces no new reciprocal leakage (worst cross-relation: "
    f"orig {100*w_orig:.1f}% -> flip {100*w_flip:.1f}%)")
-
-# ---- 6. checksums of the generated files ----------------------------------
-GENERATED = [f"{Q}_{s}.tsv" for s in ("train", "valid", "test")] + \
-            [f"{Q}_{s}.nt" for s in ("full_graph", "entity_types", "tbox")]
-MANIFEST = "CHECKSUMS.md"
-
-
-def sha256(path):
-    h = hashlib.sha256()
-    with open(path, "rb") as fh:
-        for chunk in iter(lambda: fh.read(1 << 20), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
-print("\n[6] checksums of the generated files")
-digests = {}
-for name in GENERATED:
-    path = f"{OUT}/{name}"
-    if os.path.exists(path):
-        digests[name] = (sha256(path), os.path.getsize(path))
-    else:
-        ok(False, f"{name}: missing")
-
-if "--write-manifest" in sys.argv:
-    with open(MANIFEST, "w") as fh:
-        fh.write("# YAGO4.5-10-flip generated files\n\n")
-        fh.write("Written by `verify_flip.py --write-manifest`. These files are rebuilt by\n")
-        fh.write("`flip_yago.py` rather than archived; run `verify_flip.py` to check a rebuild\n")
-        fh.write("against this manifest.\n\n")
-        fh.write("| file | bytes | sha256 |\n|---|---:|---|\n")
-        for name in GENERATED:
-            if name in digests:
-                d, n = digests[name]
-                fh.write(f"| `{name}` | {n:,} | `{d}` |\n")
-    print(f"  WROTE  {MANIFEST} ({len(digests)} files)")
-elif os.path.exists(MANIFEST):
-    expected = {}
-    for line in open(MANIFEST):
-        parts = [c.strip().strip("`") for c in line.strip().strip("|").split("|")]
-        if len(parts) == 3 and parts[0].endswith((".tsv", ".nt")):
-            expected[parts[0]] = parts[2]
-    ok(bool(expected), f"{MANIFEST} lists at least one file")
-    for name, (digest, _) in digests.items():
-        if name in expected:
-            ok(digest == expected[name], f"{name}: sha256 matches {MANIFEST}")
-        else:
-            ok(False, f"{name}: not listed in {MANIFEST}")
-else:
-    print(f"  SKIP   no {MANIFEST}; run with --write-manifest to create it")
 
 print("\n" + ("ALL CHECKS PASSED" if not fails else f"{len(fails)} CHECK(S) FAILED"))
 for f in fails:

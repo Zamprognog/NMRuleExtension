@@ -103,7 +103,6 @@ ignore, but noted.
 | `config-learn-flip.properties` | AnyBURL learn config, unrestricted (provenance only) |
 | `config-learn-flip-CP.properties` | as above, closed-path rules only (provenance only) |
 | `config-learn-flip-IFP.properties` | **the config the paper uses** — see below |
-| `CHECKSUMS.md` | sha256 of the six generated files |
 | `rules/`, `predictions/`, `logs/`, `output/` | outputs |
 
 ## Caveats
@@ -191,13 +190,14 @@ match nothing.
 
 ```sh
 python3 flip_yago.py       # needs prepared ../data/YAGO4.5/data/ as input
-python3 verify_flip.py     # six checks; non-zero exit on any failure
+python3 verify_flip.py     # five checks; non-zero exit on any failure
 ```
 
-The generated data is ~1.2 GB and is deliberately **not** archived — check 6 compares the
-six files against the sha256 manifest in `CHECKSUMS.md`, which is what tells you a rebuild
-is byte-identical to the one the paper reports on. Regenerate the manifest with
-`--write-manifest` only after a deliberate rebuild.
+The generated data is ~1.2 GB and is deliberately **not** archived: it is a deterministic
+rewrite of YAGO4.5-10, so rebuilding it is the intended route. `verify_flip.py` confirms the
+rebuild satisfies every property the experiment depends on — counts conserved, both
+properties empirically inverse functional, originals gone, domain/range clean, no new
+leakage — though it does not compare byte-for-byte against the original build.
 
 The mined rules are the opposite case: AnyBURL is time-budgeted (`SNAPSHOTS_AT`) and
 multi-threaded (`WORKER_THREADS = 4`), so re-mining yields a *different* rule set and

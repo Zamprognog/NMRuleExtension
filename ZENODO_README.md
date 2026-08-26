@@ -26,13 +26,12 @@ them, none can. That is what this record preserves.
 ```
 NMRuleExtension-data-v1.0/
   README.md               this file
-  MANIFEST.sha256         checksum for every file below
   DATA_PREPARATION.md     log of manual, non-reproducible fixes applied after download
   NELL995/    data/ rules/ NELL995.json
   YAGO4.5/    data/ rules/ yago4.5.json
   CSKG2/      data/ rules/ CSKG2.json
   hetionet/   data/ rules/ hetionet.json
-  YAGO4.5-10-flip/  rules/ predictions_ifp/ configs/ CHECKSUMS.md
+  YAGO4.5-10-flip/  rules/ predictions_ifp/ configs/
 ```
 
 Unpack the four dataset folders directly into the repository's `data/` directory; the
@@ -63,9 +62,8 @@ Graph sizes count all lines in the `.nt`, type assertions included. The paper's
 
 The derived variant used for the inverse-functionality analysis. Its ~1.2 GB of data is
 deliberately **not** archived: it is a deterministic rewrite of YAGO4.5-10, rebuilt by
-`flip_yago.py` in the code repository and checked against the sha256 manifest in
-`CHECKSUMS.md`. What *is* archived is its mined rules and the materialization output they
-produced, for the same reason as above.
+`flip_yago.py` in the code repository and checked by `verify_flip.py`. What *is* archived is
+its mined rules and the materialization output they produced, for the same reason as above.
 
 Note this rule set was mined with a lower confidence threshold (0.01 rather than 0.1) and a
 longer snapshot (300s rather than 100s), restricted to the two inverse-functional heads.
@@ -90,9 +88,8 @@ pair of splits.
 
 ## Verifying your copy
 
-```sh
-shasum -a 256 -c MANIFEST.sha256
-```
+Each file's checksum is published in this record's Zenodo metadata; compare against that if
+a download looks truncated.
 
 ## Provenance
 
