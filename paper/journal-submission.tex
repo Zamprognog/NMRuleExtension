@@ -1102,7 +1102,7 @@ Increasing rule expressivity (Anyburl CP to Full) usually, but not consistently,
 
 \subsubsection{Rank-based metrics} As shown in Table \ref{tab:metrics_rank}, the influence of the non-monotonic extension on hits@k and MRR tends to be negative, but very limited. We attribute this to the quality and precision of high-confidence rules, which likely dominate the results at lower $k$ values: since individual rules can generate multiple predictions for \texttt{(s,p,?)} or \texttt{(?,p,o)} queries, they have the most influence with the top ranks. Given that the sem@10 scores are still not perfect, this shows that while the majority of top-10 predictions are semantically correct, some inconsistent triples are still present. Our extension appears to remove them, but worsens the other LP scores: this suggest that, with standard LP metrics, the inconsistency generating rules could be considered of higher quality despite the certain presence of inconsistencies among the predictions, as the metrics only focus on the relative rank, without addressing the quality of the relevant predictions.\\
 \indent Finally, a note on Hetionet and its low-scored performance: compared to other work as e.g.~\cite{betz_supervised_2022}, we do not specifically target a single property, and instead tackle the general task of KG completion, which thus explains the discrepancy on the results. Our interest lies on the semantic consistency of rules with respect to the entire KG schema, and limiting the rules to only predict a specific relation when only domain and range constraints are available would have limited the conclusion we could gain from the results.
-\subsubsection{Inverse functionality} Tables \ref{tab:mat_flip_standard} and \ref{tab:mat_flip_nmr} report the materialization of YAGO4.5-10-flip with the rule set restricted to inverse-functional heads, respectively for the standard condition and for the non-monotonic extension. As every mined rule targets \texttt{birthPlaceOf} or \texttt{deathPlaceOf}, every materialized triple is subject to the constraint under study and the counts are directly comparable across the two conditions. Functional and domain violations are zero throughout, since the flipped properties are declared only inverse functional and their domain is satisfied by construction; the residual range violations of the standard condition come from the few rules predicting a subject that is not a \texttt{Person}.
+\subsubsection{Inverse functionality} Table \ref{tab:mat_flip} reports the materialization of YAGO4.5-10-flip with the rule set restricted to inverse-functional heads, for the standard condition and for the non-monotonic extension. As every mined rule targets \texttt{birthPlaceOf} or \texttt{deathPlaceOf}, every materialized triple is subject to the constraint under study and the counts are directly comparable across the two conditions. Functional and domain violations are zero throughout, since the flipped properties are declared only inverse functional and their domain is satisfied by construction; the residual range violations of the standard condition come from the few rules predicting a subject that is not a \texttt{Person}.
 
 The standard condition violates inverse functionality on a large share of what it infers: 1992 of 2777 triples at the 1\% threshold (71.7\%), 21461 of 40492 at 5\% (53.0\%) and 45407 of 72518 at 10\% (62.6\%), keeping semantic consistency between 0.28 and 0.46. The degradation in quality follows directly from concentrating the rule set on two constrained relations: rules predicting a person for a given place are numerous and mutually inconsistent, whereas in the unrestricted setting, the same rules are diluted among many unconstrained properties.
 
@@ -1119,33 +1119,20 @@ Beyond verifying the effect of our method on inverse-functionality constraints, 
 \scriptsize
 \setlength{\tabcolsep}{4pt}
 \renewcommand{\arraystretch}{1.12}
-\caption{Materialization of YAGO4.5-10-flip with AnyBURL rules restricted to inverse-functional heads, \textbf{standard} condition. `invf', `func', `dom' and `ran' are the inconsistent triples according to, respectively, inverse functionality, functionality, domain and range; `\# inc' is the number of distinct inconsistent triples and `sem' the ratio of consistent triples over the materialized ones. `\# applied', `\# target' and `time' are as in Table \ref{tab:mat_anyburl_10_30}.}
-\label{tab:mat_flip_standard}
-\begin{tabular}{l | r r r r r r r r r r}
+\caption{Materialization of YAGO4.5-10-flip with AnyBURL rules restricted to inverse-functional heads, comparing the \textbf{standard} condition (std) with the \textbf{non-monotonic} one (nmr). `invf', `func', `dom' and `ran' are the inconsistent triples according to, respectively, inverse functionality, functionality, domain and range; `\# inc' is the number of distinct inconsistent triples and `sem' the ratio of consistent triples over the materialized ones. `\# applied', `\# target' and `time' are as in Table \ref{tab:mat_anyburl_10_30}. As every mined rule targets an inverse-functional head, `\# target' and the set of constrained triples are identical across the two conditions, so the counts are directly comparable row by row. The residual `invf' counts under nmr are entirely due to out-rule exceptions, i.e.\ distinct rules predicting different subjects for the same object.}
+\label{tab:mat_flip}
+\begin{tabular}{l l | r r r r r r r r r r}
 \toprule
-\% & \# applied & \# target & \# triples & invf & func & dom & ran & \# inc & sem & time \\
+\% & cond. & \# applied & \# target & \# triples & invf & func & dom & ran & \# inc & sem & time \\
 \midrule
-1\%  & 155  & 206  & 2777  & 1992  & 0 & 0 & 8   & 2000  & 0.28 & 28s \\
-5\%  & 756  & 1029 & 40492 & 21461 & 0 & 0 & 321 & 21778 & 0.46 & 189s \\
-10\% & 1530 & 2057 & 72518 & 45407 & 0 & 0 & 355 & 45756 & 0.37 & 368s \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\begin{table}[]
-\centering
-\scriptsize
-\setlength{\tabcolsep}{4pt}
-\renewcommand{\arraystretch}{1.12}
-\caption{Materialization of YAGO4.5-10-flip with AnyBURL rules restricted to inverse-functional heads, \textbf{non-monotonic} condition (nmr). Columns as in Table \ref{tab:mat_flip_standard}. The residual `invf' counts are entirely due to out-rule exceptions, i.e. distinct rules predicting different subjects for the same object.}
-\label{tab:mat_flip_nmr}
-\begin{tabular}{l | r r r r r r r r r r}
-\toprule
-\% & \# applied & \# target & \# triples & invf & func & dom & ran & \# inc & sem & time \\
-\midrule
-1\%  & 104  & 206  & 785   & 8    & 0 & 0 & 0 & 8    & 0.99 & 40s \\
-5\%  & 519  & 1029 & 19417 & 703  & 0 & 0 & 0 & 703  & 0.96 & 202s \\
-10\% & 1035 & 2057 & 30122 & 3340 & 0 & 0 & 0 & 3340 & 0.89 & 385s \\
+\multicolumn{1}{l}{1\%}  & std & 155  & 206  & 2777  & 1992  & 0 & 0 & 8   & 2000  & 0.28 & 28s \\
+                         & nmr & 104  & 206  & 785   & 8     & 0 & 0 & 0   & 8     & 0.99 & 40s \\
+\addlinespace
+\multicolumn{1}{l}{5\%}  & std & 756  & 1029 & 40492 & 21461 & 0 & 0 & 321 & 21778 & 0.46 & 189s \\
+                         & nmr & 519  & 1029 & 19417 & 703   & 0 & 0 & 0   & 703   & 0.96 & 202s \\
+\addlinespace
+\multicolumn{1}{l}{10\%} & std & 1530 & 2057 & 72518 & 45407 & 0 & 0 & 355 & 45756 & 0.37 & 368s \\
+                         & nmr & 1035 & 2057 & 30122 & 3340  & 0 & 0 & 0   & 3340  & 0.89 & 385s \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -1154,7 +1141,7 @@ Beyond verifying the effect of our method on inverse-functionality constraints, 
 \subparagraph{Consistency vs. Ranking Performance trade-off} Our results show that introducing exceptions can slightly decrease standard LP metrics. However, we argue that this trade-off is in practice unavoidable: our sem@10 results clearly show inconsistencies appearing in most cases in the standard setting, claim which is further verified by the materialization analysis. From a downstream application point of view, materializing the standard rule-set will clearly introduce inconsistencies in the KG, which will require a repairing step that with our method can be avoided or heavily limited. This is can be also contextualized as being close to similar related work \cite{hubert_treat_2024,paulheim_make_2018} which argued for the need of semantic-aware metrics complementary to standard, rank-based ones.
 
 \subparagraph{Remaining Out-Rule Violations} 
-Our experiments empirically suggest that the contribution of out-rule exceptions at materialization time is limited. In fact from the \#Inc values in Tables 3,4,6,7 it is possible to notice how, after blocking in-rule and in-graph exceptions, the remaining inconsistencies are often 0 or in rare cases (NELL) only limited to a small percentage (less than 3\%) with respect to the generated triples. In the case of targeted rule mining (Tables 8 and 9), out-rule exceptions can be more prominent, by construction, but the exception-based pruning still heavily reduces them.
+Our experiments empirically suggest that the contribution of out-rule exceptions at materialization time is limited. In fact from the \#Inc values in Tables 3,4,6,7 it is possible to notice how, after blocking in-rule and in-graph exceptions, the remaining inconsistencies are often 0 or in rare cases (NELL) only limited to a small percentage (less than 3\%) with respect to the generated triples. In the case of targeted rule mining (Table \ref{tab:mat_flip}), out-rule exceptions can be more prominent, by construction, but the exception-based pruning still heavily reduces them.
 
 When handling out-rule violation, the memory requirements would immediately rise as one needs to track provenance of predictions. Additionally, out-rule violations further involve including considerations about confidence and confidence aggregation: a possible heuristic could consider resolving inconsistencies by including a preference based on higher-confidence rules and blocking lower confidence predictions, but this could only be applied with max-aggregation. It is definitely an open question that warrants further analysis, but we kept it outside of the scope to the paper, as their remaining influence is limited.
 
