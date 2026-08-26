@@ -134,13 +134,11 @@ it must stay **flat**, string-valued, and free of commas inside values. Example 
 ## Evaluation Queries
 
 Materialization output is scored by counting, among the newly inferred triples, how many violate a
-constraint of the ontology. The counting is done in GraphDB by the external
-`graphdb-workflow` runner (`~/graphdb-import/graphdb-workflow`): it clears the named graph
+constraint of the ontology. The counting is done in GraphDB, to reproduce: clear the named graph
 `<http://newtriples/>` in the dataset's repository, loads one materialization `.nt` file into it,
-and runs a single **metrics query** per file. `MaterializationEvaluationPipeline` runs the exact
+and run a single **metrics query** per file. `MaterializationEvaluationPipeline` runs the exact
 same queries locally over an in-memory Jena dataset (base graph + schema + types as the default
-graph, the `.nt` file as `<http://newtriples/>`); it is the offline equivalent, not a second
-definition.
+graph, the `.nt` file as `<http://newtriples/>`); it is the offline equivalent, but not used in the paper.
 
 Each file yields:
 
@@ -159,10 +157,8 @@ Because `inc` is DISTINCT over `(?s ?p ?o)`, `0 ≤ inc ≤ triples` and `sem �
 Every block starts from the new triples, so the work is bounded by `|newtriples|`. The
 functional / inverse-functional checks are two OR-ed `FILTER EXISTS` (a conflicting value in the
 base graph **or** in `<http://newtriples/>`), which short-circuits on the first conflict instead of
-enumerating every value of a high-fan-out subject — same result as a `GROUP BY … HAVING COUNT > 1`
-join, without the blow-up.
+enumerating every value of a high-fan-out subject.
 
-`{{NEWTRIPLES}}` below is replaced with `<http://newtriples/>` at run time.
 
 ### Default metrics query (NELL-995, YAGO4.5-10, CSKG2, Hetionet)
 
@@ -175,50 +171,50 @@ SELECT ?func ?dom ?ran ?inc WHERE {
   # ---- functional: (s,p) already has a DIFFERENT value (base or new) ----
   { SELECT (COUNT(*) AS ?func) WHERE {
       SELECT DISTINCT ?s ?p ?o WHERE {
-        GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+        GRAPH {<http://newtriples/>} { ?s ?p ?o . }
         ?p rdf:type owl:FunctionalProperty .
         FILTER( EXISTS { ?s ?p ?ox . FILTER(?ox != ?o) }
-             || EXISTS { GRAPH {{NEWTRIPLES}} { ?s ?p ?oy . FILTER(?oy != ?o) } } )
+             || EXISTS { GRAPH {<http://newtriples/>} { ?s ?p ?oy . FILTER(?oy != ?o) } } )
       }
   } }
 
   # ---- domain: subject typed with a class disjoint from the property domain ----
   { SELECT (COUNT(*) AS ?dom) WHERE {
       SELECT DISTINCT ?s ?p ?o WHERE {
-        GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+        GRAPH {<http://newtriples/>} { ?s ?p ?o . }
         ?p rdfs:domain ?domClass .
         ?domClass owl:disjointWith|^owl:disjointWith ?type1 .
-        { ?s rdf:type ?type1 . } UNION { GRAPH {{NEWTRIPLES}} { ?s rdf:type ?type1 . } }
+        { ?s rdf:type ?type1 . } UNION { GRAPH {<http://newtriples/>} { ?s rdf:type ?type1 . } }
       }
   } }
 
   # ---- range: object typed with a class disjoint from the property range ----
   { SELECT (COUNT(*) AS ?ran) WHERE {
       SELECT DISTINCT ?s ?p ?o WHERE {
-        GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+        GRAPH {<http://newtriples/>} { ?s ?p ?o . }
         ?p rdfs:range ?ranClass .
         ?ranClass owl:disjointWith|^owl:disjointWith ?type2 .
-        { ?o rdf:type ?type2 . } UNION { GRAPH {{NEWTRIPLES}} { ?o rdf:type ?type2 . } }
+        { ?o rdf:type ?type2 . } UNION { GRAPH {<http://newtriples/>} { ?o rdf:type ?type2 . } }
       }
   } }
 
   # ---- combined total, DISTINCT across the three checks ----
   { SELECT (COUNT(*) AS ?inc) WHERE {
       SELECT DISTINCT ?s ?p ?o WHERE {
-        { GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+        { GRAPH {<http://newtriples/>} { ?s ?p ?o . }
           ?p rdf:type owl:FunctionalProperty .
           FILTER( EXISTS { ?s ?p ?ox . FILTER(?ox != ?o) }
-               || EXISTS { GRAPH {{NEWTRIPLES}} { ?s ?p ?oy . FILTER(?oy != ?o) } } ) }
+               || EXISTS { GRAPH {<http://newtriples/>} { ?s ?p ?oy . FILTER(?oy != ?o) } } ) }
         UNION
-        { GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+        { GRAPH {<http://newtriples/>} { ?s ?p ?o . }
           ?p rdfs:domain ?dc .
           ?dc owl:disjointWith|^owl:disjointWith ?t1 .
-          { ?s rdf:type ?t1 . } UNION { GRAPH {{NEWTRIPLES}} { ?s rdf:type ?t1 . } } }
+          { ?s rdf:type ?t1 . } UNION { GRAPH {<http://newtriples/>} { ?s rdf:type ?t1 . } } }
         UNION
-        { GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+        { GRAPH {<http://newtriples/>} { ?s ?p ?o . }
           ?p rdfs:range ?rc .
           ?rc owl:disjointWith|^owl:disjointWith ?t2 .
-          { ?o rdf:type ?t2 . } UNION { GRAPH {{NEWTRIPLES}} { ?o rdf:type ?t2 . } } }
+          { ?o rdf:type ?t2 . } UNION { GRAPH {<http://newtriples/>} { ?o rdf:type ?t2 . } } }
       }
   } }
 }
@@ -233,10 +229,10 @@ Identical to the default plus an inverse-functional block, which is mirrored int
   # ---- inverse-functional: (p,o) already reached from a DIFFERENT subject ----
   { SELECT (COUNT(*) AS ?invf) WHERE {
       SELECT DISTINCT ?s ?p ?o WHERE {
-        GRAPH {{NEWTRIPLES}} { ?s ?p ?o . }
+        GRAPH {<http://newtriples/>} { ?s ?p ?o . }
         ?p rdf:type owl:InverseFunctionalProperty .
         FILTER( EXISTS { ?sx ?p ?o . FILTER(?sx != ?s) }
-             || EXISTS { GRAPH {{NEWTRIPLES}} { ?sy ?p ?o . FILTER(?sy != ?s) } } )
+             || EXISTS { GRAPH {<http://newtriples/>} { ?sy ?p ?o . FILTER(?sy != ?s) } } )
       }
   } }
 ```
