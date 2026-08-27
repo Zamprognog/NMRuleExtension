@@ -45,7 +45,7 @@
 
 \author{Ilaria Tiddi}{Vrije Universiteit Amsterdam, The Netherlands \and Hybrid Intelligence Consortium, The Netherlands}{i.tiddi@vu.nl}{https://orcid.org/0000-0001-7116-9338}{}
 
-\author{Bart Verheij}{University of Groningen, The Netherlands \and Hybrid Intelligence Consortium, The Netherlands}{Bart.Verheij@rug.nl}{https://orcid.org/0000-0001-8927-8751}{}
+    \author{Bart Verheij}{University of Groningen, The Netherlands \and Hybrid Intelligence Consortium, The Netherlands}{Bart.Verheij@rug.nl}{https://orcid.org/0000-0001-8927-8751}{}
 
 \author{Stefan Schlobach}{Vrije Universiteit Amsterdam, The Netherlands \and Hybrid Intelligence Consortium, The Netherlands}{k.s.schlobach@vu.nl}{https://orcid.org/0000-0002-3282-1597}{}
 
@@ -62,8 +62,8 @@
 \relatedversion{} %optional, e.g. full version hosted on arXiv, HAL, or other respository/website
 %\relatedversiondetails[linktext={opt. text shown instead of the URL}, cite=DBLP:books/mk/GrayR93]{Classification (e.g. Full Version, Extended Version, Previous Version}{URL to related version} %linktext and cite are optional
 
-%\supplement{}%optional, e.g. related research data, source code, ... hosted on a repository like zenodo, figshare, GitHub, ...
-%\supplementdetails[linktext={opt. text shown instead of the URL}, cite=DBLP:books/mk/GrayR93, subcategory={Description, Subcategory}, swhid={Software Heritage Identifier}]{General Classification (e.g. Software, Dataset, Model, ...)}{URL to related version} %linktext, cite, and subcategory are optional
+\supplement{Source code is hosted at the following GitHub repository \url{https://github.com/Zamprognog/NMRuleExtension}, which includes the full supplementary material statement.}%optional, e.g. related research data, source code, ... hosted on a repository like zenodo, figshare, GitHub, ...
+% \supplementdetails[linktext={}, cite=DBLP:books/mk/GrayR93, subcategory={Description, Subcategory}, swhid={Software Heritage Identifier}]{General Classification (e.g. Software, Dataset, Model, ...)}{URL to related version} %linktext, cite, and subcategory are optional
 
 %\funding{(Optional) general funding statement \dots}%optional, to capture a funding statement, which applies to all authors. Please enter author specific funding statements as fifth argument of the \author macro.
 
@@ -1061,7 +1061,7 @@ We now proceed to illustrate and analyze our empirical experiment setup.
     \item AMIE3 `L4': min PCA confidence: 0.1, min confidence: 0.1, min support: 2, rule length: 3 body atoms.
 \end{itemize}
 
-\noindent Since AMIE3 performs a full search even on large KGs, we limit the expressivity of its rules for performance reasons. In practice, we excluded any AMIE-mined rules with constants, as well as the longer rules in the case of CSKG2, which our resource could not mine within several days. Despite the trade-off, we obtain in this way closed path rules which are not strictly cyclic, thus integrating a different type of expressivity. We note that this is a standard tractability trade-off acknowledged in recent literature (e.g., frameworks like pyclause\cite{betz_pyclause-simple_2024} similarly limit this expressivity for scalability and comparability).
+\noindent Since AMIE3 performs a full search even on large KGs, we limit the expressivity of its rules for performance reasons. In practice, we excluded any AMIE-mined rules with constants, as well as the longer rules in the case of CSKG2, which our resource could not mine within several days. Despite the trade-off, we obtain in this way closed path rules which are not strictly cyclic, thus integrating a different type of expressivity. We note that this is a standard tractability trade-off acknowledged in recent literature (e.g., frameworks like pyclause\cite{betz_pyclause_2024} similarly limit this expressivity for scalability and comparability).
 
 \subsubsection{Datasets} We extract rules from the following Knowledge Graphs, which are selected as they come with a defined schema, summarized in Table \ref{tab:datasets}. 
 
@@ -1169,4 +1169,7 @@ As discussed, we only included a limited number of restrictions, albeit common, 
 
 \bibliography{references}
 
+\appendix
+\section*{Usage of generative AI}
+Generative AI (Claude and Claude Code, \url{https://claude.ai/}) was used in a supporting fashion for grammar correction and text rephrasing in this work, and in a co-pilot fashion for coding and documentation of the model and the repository.
 \end{document}
