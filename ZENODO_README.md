@@ -9,7 +9,6 @@ produce every table in the paper. Code lives separately, at
 ```
 NMRuleExtension-data-v1.0/
   README.md               this file
-  DATA_PREPARATION.md     log of manual, non-reproducible fixes applied after download
   NELL995/    data/ rules/ NELL995.json
   YAGO4.5/    data/ rules/ yago4.5.json
   CSKG2/      data/ rules/ CSKG2.json
@@ -22,7 +21,6 @@ Unpacking, from the repository root:
 ```sh
 # the four main datasets
 cp -r NELL995 YAGO4.5 CSKG2 hetionet  data/
-cp    DATA_PREPARATION.md              data/
 
 # the flip variant, which the code expects beside its scripts, not under data/
 cp -r YAGO4.5-10-flip/data YAGO4.5-10-flip/rules YAGO4.5-10-flip/predictions_ifp \
