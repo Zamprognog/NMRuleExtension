@@ -432,26 +432,26 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \toprule
 \% & Metric & CP & \shortstack{CP\\nmr} & Full & \shortstack{Full\\nmr} \\
 \midrule
-1\%  & \# applied & 4 & 4 & 9 & 9 \\
+1\%  & \# applied & 4 & 4 & 7 & 7 \\
 1\%  & \# target  & 4 & 4 & 10 & 10 \\
 1\%  & \# inc     & 0 & 0 & 0 & 0 \\
-1\%  & triples    & 444k & 444k & 1.2k & 1.2k \\
+1\%  & triples    & 444k & 444k & 958 & 958 \\
 1\% & sem       & 1.0 & 1.0  & 1.0 & 1.0\\
-1\%  & time      & 4s & 8s & 1s & 1s \\
+1\%  & time      & 3s & 7s & $<$1s & $<$1s \\
 \addlinespace
-5\%  & \# applied & 19 & 19 & 44 & 44 \\
+5\%  & \# applied & 19 & 19 & 40 & 40 \\
 5\%  & \# target  & 19 & 19 & 50 & 50 \\
-5\%  & \# inc     & 218865 & 0 & 0 & 0 \\
-5\%  & triples    & 2.0m & 1.7m & 13k & 13k \\
+5\%  & \# inc     & 221935 & 0 & 0 & 0 \\
+5\%  & triples    & 2.0m & 1.8m & 12k & 12k \\
 5\% & sem       & 0.89 & 1.0 & 1.0 &  1.0 \\
-5\%  & time      & 35s & 112s & 6s & 18s \\
+5\%  & time      & 33s & 88s & 5s & 15s \\
 \addlinespace
-10\% & \# applied & 38 & 38 & 86 & 86 \\
+10\% & \# applied & 38 & 38 & 82 & 82 \\
 10\% & \# target  & 38 & 38 & 100 & 100 \\
-10\% & \# inc     & 233122 & 0 & 0 & 0 \\
-10\% & triples    & 4.0m & 3.8m & 31k & 31k \\
+10\% & \# inc     & 236247 & 0 & 0 & 0 \\
+10\% & triples    & 4.0m & 3.8m & 30k & 30k \\
 10\% & sem       & 0.94 & 1.0  & 1.0 & 1.0\\
-10\% & time      & 284s & 801s & 6s & 19s \\
+10\% & time      & 124s & 342s & 6s & 17s \\
 \bottomrule
 \end{tabular}
 \end{minipage}%
@@ -555,19 +555,19 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \toprule
 \% & Metric & CP & \shortstack{CP\\nmr} & Full & \shortstack{Full\\nmr} \\
 \midrule
-1\%  & \# triples & 443k & 443k & 1.2k & 1.2k \\
+1\%  & \# triples & 444k & 444k & 958 & 958 \\
 1\%  & func      & -- & -- & -- & -- \\
 1\%  & dom       & 0 & 0 & 0 & 0 \\
 1\%  & ran       & 0 & 0 & 0 & 0 \\
 \addlinespace
-5\%  & \# triples & 2.0m & 1.7m & 13k & 13k \\
+5\%  & \# triples & 2.0m & 1.8m & 12k & 12k \\
 5\%  & func      & -- & -- & -- & -- \\
-5\%  & dom       & 218865 & 0 & 0 & 0 \\
+5\%  & dom       & 221935 & 0 & 0 & 0 \\
 5\%  & ran       & 0 & 0 & 0 & 0 \\
 \addlinespace
-10\% & \# triples & 4.0m & 3.8m & 31k & 31k \\
+10\% & \# triples & 4.0m & 3.8m & 30k & 30k \\
 10\% & func      & -- & -- & -- & -- \\
-10\% & dom       & 233122 & 0 & 0 & 0 \\
+10\% & dom       & 236247 & 0 & 0 & 0 \\
 10\% & ran       & 0 & 0 & 0 & 0 \\
 \bottomrule
 \end{tabular}
@@ -756,24 +756,24 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \midrule
 1\%  & \# applied & 1 & 1 & 5 & 5 \\
 1\%  & \# target  & 1 & 1 & 5 & 5 \\
-1\%  & \# inc     & 26220 & 0 & 0 & 0 \\
-1\%  & triples    & 40k & 14k & 1.6k & 1.6k \\
-1\%  & sem    &0.34 &1.0 & 1.0 & 1.0 \\
-1\%  & time      & 1s & 1s & 1s & 1s \\
+1\%  & \# inc     & 26487 & 0 & 0 & 0 \\
+1\%  & triples    & 40k & 13k & 1.6k & 1.6k \\
+1\%  & sem    &0.33 &1.0 & 1.0 & 1.0 \\
+1\%  & time      & $<$1s & $<$1s & 1s & 1s \\
 \addlinespace
 5\%  & \# applied & 3 & 3 & 21 & 20 \\
 5\%  & \# target  & 3 & 3 & 21 & 21 \\
-5\%  & \# inc     & 26220 & 0 & 2521 & 0 \\
-5\%  & triples    & 525k & 499k & 12k & 9.7k \\
-5\%  & sem    & 0.95 &1.0 & 0.79 & 1.0\\
-5\%  & time      & 2s & 4s & 2s & 2s \\
+5\%  & \# inc     & 26487 & 0 & 2729 & 0 \\
+5\%  & triples    & 525k & 499k & 12k & 9.6k \\
+5\%  & sem    & 0.95 &1.0 & 0.78 & 1.0\\
+5\%  & time      & 2s & 4s & 3s & 2s \\
 \addlinespace
 10\% & \# applied & 6 & 6 & 40 & 39 \\
 10\% & \# target  & 6 & 6 & 41 & 41 \\
-10\% & \# inc     & 26220 & 0 & 26282 & 0 \\
-10\% & triples    & 957k & 931k & 58k & 32k \\
+10\% & \# inc     & 26487 & 0 & 26545 & 0 \\
+10\% & triples    & 958k & 931k & 59k & 32k \\
 10\%  & sem    & 0.97&1.0 & 0.55& 1.0\\
-10\% & time      & 3s & 7s & 4s & 4s \\
+10\% & time      & 5s & 8s & 5s & 5s \\
 \bottomrule
 \end{tabular}
 \end{minipage}%
@@ -876,19 +876,19 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 \toprule
 \% & Metric & L3 & \shortstack{L3\\nmr} & L4 & \shortstack{L4\\nmr} \\
 \midrule
-1\%  & \# triples & 40k & 14k & 1.7k & 1.7 \\
+1\%  & \# triples & 40k & 13k & 1.6k & 1.6k \\
 1\%  & func      & -- & -- & -- & -- \\
-1\%  & dom       & 26220 & 0 & 0 & 0 \\
+1\%  & dom       & 26487 & 0 & 0 & 0 \\
 1\%  & ran       & 0 & 0 & 0 & 0 \\
 \addlinespace
-5\%  & \# triples & 525k & 499k & 12k & 9.7k \\
+5\%  & \# triples & 525k & 499k & 12k & 9.6k \\
 5\%  & func      & -- & -- & -- & -- \\
-5\%  & dom       & 26220 & 0 & 2494 & 0 \\
+5\%  & dom       & 26487 & 0 & 2729 & 0 \\
 5\%  & ran       & 0 & 0 & 0 & 0 \\
 \addlinespace
-10\% & \# triples & 957k & 931k & 58k & 32k \\
+10\% & \# triples & 958k & 931k & 59k & 32k \\
 10\% & func      & -- & -- & -- & -- \\
-10\% & dom       & 26220 & 0 & 26278 & 0 \\
+10\% & dom       & 26487 & 0 & 26545 & 0 \\
 10\% & ran       & 0 & 0 & 0 & 0 \\
 \bottomrule
 \end{tabular}
@@ -974,9 +974,9 @@ LP metrics are usually \textit{ranking metrics}. Given a set of test triples, i.
 
 % --- Hetionet ---
 \nextgroupplot[title={Hetionet}]
-\addplot+[draw=black, fill=blue!55, bar width=6pt, bar shift=-9pt] coordinates {(1,0.34) (5,0.95) (10,0.97)};
+\addplot+[draw=black, fill=blue!55, bar width=6pt, bar shift=-9pt] coordinates {(1,0.33) (5,0.95) (10,0.97)};
 \addplot+[draw=black, fill=blue!20, bar width=6pt, bar shift=-3pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
-\addplot+[draw=black, fill=orange!65, bar width=6pt, bar shift=3pt] coordinates {(1,1.00) (5,0.79) (10,0.55)};
+\addplot+[draw=black, fill=orange!65, bar width=6pt, bar shift=3pt] coordinates {(1,1.00) (5,0.78) (10,0.55)};
 \addplot+[draw=black, fill=orange!25, bar width=6pt, bar shift=9pt] coordinates {(1,1.00) (5,1.00) (10,1.00)};
 
 % --- CSKG-490K ---
@@ -1028,10 +1028,10 @@ AMIE nmr & 1.0 & 0.2517 & 0.2853 & 0.2643 & 1.0 & 0.2780 & 0.3264 & 0.2958\\
 \cmidrule(lr){2-5} \cmidrule(lr){6-9}
 Ruleset & sem@10 & hits@1 & hits@10 & mrr & sem@10 & hits@1 & hits@10 & mrr \\
 \midrule
-AnyBURL  & 0.9999 & 0.0169 & 0.0804 & 0.0382 & 0.9999 & 0.0549 & 0.1310 & 0.0792 \\
-AnyBURL nmr & 1.0 & 0.0156 & 0.0797 & 0.0370 & 1.0 & 0.0550 & 0.1310 & 0.0793\\
-AMIE & 0.9801 & 0.0283 & 0.1002 & 0.0508 & 0.9902 & 0.0275 & 0.1017 & 0.0506 \\
-AMIE nmr & 1.0 & 0.0270 & 0.0992 & 0.0494 & 1.0 & 0.0320 & 0.1063 & 0.0554\\
+AnyBURL  & 0.9999 & 0.0184 & 0.0813 & 0.0396 & 0.9999 & 0.0612 & 0.1316 & 0.0833 \\
+AnyBURL nmr & 1.0 & 0.0169 & 0.0806 & 0.0382 & 1.0 & 0.0613 & 0.1317 & 0.0834\\
+AMIE & 0.9801 & 0.0312 & 0.1021 & 0.0532 & 0.9902 & 0.0302 & 0.1037 & 0.0530 \\
+AMIE nmr & 1.0 & 0.0298 & 0.1008 & 0.0518 & 1.0 & 0.0359 & 0.1082 & 0.0585\\
 \midrule
 \multicolumn{9}{c}{CSKG-490K} \\
 \midrule
