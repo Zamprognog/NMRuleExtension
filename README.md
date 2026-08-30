@@ -33,7 +33,7 @@ This project implements a framework for evaluating and enhancing Rule Mining (sp
    ```
    
 3. Download the datasets and extract them into the `data/` directory, they can be found at the following link:
-   - [data](https://zenodo.org/records/20067594?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6ImJlMThhYTc4LWU5ZTgtNDZhOS04MzY0LWI5YTVmNmFiMGIzMyIsImRhdGEiOnt9LCJyYW5kb20iOiI4NGQwYzdmODJkZmI1MzVmMDc3NDUxNDliZDdjN2JlMCJ9.-D2d2bDBK-thqNrgkqk-Rcwa587pfovN6RBAlAD4idjWdKyUSvZcf-SglIZt2TFv8-rhRispAaZsGK_Io0BoaA)
+   - [data](https://zenodo.org/records/22125113)
 
 
 ## Usage
