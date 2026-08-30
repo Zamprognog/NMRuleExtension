@@ -159,7 +159,7 @@ In the specific scenario we consider, the substitution requires each variable to
 Link Prediction  refers to the task of predicting missing links in the graph. More precisely, the goal is to infer plausible triples $\texttt{(s,p,o)}$ that are not present in $\mathcal{T}$ but are likely to hold.
 
 LP is usually tested via the \textit{silver-standard} method: a set of triples from the original graph is removed, and the LP methods are tasked to rank each removed triple with respect of its possible corruptions (random substitutions of its components), where ideally the test triple is ranked among the most likely ones. 
-In the context of Rule Mining for Link Prediction, most rule-sets $\mathcal{IR}$ assign a \textit{confidence} value to each rule. So, given a test triple $\texttt{(s,p,o)}$, all rules that allow to infer $\texttt{(s,p,?)}$ are queried, ranking the predicted $\texttt{(s,p,o')}$ by an aggregation of the confidence scores of the rules which can correctly predict each triple. The same can be done for $\texttt{(?,r,o)}$ ranking predicted $\texttt{(s',r,o)}$.
+In the context of Rule Mining for Link Prediction, most rule-sets $\mathcal{IR}$ assign a \textit{confidence} value to each rule. So, given a test triple $\texttt{(s,p,o)}$, all rules that allow to infer $\texttt{(s,p,?)}$ are queried, ranking the predicted $\texttt{(s,p,o')}$ by an aggregation of the confidence scores of the rules which can correctly predict each triple. The same can be done for $\texttt{(?,p,o)}$ ranking predicted $\texttt{(s',p,o)}$.
 
 \subsection{Rule Mining}
 
