@@ -4,15 +4,14 @@
 # Two things this script exists to get right:
 #
 # 1. SLEEP. `pmset -g` reports `sleep 1` on AC -- this machine suspends after one
-#    minute idle, held off only by transient assertions (powerd while the display
-#    is on, and Claude Code's own `caffeinate -i -t 300`, which expires after 5
-#    minutes). That is the most likely reason earlier unattended runs died at
-#    inconsistent times with no OOM and no Java error. `caffeinate -dimsu` here
-#    holds the assertion for exactly as long as the JVM runs, and releases it
-#    afterwards -- no permanent change to the user's power settings.
+#    minute idle, held off only by transient power assertions that expire while
+#    the run is still going. That is the most likely reason earlier unattended
+#    runs died at inconsistent times with no OOM and no Java error.
+#    `caffeinate -dimsu` here holds the assertion for exactly as long as the JVM
+#    runs, and releases it afterwards -- power settings are left unchanged.
 #
-# 2. DETACHMENT. nohup + setsid so the job outlives the terminal and the agent
-#    session that started it.
+# 2. DETACHMENT. nohup + setsid so the job outlives the terminal it was started
+#    from.
 #
 # The pipeline already loads the base graph ONCE (Dataset built before the file
 # loop) and cycles each materialized file through a named graph
